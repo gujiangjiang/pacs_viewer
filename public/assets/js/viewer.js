@@ -87,6 +87,10 @@
             if (a === 'prev' || a === 'next') { b.disabled = !multi; return; }
             b.disabled = !hasImage;
         });
+        // 无影像时取消工具按钮的选中态（避免灰置却显示被选中）
+        if (!hasImage) {
+            Array.prototype.forEach.call(bar.querySelectorAll('[data-pv-tool]'), function (b) { b.classList.remove('active'); });
+        }
     };
 
     PvViewer.prototype.setStatus = function (m) { if (this.statusEl) this.statusEl.textContent = m || ''; };
