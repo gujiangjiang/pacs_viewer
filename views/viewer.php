@@ -50,6 +50,8 @@ $pageData = array(
                 <button type="button" data-pv-tool="angle">📐 测角（°）</button>
                 <button type="button" data-pv-tool="rect">▭ 矩形 ROI</button>
                 <button type="button" data-pv-tool="ellipse">⬭ 椭圆 ROI</button>
+                <div class="pv-menu-sep"></div>
+                <button type="button" data-pv-act="clear">🧹 清除标注</button>
             </div>
         </div>
         <div class="pv-menu-wrap">
@@ -71,8 +73,6 @@ $pageData = array(
                 <button type="button" data-pv-act="copy-link">🔗 复制阅片直链</button>
                 <button type="button" data-pv-act="save-image">💾 保存当前图像</button>
                 <button type="button" data-pv-act="save-series">🗂 保存序列（ZIP）</button>
-                <div class="pv-menu-sep"></div>
-                <button type="button" data-pv-act="clear">🧹 清除标注</button>
             </div>
         </div>
         <span class="pv-spacer"></span>
