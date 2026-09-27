@@ -7,42 +7,42 @@
 }
 .pv-app * { user-select: none; -webkit-user-select: none; }
 
-/* 工具条（按功能分组的子 Tab） */
+/* 工具条（大图标 + 下拉菜单） */
 .pv-vw-toolbar {
-    display: flex; flex-direction: column; align-items: stretch; gap: 6px;
-    padding: 6px 10px; background: #0b0f17; border-bottom: 1px solid var(--pv-line);
+    display: flex; align-items: stretch; gap: 2px; flex-wrap: nowrap; overflow-x: auto;
+    padding: 5px 10px; background: #0b0f17; border-bottom: 1px solid var(--pv-line);
 }
-.pv-vw-tabs { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.pv-tabbtn {
-    padding: 4px 12px; border: 1px solid var(--pv-line); border-radius: 6px;
-    background: #0f172a; color: var(--pv-txt2); cursor: pointer; font-size: 12px; white-space: nowrap;
+.pv-vw-toolbar::-webkit-scrollbar { height: 6px; }
+.pv-vw-toolbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+.pv-spacer { flex: 1 1 auto; }
+.pv-tsep { width: 1px; align-self: stretch; background: var(--pv-line); margin: 4px 6px; }
+.pv-bigbtn {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    min-width: 58px; padding: 4px 8px; border: 1px solid transparent; border-radius: 8px;
+    background: transparent; color: var(--pv-txt); cursor: pointer; white-space: nowrap;
 }
-.pv-tabbtn:hover { background: #1e293b; color: #fff; }
-.pv-tabbtn.active { background: rgba(14,165,233,.16); border-color: var(--pv-acc2); color: #7dd3fc; }
-.pv-vw-panes { display: flex; min-height: 30px; }
-.pv-vw-pane { display: none; align-items: center; gap: 4px; flex-wrap: wrap; }
-.pv-vw-pane.active { display: flex; }
-.pv-tbtn {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 5px 9px; border: 1px solid var(--pv-line); border-radius: 6px;
-    background: #0f172a; color: var(--pv-txt); cursor: pointer; font-size: 12px; white-space: nowrap;
+.pv-bigbtn:hover { background: #141d30; color: #fff; }
+.pv-bigbtn.active { background: rgba(16,185,129,.16); border-color: var(--pv-acc); color: #6ee7b7; }
+.pv-bi { font-size: 19px; line-height: 1.15; }
+.pv-bl { font-size: 11px; color: var(--pv-txt2); }
+.pv-bigbtn.active .pv-bl, .pv-bigbtn:hover .pv-bl { color: inherit; }
+.pv-bigbtn-exit .pv-bi { color: #fca5a5; }
+.pv-bigbtn-exit:hover { background: rgba(239,68,68,.14); }
+
+.pv-menu-wrap { position: relative; display: inline-flex; }
+.pv-menu {
+    position: absolute; top: calc(100% + 6px); left: 0; z-index: 40; min-width: 176px; padding: 5px;
+    background: #0f172a; border: 1px solid var(--pv-line); border-radius: 9px;
+    box-shadow: 0 16px 40px rgba(0,0,0,.6); display: none;
 }
-.pv-tbtn:hover { background: #1e293b; color: #fff; border-color: var(--pv-line2); }
-.pv-tbtn.active { background: rgba(16,185,129,.18); border-color: var(--pv-acc); color: #6ee7b7; }
-.pv-tsep { width: 1px; height: 20px; background: var(--pv-line); margin: 0 4px; }
-.pv-dd { position: relative; }
-.pv-dd > summary {
-    list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
-    padding: 5px 9px; border: 1px solid var(--pv-line); border-radius: 6px; background: #0f172a; color: var(--pv-txt); font-size: 12px;
+.pv-menu-wrap.open .pv-menu { display: block; }
+.pv-menu button {
+    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+    padding: 7px 10px; border: 0; border-radius: 6px; background: transparent;
+    color: var(--pv-txt); cursor: pointer; font-size: 12px; white-space: nowrap;
 }
-.pv-dd > summary::-webkit-details-marker { display: none; }
-.pv-dd[open] > summary { border-color: var(--pv-acc); color: #6ee7b7; }
-.pv-dd-menu {
-    position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; min-width: 168px; padding: 4px;
-    background: #0f172a; border: 1px solid var(--pv-line); border-radius: 8px; box-shadow: 0 12px 30px rgba(0,0,0,.6);
-}
-.pv-dd-menu button { display: block; width: 100%; text-align: left; padding: 6px 10px; border: 0; border-radius: 5px; background: transparent; color: var(--pv-txt); cursor: pointer; font-size: 12px; }
-.pv-dd-menu button:hover, .pv-dd-menu button.active { background: #1e293b; color: #fff; }
+.pv-menu button:hover, .pv-menu button.active { background: #1e293b; color: #fff; }
+.pv-menu-sep { height: 1px; background: var(--pv-line); margin: 4px 2px; }
 
 /* 主体 */
 .pv-vw-body { flex: 1 1 auto; display: flex; min-height: 0; }

@@ -1,6 +1,7 @@
 /* ============================================================
  * assets/js/modules/toolbar.js — 工具栏模块
- * 绑定工具 / 预设窗 / 动作按钮，并向控制器暴露同步状态的方法。
+ * 大图标按钮 + 下拉菜单；绑定工具 / 预设 / 动作，并暴露状态同步方法。
+ * 菜单：点击按钮开关，点击其他区域或选择任一项后自动收起。
  * ============================================================ */
 (function (global) {
     'use strict';
@@ -8,27 +9,44 @@
         this.el = el; this.h = handlers || {};
         var self = this;
         if (!el) return;
+
+        function closeMenus(except) {
+            Array.prototype.forEach.call(el.querySelectorAll('.pv-menu-wrap.open'), function (w) {
+                if (w !== except) w.classList.remove('open');
+            });
+        }
+        function toggleMenu(btn) {
+            var wrap = btn.closest ? btn.closest('.pv-menu-wrap') : null;
+            if (!wrap) return;
+            var wasOpen = wrap.classList.contains('open');
+            closeMenus();
+            if (!wasOpen) wrap.classList.add('open');
+        }
+        this.closeMenus = function () { closeMenus(); };
+
         el.addEventListener('click', function (e) {
-            // 子 Tab 切换（窗宽窗位 / 浏览 / 测量 / 变换 / 工具）
-            var tab = e.target.closest ? e.target.closest('[data-pv-tab]') : null;
-            if (tab && el.contains(tab)) {
-                var key = tab.getAttribute('data-pv-tab');
-                Array.prototype.forEach.call(el.querySelectorAll('[data-pv-tab]'), function (x) { x.classList.toggle('active', x === tab); });
-                Array.prototype.forEach.call(el.querySelectorAll('[data-pv-pane]'), function (p) { p.classList.toggle('active', p.getAttribute('data-pv-pane') === key); });
-                return;
-            }
+            // 下拉菜单按钮
+            var menuBtn = e.target.closest ? e.target.closest('[data-pv-menu]') : null;
+            if (menuBtn && el.contains(menuBtn)) { e.stopPropagation(); toggleMenu(menuBtn); return; }
+
+            // 工具 / 预设 / 动作
             var node = e.target;
             while (node && node !== el && !node.getAttribute('data-pv-tool') && !node.getAttribute('data-pv-preset') && !node.getAttribute('data-pv-act')) {
                 node = node.parentNode;
             }
-            if (!node || node === el) return;
+            if (!node || node === el) { closeMenus(); return; }
             var tool = node.getAttribute('data-pv-tool');
             var preset = node.getAttribute('data-pv-preset');
             var act = node.getAttribute('data-pv-act');
             if (tool && self.h.onTool) self.h.onTool(tool);
             else if (preset && self.h.onPreset) self.h.onPreset(preset);
             else if (act && self.h.onAction) self.h.onAction(act);
+            closeMenus();   // 选择任意项后收起菜单
         });
+
+        // 点击工具栏之外的区域收起菜单
+        this._docClick = function (ev) { if (!el.contains(ev.target)) closeMenus(); };
+        document.addEventListener('click', this._docClick);
     }
     PvToolbar.prototype.sync = function (state) {
         if (!this.el) return;
@@ -41,6 +59,9 @@
             else if (a === 'flip-h') el.classList.toggle('active', !!state.flipH);
             else if (a === 'flip-v') el.classList.toggle('active', !!state.flipV);
         });
+    };
+    PvToolbar.prototype.destroy = function () {
+        if (this._docClick) document.removeEventListener('click', this._docClick);
     };
     global.PvToolbar = PvToolbar;
 })(window);

@@ -69,6 +69,8 @@
         try { if (this._ro) this._ro.disconnect(); } catch (e) {}
         if (this._upH) window.removeEventListener('pointerup', this._upH);
         if (this._onWinResize) window.removeEventListener('resize', this._onWinResize);
+        if (this.toolbar && this.toolbar.destroy) this.toolbar.destroy();
+        if (this._sb && this._sb.hideTimer) clearTimeout(this._sb.hideTimer);
         this.st.drag = null; this.st.draft = null;
     };
 
