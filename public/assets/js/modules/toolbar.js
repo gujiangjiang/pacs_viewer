@@ -20,7 +20,22 @@
             if (!wrap) return;
             var wasOpen = wrap.classList.contains('open');
             closeMenus();
-            if (!wasOpen) wrap.classList.add('open');
+            if (!wasOpen) {
+                wrap.classList.add('open');
+                positionMenu(wrap, btn);
+            }
+        }
+        // 菜单使用 fixed 定位，避免被工具栏的 overflow 裁剪
+        function positionMenu(wrap, btn) {
+            var panel = wrap.querySelector('.pv-menu');
+            if (!panel) return;
+            var r = btn.getBoundingClientRect();
+            var pw = panel.offsetWidth, ph = panel.offsetHeight;
+            var left = Math.max(8, Math.min(r.left, window.innerWidth - pw - 8));
+            var top = r.bottom + 6;
+            if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 6);
+            panel.style.left = left + 'px';
+            panel.style.top = top + 'px';
         }
         this.closeMenus = function () { closeMenus(); };
 
@@ -47,6 +62,10 @@
         // 点击工具栏之外的区域收起菜单
         this._docClick = function (ev) { if (!el.contains(ev.target)) closeMenus(); };
         document.addEventListener('click', this._docClick);
+        // 视口变化时收起，避免 fixed 菜单错位
+        this._onViewport = function () { closeMenus(); };
+        window.addEventListener('resize', this._onViewport);
+        window.addEventListener('scroll', this._onViewport, true);
     }
     PvToolbar.prototype.sync = function (state) {
         if (!this.el) return;
@@ -62,6 +81,10 @@
     };
     PvToolbar.prototype.destroy = function () {
         if (this._docClick) document.removeEventListener('click', this._docClick);
+        if (this._onViewport) {
+            window.removeEventListener('resize', this._onViewport);
+            window.removeEventListener('scroll', this._onViewport, true);
+        }
     };
     global.PvToolbar = PvToolbar;
 })(window);
