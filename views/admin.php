@@ -148,6 +148,7 @@ $pageData = array('flash' => isset($flash) ? $flash : '');
             <h3 class="pv-form-title">检索日志（共 <?php echo (int)$logCount; ?> 条）</h3>
             <button type="button" id="pvLogClear" class="pv-btn pv-btn-outline pv-btn-sm">清空</button>
         </div>
+        <div class="pv-logscroll">
         <table class="pv-table">
             <thead><tr><th>时间</th><th>账号</th><th>操作</th><th>详情</th><th>关键词</th><th>结果数</th><th>IP</th></tr></thead>
             <tbody>
@@ -166,6 +167,7 @@ $pageData = array('flash' => isset($flash) ? $flash : '');
             <?php } ?>
             </tbody>
         </table>
+        </div>
     </div>
 </section>
 

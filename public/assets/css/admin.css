@@ -14,9 +14,16 @@
 .pv-badge.op-download { background: rgba(245,158,11,.16); color: #fbbf24; }
 .pv-badge.op-dicom { background: rgba(168,85,247,.18); color: #c4b5fd; }
 
-/* 子 Tab 固定不随内容滚动 */
+/* 子 Tab 固定不随内容滚动（顶部无空隙，滚动内容从其下方经过） */
+.pv-page-admin .pv-main { padding-top: 0; }
 .pv-page-admin .pv-tabs {
     position: sticky; top: 0; z-index: 20;
-    margin: -18px -18px 16px; padding: 14px 18px 0;
-    background: var(--pv-bg); box-shadow: 0 8px 12px -10px rgba(0,0,0,.8);
+    margin: 0 -18px 16px; padding: 16px 18px 8px;
+    background: var(--pv-bg); border-bottom: 1px solid var(--pv-line);
 }
+
+/* 检索日志：仅列表滚动，标题与表头固定 */
+.pv-logscroll { max-height: 62vh; overflow: auto; border: 1px solid var(--pv-line); border-radius: 10px; }
+.pv-logscroll .pv-table { min-width: 100%; }
+.pv-logscroll .pv-table thead th { position: sticky; top: 0; z-index: 2; background: #0b0f17; }
+echo done
