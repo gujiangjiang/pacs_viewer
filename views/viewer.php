@@ -24,10 +24,10 @@ $pageData = array(
             <button type="button" class="pv-bigbtn" data-pv-menu="preset" title="常用窗宽窗位预设">
                 <span class="pv-bi">🎚</span><span class="pv-bl">预设窗 ▾</span></button>
             <div class="pv-menu" data-pv-menu-panel="preset">
-                <button type="button" data-pv-preset="soft">软组织窗 (400 / 40)</button>
-                <button type="button" data-pv-preset="lung">肺窗 (1500 / -600)</button>
-                <button type="button" data-pv-preset="bone">骨窗 (2000 / 350)</button>
-                <button type="button" data-pv-preset="full">默认窗 (2500 / 250)</button>
+                <button type="button" data-pv-preset="soft"><span class="ic">🟫</span> 软组织窗 (400 / 40)</button>
+                <button type="button" data-pv-preset="lung"><span class="ic">🫁</span> 肺窗 (1500 / -600)</button>
+                <button type="button" data-pv-preset="bone"><span class="ic">🦴</span> 骨窗 (2000 / 350)</button>
+                <button type="button" data-pv-preset="full"><span class="ic">🖼</span> 默认窗 (2500 / 250)</button>
             </div>
         </div>
         <span class="pv-tsep"></span>

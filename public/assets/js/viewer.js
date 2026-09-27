@@ -362,30 +362,30 @@
         var el = this.ctxEl; if (!el) return;
         var items = [
             { label: '预设窗', icon: '🎚', sub: [
-                { label: '软组织窗 (400/40)', preset: 'soft' },
-                { label: '肺窗 (1500/-600)', preset: 'lung' },
-                { label: '骨窗 (2000/350)', preset: 'bone' },
-                { label: '默认窗 (2500/250)', preset: 'full' }
+                { label: '软组织窗 (400/40)', preset: 'soft', icon: '🟫' },
+                { label: '肺窗 (1500/-600)', preset: 'lung', icon: '🫁' },
+                { label: '骨窗 (2000/350)', preset: 'bone', icon: '🦴' },
+                { label: '默认窗 (2500/250)', preset: 'full', icon: '🖼' }
             ] },
             { label: '缩放', icon: '🔍', tool: 'zoom' },
             { label: '平移', icon: '✥', tool: 'pan' },
             { label: '使用窗口', icon: '◐', tool: 'wl' },
-            { label: '原图 1:1', act: 'oneone' },
+            { label: '原图 1:1', icon: '🖼', act: 'oneone' },
             { sep: true },
             { label: '测量', icon: '📏', sub: [
-                { label: '测距（mm）', tool: 'length' },
-                { label: '测角（°）', tool: 'angle' },
-                { label: '矩形 ROI', tool: 'rect' },
-                { label: '椭圆 ROI', tool: 'ellipse' },
+                { label: '测距（mm）', tool: 'length', icon: '📏' },
+                { label: '测角（°）', tool: 'angle', icon: '📐' },
+                { label: '矩形 ROI', tool: 'rect', icon: '▭' },
+                { label: '椭圆 ROI', tool: 'ellipse', icon: '⬭' },
                 { sep: true },
-                { label: '清除标注', act: 'clear' }
+                { label: '清除标注', act: 'clear', icon: '🧹' }
             ] },
             { label: '变换', icon: '🔄', sub: [
-                { label: '逆时针 90°', act: 'rotate-ccw' },
-                { label: '顺时针 90°', act: 'rotate-cw' },
-                { label: '水平镜像', act: 'flip-h' },
-                { label: '垂直镜像', act: 'flip-v' },
-                { label: '正负片反色', act: 'invert' }
+                { label: '逆时针 90°', act: 'rotate-ccw', icon: '↺' },
+                { label: '顺时针 90°', act: 'rotate-cw', icon: '↻' },
+                { label: '水平镜像', act: 'flip-h', icon: '⇋' },
+                { label: '垂直镜像', act: 'flip-v', icon: '⇅' },
+                { label: '正负片反色', act: 'invert', icon: '◑' }
             ] }
         ];
         el.innerHTML = items.map(this._ctxItem.bind(this)).join('');
