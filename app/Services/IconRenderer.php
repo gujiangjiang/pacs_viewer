@@ -6,7 +6,8 @@
  * 不再使用任何预置图片：默认图标完全由 PHP GD 代码绘制（4 倍超采样后降采样），
  * 可按需生成任意尺寸（favicon / apple-touch / PWA / maskable）。
  * 管理员可在【管理设置 → 基础设置】上传自定义图标覆盖默认；未设置时自动回退
- * 到代码绘制的默认图标。自定义图标以 PNG 归一化后存放于 data/custom_icon.png。
+ * 到代码绘制的默认图标。自定义图标以 PNG 归一化后存放于运行时目录
+ * data/uploads/icon.png（Web 根之外，不纳入版本管理，经路由下发）。
  * ============================================================ */
 class PvIconRenderer {
 
@@ -21,7 +22,14 @@ class PvIconRenderer {
 
     /* ---------------- 自定义图标 ---------------- */
 
-    public static function customFile() { return PV_DATA . '/custom_icon.png'; }
+    /** 通用上传目录（Web 根之外）：data/uploads/（按需创建） */
+    public static function uploadDir() {
+        $dir = PV_DATA . '/uploads';
+        if (!is_dir($dir)) @mkdir($dir, 0775, true);
+        return $dir;
+    }
+
+    public static function customFile() { return PV_DATA . '/uploads/icon.png'; }
     public static function hasCustom() { return is_file(self::customFile()); }
     public static function version() { return max(1, (int)PvSettings::get('icon_version', '1')); }
     private static function bumpVersion() { PvSettings::set('icon_version', (string)(self::version() + 1)); }
@@ -45,9 +53,10 @@ class PvIconRenderer {
         imagealphablending($out, true);
         imagesavealpha($out, true);
         imagecopyresampled($out, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+        self::uploadDir();
         $ok = imagepng($out, self::customFile());
         if (PHP_VERSION_ID < 80500) { imagedestroy($out); imagedestroy($src); }
-        if (!$ok) throw new RuntimeException('图标写入失败，请确认 data/ 目录可写');
+        if (!$ok) throw new RuntimeException('图标写入失败，请确认 data/uploads/ 目录可写');
         self::bumpVersion();
     }
 

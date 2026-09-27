@@ -141,7 +141,8 @@ GET {endpoint}?action=ping&key=APIKEY
   自适应（子目录挂载也能正确设置 scope）。
 - 默认图标**由代码绘制，无预置图片**（`?r=icon&size=N`）。管理员可在
   【管理设置 → 基础设置 → 站点图标】上传自定义图标（PNG / JPG / GIF / WebP，
-  ≤4MB）覆盖默认，并可「恢复默认」；自定义图标保存为运行时 `data/custom_icon.png`。
+  ≤4MB）覆盖默认，并可「恢复默认」；自定义图标保存为运行时 `data/uploads/icon.png`
+  （Web 根之外，不纳入版本管理，经 `?r=icon` 路由下发）。
 
 ## 七、常见问题
 
