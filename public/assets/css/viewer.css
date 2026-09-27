@@ -57,23 +57,21 @@
 .pv-serieslist::-webkit-scrollbar { width: 8px; }
 .pv-serieslist::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
 
-/* 患者信息卡（可展开 / 收起） */
-.pv-patientcard {
-    position: relative; flex: 0 0 auto; background: #0b0f17; border: 1px solid var(--pv-line); border-radius: 9px; overflow: hidden;
+/* 患者 / 序列标题（点击展开、收起下方序列图像） */
+.pv-series-head {
+    position: relative; flex: 0 0 auto; cursor: pointer; user-select: none;
+    background: #0b0f17; border: 1px solid var(--pv-line); border-radius: 9px; padding: 8px 22px 8px 10px;
 }
-.pv-patientcard > summary {
-    list-style: none; cursor: pointer; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px;
-    border-bottom: 1px solid var(--pv-line);
+.pv-series-head:hover { border-color: var(--pv-line2); background: #0e1626; }
+.pv-series-head::after {
+    content: '▾'; position: absolute; right: 9px; top: 10px; color: var(--pv-txt2); font-size: 11px;
 }
-.pv-patientcard > summary::-webkit-details-marker { display: none; }
-.pv-patientcard > summary::after { content: '▾'; position: absolute; right: 16px; margin-top: 2px; color: var(--pv-txt2); font-size: 11px; }
-.pv-patientcard:not([open]) > summary::after { content: '▸'; }
-.pv-patientcard:not([open]) > summary { border-bottom: 0; }
+.pv-series-head.collapsed::after { content: '▸'; }
+.pv-sh-row { display: flex; align-items: baseline; gap: 6px; }
 .pv-pc-name { font-size: 14px; font-weight: 700; color: #f1f5f9; }
 .pv-pc-sub { font-size: 11px; color: var(--pv-txt2); }
-.pv-pc-body { margin: 0; padding: 8px 10px 10px; display: grid; grid-template-columns: auto 1fr; gap: 3px 8px; font-size: 11px; }
-.pv-pc-body dt { color: #64748b; white-space: nowrap; }
-.pv-pc-body dd { margin: 0; color: var(--pv-txt); word-break: break-all; }
+.pv-sh-meta { margin-top: 3px; font-size: 11px; color: #64748b; line-height: 1.5; word-break: break-all; }
+.pv-serieslist.is-collapsed { display: none; }
 .pv-thumb {
     position: relative; margin: 0 0 10px; padding: 4px; border: 2px solid transparent;
     border-radius: 9px; background: #0b0f17; cursor: pointer; overflow: hidden;

@@ -80,13 +80,14 @@ $pageData = array(
     </div>
     <div class="pv-vw-body">
         <aside class="pv-filmstrip" data-pv="filmstrip">
-            <details class="pv-patientcard" data-pv="patientcard" open>
-                <summary>
+            <div class="pv-series-head" data-pv="series-head" role="button" tabindex="0"
+                 title="点击展开 / 收起序列图像">
+                <div class="pv-sh-row">
                     <span class="pv-pc-name" data-pv="pc-name">—</span>
                     <span class="pv-pc-sub" data-pv="pc-sub"></span>
-                </summary>
-                <dl class="pv-pc-body" data-pv="pc-body"></dl>
-            </details>
+                </div>
+                <div class="pv-sh-meta" data-pv="pc-meta"></div>
+            </div>
             <div class="pv-serieslist" data-pv="serieslist"></div>
         </aside>
         <main class="pv-stage">

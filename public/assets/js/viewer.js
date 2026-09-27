@@ -30,7 +30,8 @@
         this.statusEl = this.q('status');
         this.titleEl = this.q('title');
         this.filmstripEl = this.q('filmstrip');
-        this.pcName = this.q('pc-name'); this.pcSub = this.q('pc-sub'); this.pcBody = this.q('pc-body');
+        this.pcName = this.q('pc-name'); this.pcSub = this.q('pc-sub'); this.pcMeta = this.q('pc-meta');
+        this.seriesHeadEl = this.q('series-head'); this.seriesListEl = this.q('serieslist');
         this.dpr = window.devicePixelRatio || 1;
 
         this.work = document.createElement('canvas'); this.work.width = BASE; this.work.height = BASE;
@@ -38,7 +39,7 @@
         this.raw = document.createElement('canvas'); this.raw.width = BASE; this.raw.height = BASE;
 
         this.cache = {}; this.cacheKeys = []; this.imgCache = {};
-        this.sidebar = new PvSidebar(this.q('serieslist'));
+        this.sidebar = new PvSidebar(this.seriesListEl);
         this.scrollEl = this.q('vscroll'); this.scrollTrack = this.q('vscroll-track');
         this.scrollThumb = this.q('vscroll-thumb'); this.scrollBubble = this.q('vscroll-bubble');
         this.toolbar = new PvToolbar(this.q('toolbar'), {
@@ -54,6 +55,7 @@
         };
         this._bind();
         this._bindScrollbar();
+        this._bindSeriesHead();
         this.resize();
         var self = this;
         if (window.ResizeObserver) { this._ro = new ResizeObserver(function () { self.resize(); self.render(); }); this._ro.observe(this.stage); }
@@ -136,6 +138,22 @@
             }
         });
         track.addEventListener('mouseleave', function () { if (!self._sb.dragging) self.scrollEl.classList.remove('show-bubble'); });
+    };
+
+    /** 序列标题：点击展开 / 收起下方序列图像 */
+    PvViewer.prototype._bindSeriesHead = function () {
+        var self = this, head = this.seriesHeadEl;
+        if (!head) return;
+        head.addEventListener('click', function () { self.toggleSeriesList(); });
+        head.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); self.toggleSeriesList(); }
+        });
+    };
+    PvViewer.prototype.toggleSeriesList = function () {
+        if (!this.seriesListEl || !this.seriesHeadEl) return;
+        var collapsed = this.seriesListEl.classList.toggle('is-collapsed');
+        this.seriesHeadEl.classList.toggle('collapsed', collapsed);
+        this.setStatus(collapsed ? '序列已收起' : '序列已展开');
     };
 
     PvViewer.prototype.load = function () {
@@ -607,20 +625,18 @@
         this.render();
     };
     PvViewer.prototype.updateHud = function () {
-        var data = this.st.data || {}, p = data.patient || {}, s = data.study || {}, ser = this.curSeries() || {};
+        var data = this.st.data || {}, p = data.patient || {}, s = data.study || {};
         if (this.pcName) this.pcName.textContent = p.name || '—';
         if (this.pcSub) this.pcSub.textContent = (p.gender || '') + (p.age ? '　/　' + p.age : '');
-        if (this.pcBody) {
-            var rows = [
-                ['患者号', p.patient_id], ['门诊号', p.outpatient_no],
-                ['检查号', s.accession_no], ['检查项目', s.description],
-                ['检查时间', s.study_date], ['设备', s.station_name],
-                ['机构', s.institution],
-                ['序列', ser.series_id ? ('Ser ' + ser.series_id + ' · ' + (ser.description || '')) : '']
-            ];
-            var html = '';
-            rows.forEach(function (r) { if (r[1]) html += '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>'; });
-            this.pcBody.innerHTML = html;
+        if (this.pcMeta) {
+            var meta = [];
+            if (p.patient_id) meta.push('PID ' + p.patient_id);
+            if (s.accession_no) meta.push('检查号 ' + s.accession_no);
+            if (p.outpatient_no) meta.push('门诊号 ' + p.outpatient_no);
+            if (s.description) meta.push(s.description);
+            var n = (data.series || []).length;
+            if (n) meta.push(n + ' 个序列');
+            this.pcMeta.textContent = meta.join('　');
         }
     };
 
