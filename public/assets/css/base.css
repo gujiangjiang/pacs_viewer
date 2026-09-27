@@ -54,12 +54,13 @@ body.pv-nav-busy #pvMain { opacity: .55; transition: opacity .12s; }
 .pv-page-viewer .pv-main { padding: 0; overflow: hidden; display: flex; }
 .pv-page-viewer body, .pv-page-viewer { }
 .pv-footer {
-    flex: 0 0 auto; display: flex; justify-content: space-between;
+    flex: 0 0 auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px;
     padding: 8px 18px; font-size: 12px; color: var(--pv-txt2);
     border-top: 1px solid var(--pv-line); background: #070a10;
 }
-.pv-footer-dim { color: #64748b; }
-.pv-page-viewer .pv-footer { display: none; }
+.pv-footer-left { justify-self: start; }
+.pv-footer-hosp { justify-self: center; color: #94a3b8; font-weight: 600; }
+.pv-footer-dim { justify-self: end; color: #64748b; }
 
 /* ---------- 通用组件 ---------- */
 .pv-btn {
