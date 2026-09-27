@@ -161,8 +161,10 @@
             this.placeholder('正在解码图像…');
         } else {
             var isActive = this === this.viewer.activePane();
-            this.placeholder((!this.viewer.ws.studies.length && isActive)
-                ? '请在「研究检索」中选择检查\n或点击顶部「影像查看」查看已打开的检查' : '', true);
+            var emptyWs = !this.viewer.ws.studies.length;
+            this.placeholder((emptyWs && isActive)
+                ? '请在「研究检索」中选择检查\n或点击顶部「影像查看」查看已打开的检查'
+                : '空视图\n从左侧序列载入', emptyWs && isActive);
         }
         if (winCanvas) {
             ctx.save();
