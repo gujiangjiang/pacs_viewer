@@ -59,6 +59,7 @@ define('PV_ENTRY', $pvEntry);                    // 入口脚本 URL
 
 /* ---------- 载入核心类 ---------- */
 require_once PV_APP . '/Database.php';
+require_once PV_APP . '/Support/icons.php';
 require_once PV_APP . '/Settings.php';
 require_once PV_APP . '/Auth.php';
 require_once PV_APP . '/Pacs/DemoPacs.php';
@@ -112,28 +113,6 @@ function pvw_file_url($token, $download = false, array $params = array()) {
     return pvw_url('file', $q);
 }
 
-/** 统一内联 SVG 图标（24 视图框，currentColor 描边；用于工具栏等，保证大小一致） */
-function pvw_icon($name) {
-    static $icons = array(
-        'sidebar'   => '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/>',
-        'wl'        => '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/>',
-        'preset'    => '<line x1="4" y1="7" x2="20" y2="7"/><circle cx="9" cy="7" r="2.2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.2"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="11" cy="17" r="2.2"/>',
-        'layout'    => '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/>',
-        'zoom'      => '<circle cx="11" cy="11" r="6.5"/><line x1="16" y1="16" x2="21" y2="21"/><line x1="11" y1="8.5" x2="11" y2="13.5"/><line x1="8.5" y1="11" x2="13.5" y2="11"/>',
-        'pan'       => '<path d="M12 3v18M3 12h18"/><path d="M12 3l-2.2 2.2M12 3l2.2 2.2M12 21l-2.2-2.2M12 21l2.2-2.2M3 12l2.2-2.2M3 12l2.2 2.2M21 12l-2.2-2.2M21 12l-2.2 2.2"/>',
-        'prev'      => '<polygon points="9,12 19,6 19,18" fill="currentColor" stroke="none"/><line x1="6" y1="6" x2="6" y2="18"/>',
-        'next'      => '<polygon points="15,12 5,6 5,18" fill="currentColor" stroke="none"/><line x1="18" y1="6" x2="18" y2="18"/>',
-        'fit'       => '<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>',
-        'oneone'    => '<rect x="3" y="5" width="18" height="14" rx="2"/><text x="12" y="15.5" text-anchor="middle" font-size="9" font-family="monospace" fill="currentColor" stroke="none">1:1</text>',
-        'measure'   => '<rect x="2" y="7" width="20" height="10" rx="2"/><line x1="7" y1="7" x2="7" y2="11"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="17" y1="7" x2="17" y2="11"/>',
-        'transform' => '<path d="M20 12a8 8 0 1 1-2.34-5.66"/><polyline points="18 4 18 9 13 9"/>',
-        'tools'     => '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9 19 19M19 5l-2.1 2.1M7.1 16.9 5 19"/>',
-        'about'     => '<circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="17"/><circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none"/>',
-        'close'     => '<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',
-    );
-    $inner = isset($icons[$name]) ? $icons[$name] : '';
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $inner . '</svg>';
-}
 
 /** 是否为站内 AJAX 局部刷新请求 */
 function pvw_is_ajax() {

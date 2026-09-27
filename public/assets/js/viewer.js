@@ -22,6 +22,13 @@
         return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
             .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
+    /** 图标渲染：命中统一 SVG 图标库则用 SVG，否则按文本/emoji（如预设窗）显示 */
+    function iconHtml(name) {
+        if (global.PvIcons && global.PvIcons[name]) {
+            return '<span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + global.PvIcons[name] + '</svg></span>';
+        }
+        return '<span class="ic">' + name + '</span>';
+    }
 
     /* ============================================================
      * PvPane —— 单个窗格
@@ -910,7 +917,7 @@
         if (o.tool) attrs += ' data-tool="' + o.tool + '"';
         if (o.act) attrs += ' data-act="' + o.act + '"';
         if (o.preset) attrs += ' data-preset="' + o.preset + '"';
-        var icon = o.icon ? '<span class="ic">' + o.icon + '</span>' : '';
+        var icon = o.icon ? iconHtml(o.icon) : '';
         return '<div class="pv-ctx-item"' + attrs + '>' + icon + '<span class="lb">' + esc(o.label) + '</span>' + arrow + sub + '</div>';
     };
     PvViewer.prototype.openCtxMenu = function (cx, cy) {
@@ -919,15 +926,15 @@
         var hasImage = !!(p && p.hasImage());
         var items;
         if (!hasImage) {
-            items = [{ label: '关于', icon: 'ⓘ', act: 'about' }];
+            items = [{ label: '关于', icon: 'about', act: 'about' }];
         } else {
             items = [
-                { label: '预设窗', icon: '🎚', sub: [{ label: '软组织窗 (400/40)', preset: 'soft', icon: '🟫' }, { label: '肺窗 (1500/-600)', preset: 'lung', icon: '🫁' }, { label: '骨窗 (2000/350)', preset: 'bone', icon: '🦴' }, { label: '默认窗 (2500/250)', preset: 'full', icon: '🖼' }] },
-                { label: '缩放', icon: '🔍', tool: 'zoom' }, { label: '平移', icon: '✥', tool: 'pan' }, { label: '使用窗口', icon: '◐', tool: 'wl' },
-                { label: '原图 1:1', icon: '🖼', act: 'oneone' }, { sep: true },
-                { label: '测量', icon: '📏', sub: [{ label: '测距（mm）', tool: 'length', icon: '📏' }, { label: '测角（°）', tool: 'angle', icon: '📐' }, { label: '矩形 ROI', tool: 'rect', icon: '▭' }, { label: '椭圆 ROI', tool: 'ellipse', icon: '⬭' }, { sep: true }, { label: '清除标注', act: 'clear', icon: '🧹' }] },
-                { label: '变换', icon: '⟳', sub: [{ label: '逆时针 90°', act: 'rotate-ccw', icon: '↺' }, { label: '顺时针 90°', act: 'rotate-cw', icon: '↻' }, { label: '水平镜像', act: 'flip-h', icon: '⇋' }, { label: '垂直镜像', act: 'flip-v', icon: '⇅' }, { label: '正负片反色', act: 'invert', icon: '◑' }] },
-                { sep: true }, { label: '关于', icon: 'ⓘ', act: 'about' }
+                { label: '预设窗', icon: 'preset', sub: [{ label: '软组织窗 (400/40)', preset: 'soft', icon: '🟫' }, { label: '肺窗 (1500/-600)', preset: 'lung', icon: '🫁' }, { label: '骨窗 (2000/350)', preset: 'bone', icon: '🦴' }, { label: '默认窗 (2500/250)', preset: 'full', icon: '🖼' }] },
+                { label: '缩放', icon: 'zoom', tool: 'zoom' }, { label: '平移', icon: 'pan', tool: 'pan' }, { label: '使用窗口', icon: 'wl', tool: 'wl' },
+                { label: '原图 1:1', icon: 'oneone', act: 'oneone' }, { sep: true },
+                { label: '测量', icon: 'measure', sub: [{ label: '测距（mm）', tool: 'length', icon: 'length' }, { label: '测角（°）', tool: 'angle', icon: 'angle' }, { label: '矩形 ROI', tool: 'rect', icon: 'rect' }, { label: '椭圆 ROI', tool: 'ellipse', icon: 'ellipse' }, { sep: true }, { label: '清除标注', act: 'clear', icon: 'clear' }] },
+                { label: '变换', icon: 'transform', sub: [{ label: '逆时针 90°', act: 'rotate-ccw', icon: 'rotate-ccw' }, { label: '顺时针 90°', act: 'rotate-cw', icon: 'rotate-cw' }, { label: '水平镜像', act: 'flip-h', icon: 'flip-h' }, { label: '垂直镜像', act: 'flip-v', icon: 'flip-v' }, { label: '正负片反色', act: 'invert', icon: 'invert' }] },
+                { sep: true }, { label: '关于', icon: 'about', act: 'about' }
             ];
         }
         el.innerHTML = items.map(this._ctxItem.bind(this)).join('');
@@ -1017,6 +1024,7 @@
     global.PvPages.viewer = {
         init: function (data) {
             data = data || {};
+            global.PvIcons = data.icons || global.PvIcons || {};
             var root = document.querySelector('[data-pv="app"]');
             if (!root) return;
             if (instance) { try { instance.destroy(); } catch (e) {} instance = null; }

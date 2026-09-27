@@ -18,6 +18,7 @@ $pageData = array(
         'hospital' => pvw_hospital(),
         'icon'     => PvPwaController::iconUrl(96),
     ),
+    'icons'      => pvw_icons(),
 );
 ?>
 <div id="pvViewer" class="pv-app" data-pv="app">
@@ -64,33 +65,33 @@ $pageData = array(
             <button type="button" class="pv-bigbtn" data-pv-menu="measure" title="测量工具">
                 <span class="pv-bi"><?php echo pvw_icon('measure'); ?></span><span class="pv-bl">测量 ▾</span></button>
             <div class="pv-menu" data-pv-menu-panel="measure">
-                <button type="button" data-pv-tool="length">📏 测距（mm）</button>
-                <button type="button" data-pv-tool="angle">📐 测角（°）</button>
-                <button type="button" data-pv-tool="rect">▭ 矩形 ROI</button>
-                <button type="button" data-pv-tool="ellipse">⬭ 椭圆 ROI</button>
+                <button type="button" data-pv-tool="length"><span class="ic"><?php echo pvw_icon('length'); ?></span> 测距（mm）</button>
+                <button type="button" data-pv-tool="angle"><span class="ic"><?php echo pvw_icon('angle'); ?></span> 测角（°）</button>
+                <button type="button" data-pv-tool="rect"><span class="ic"><?php echo pvw_icon('rect'); ?></span> 矩形 ROI</button>
+                <button type="button" data-pv-tool="ellipse"><span class="ic"><?php echo pvw_icon('ellipse'); ?></span> 椭圆 ROI</button>
                 <div class="pv-menu-sep"></div>
-                <button type="button" data-pv-act="clear">🧹 清除标注</button>
+                <button type="button" data-pv-act="clear"><span class="ic"><?php echo pvw_icon('clear'); ?></span> 清除标注</button>
             </div>
         </div>
         <div class="pv-menu-wrap">
             <button type="button" class="pv-bigbtn" data-pv-menu="transform" title="图像变换">
                 <span class="pv-bi"><?php echo pvw_icon('transform'); ?></span><span class="pv-bl">变换 ▾</span></button>
             <div class="pv-menu" data-pv-menu-panel="transform">
-                <button type="button" data-pv-act="rotate-ccw">↺ 逆时针 90°</button>
-                <button type="button" data-pv-act="rotate-cw">↻ 顺时针 90°</button>
-                <button type="button" data-pv-act="flip-h">⇋ 水平镜像</button>
-                <button type="button" data-pv-act="flip-v">⇅ 垂直镜像</button>
-                <button type="button" data-pv-act="invert">◑ 正负片反色</button>
+                <button type="button" data-pv-act="rotate-ccw"><span class="ic"><?php echo pvw_icon('rotate-ccw'); ?></span> 逆时针 90°</button>
+                <button type="button" data-pv-act="rotate-cw"><span class="ic"><?php echo pvw_icon('rotate-cw'); ?></span> 顺时针 90°</button>
+                <button type="button" data-pv-act="flip-h"><span class="ic"><?php echo pvw_icon('flip-h'); ?></span> 水平镜像</button>
+                <button type="button" data-pv-act="flip-v"><span class="ic"><?php echo pvw_icon('flip-v'); ?></span> 垂直镜像</button>
+                <button type="button" data-pv-act="invert"><span class="ic"><?php echo pvw_icon('invert'); ?></span> 正负片反色</button>
             </div>
         </div>
         <div class="pv-menu-wrap">
             <button type="button" class="pv-bigbtn" data-pv-menu="tools" title="更多工具">
                 <span class="pv-bi"><?php echo pvw_icon('tools'); ?></span><span class="pv-bl">工具 ▾</span></button>
             <div class="pv-menu" data-pv-menu-panel="tools">
-                <button type="button" data-pv-act="dicom-info">🩻 DICOM 详情</button>
-                <button type="button" data-pv-act="copy-link">🔗 复制阅片直链</button>
-                <button type="button" data-pv-act="save-image">💾 保存当前图像</button>
-                <button type="button" data-pv-act="save-series">🗂 保存序列（ZIP）</button>
+                <button type="button" data-pv-act="dicom-info"><span class="ic"><?php echo pvw_icon('dicom'); ?></span> DICOM 详情</button>
+                <button type="button" data-pv-act="copy-link"><span class="ic"><?php echo pvw_icon('link'); ?></span> 复制阅片直链</button>
+                <button type="button" data-pv-act="save-image"><span class="ic"><?php echo pvw_icon('save-image'); ?></span> 保存当前图像</button>
+                <button type="button" data-pv-act="save-series"><span class="ic"><?php echo pvw_icon('save-series'); ?></span> 保存序列（ZIP）</button>
             </div>
         </div>
         <button type="button" class="pv-bigbtn" data-pv-act="about" title="关于本软件">
