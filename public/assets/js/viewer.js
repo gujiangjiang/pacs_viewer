@@ -749,7 +749,7 @@
         else if (a === 'dicom-info') { this.showDicomInfo(); return; }
         else if (a === 'save-image') { this.saveImage(); return; }
         else if (a === 'save-series') { this.saveSeries(); return; }
-        else if (a === 'back') { if (window.PvNav) window.PvNav.go('search'); return; }
+        else if (a === 'back') { this.confirmExit(); return; }
         this.toolbar.sync(st); this.render();
     };
 
@@ -838,6 +838,23 @@
             self.setStatus('已导出序列：' + base + '.zip（' + n + ' 帧）');
             self.logEvent('download', '序列 ZIP ' + base + '（' + n + ' 帧）');
         }).catch(function () { self.setStatus('序列导出失败'); });
+    };
+
+    /** 退出阅片：确认后关闭全部检查、清空搜索状态并返回研究检索 */
+    PvViewer.prototype.confirmExit = function () {
+        var self = this;
+        var go = function () {
+            self.closeAll();
+            try { sessionStorage.removeItem('pacs_search_v1'); } catch (e) {}
+            if (window.PvNav) window.PvNav.go('search');
+        };
+        if (window.PvModal) {
+            PvModal.confirm({
+                title: '退出阅片',
+                message: '退出将关闭全部已打开的检查，并清空检索记录，确认退出？',
+                okText: '退出', danger: true
+            }).then(function (ok) { if (ok) go(); });
+        } else go();
     };
 
     /* ---------- DICOM 详情 ---------- */
