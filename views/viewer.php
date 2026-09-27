@@ -104,4 +104,5 @@ $pageData = array(
             </div>
         </main>
     </div>
+    <div class="pv-ctxmenu" data-pv="ctxmenu"></div>
 </div>

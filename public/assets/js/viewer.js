@@ -30,6 +30,7 @@
         this.statusEl = this.q('status');
         this.titleEl = this.q('title');
         this.huEl = this.q('hu');
+        this.ctxEl = this.q('ctxmenu');
         this.filmstripEl = this.q('filmstrip');
         this.pcName = this.q('pc-name'); this.pcSub = this.q('pc-sub'); this.pcMeta = this.q('pc-meta');
         this.seriesHeadEl = this.q('series-head'); this.seriesListEl = this.q('serieslist');
@@ -57,6 +58,7 @@
         this._bind();
         this._bindScrollbar();
         this._bindSeriesHead();
+        this._bindCtxMenu();
         this.resize();
         var self = this;
         if (window.ResizeObserver) { this._ro = new ResizeObserver(function () { self.resize(); self.render(); }); this._ro.observe(this.stage); }
@@ -74,6 +76,11 @@
         if (this._onWinResize) window.removeEventListener('resize', this._onWinResize);
         if (this.toolbar && this.toolbar.destroy) this.toolbar.destroy();
         if (this._sb && this._sb.hideTimer) clearTimeout(this._sb.hideTimer);
+        if (this._ctxDoc) document.removeEventListener('pointerdown', this._ctxDoc, true);
+        if (this._ctxViewport) {
+            window.removeEventListener('resize', this._ctxViewport);
+            window.removeEventListener('scroll', this._ctxViewport, true);
+        }
         this.st.drag = null; this.st.draft = null;
     };
 
@@ -181,6 +188,76 @@
                 this._setHU('灰度 ' + d[0] + '　(' + x + ', ' + y + ')');
             } catch (err) { this._setHU('(' + x + ', ' + y + ')'); }
         }
+    };
+
+    /* ---------- 右键快捷菜单 ---------- */
+    PvViewer.prototype._ctxItem = function (o) {
+        if (o.sep) return '<div class="pv-ctx-sep"></div>';
+        var arrow = o.sub ? '<span class="arrow">▶</span>' : '';
+        var sub = o.sub ? '<div class="pv-ctx-sub">' + o.sub.map(this._ctxItem.bind(this)).join('') + '</div>' : '';
+        var attrs = '';
+        if (o.tool) attrs += ' data-tool="' + o.tool + '"';
+        if (o.act) attrs += ' data-act="' + o.act + '"';
+        if (o.preset) attrs += ' data-preset="' + o.preset + '"';
+        var icon = o.icon ? '<span class="ic">' + o.icon + '</span>' : '';
+        return '<div class="pv-ctx-item"' + attrs + '>' + icon + '<span class="lb">' + esc(o.label) + '</span>' + arrow + sub + '</div>';
+    };
+    PvViewer.prototype.openCtxMenu = function (cx, cy) {
+        var el = this.ctxEl; if (!el) return;
+        var items = [
+            { label: '预设窗', icon: '🎚', sub: [
+                { label: '软组织窗 (400/40)', preset: 'soft' },
+                { label: '肺窗 (1500/-600)', preset: 'lung' },
+                { label: '骨窗 (2000/350)', preset: 'bone' },
+                { label: '默认窗 (2500/250)', preset: 'full' }
+            ] },
+            { label: '缩放', icon: '🔍', tool: 'zoom' },
+            { label: '平移', icon: '✥', tool: 'pan' },
+            { label: '使用窗口', icon: '◐', tool: 'wl' },
+            { label: '原图 1:1', act: 'oneone' },
+            { sep: true },
+            { label: '测量', icon: '📏', sub: [
+                { label: '测距（mm）', tool: 'length' },
+                { label: '测角（°）', tool: 'angle' },
+                { label: '矩形 ROI', tool: 'rect' },
+                { label: '椭圆 ROI', tool: 'ellipse' },
+                { sep: true },
+                { label: '清除标注', act: 'clear' }
+            ] },
+            { label: '变换', icon: '🔄', sub: [
+                { label: '逆时针 90°', act: 'rotate-ccw' },
+                { label: '顺时针 90°', act: 'rotate-cw' },
+                { label: '水平镜像', act: 'flip-h' },
+                { label: '垂直镜像', act: 'flip-v' },
+                { label: '正负片反色', act: 'invert' }
+            ] }
+        ];
+        el.innerHTML = items.map(this._ctxItem.bind(this)).join('');
+        el.classList.add('open');
+        var w = el.offsetWidth, h = el.offsetHeight;
+        var left = Math.max(8, Math.min(cx, window.innerWidth - w - 8));
+        var top = Math.max(8, Math.min(cy, window.innerHeight - h - 8));
+        el.style.left = left + 'px';
+        el.style.top = top + 'px';
+    };
+    PvViewer.prototype.closeCtxMenu = function () { if (this.ctxEl) this.ctxEl.classList.remove('open'); };
+    PvViewer.prototype._bindCtxMenu = function () {
+        var self = this, el = this.ctxEl; if (!el) return;
+        el.addEventListener('click', function (e) {
+            var it = e.target.closest ? e.target.closest('.pv-ctx-item') : null;
+            if (!it) return;
+            if (it.querySelector('.pv-ctx-sub')) return;   // 含子菜单，交给 hover 展开
+            var tool = it.getAttribute('data-tool'), act = it.getAttribute('data-act'), preset = it.getAttribute('data-preset');
+            if (tool) self.setTool(tool);
+            else if (act) self.doAction(act);
+            else if (preset) self.setPreset(preset);
+            self.closeCtxMenu();
+        });
+        this._ctxDoc = function (ev) { if (el.classList.contains('open') && !el.contains(ev.target)) self.closeCtxMenu(); };
+        this._ctxViewport = function () { self.closeCtxMenu(); };
+        document.addEventListener('pointerdown', this._ctxDoc, true);
+        window.addEventListener('resize', this._ctxViewport);
+        window.addEventListener('scroll', this._ctxViewport, true);
     };
 
     PvViewer.prototype.load = function () {
@@ -411,7 +488,7 @@
         var pt = this._rel(e), st = this.st;
         try { this.canvas.setPointerCapture(e.pointerId); } catch (err) {}
         if (e.button === 1) { st.drag = { mode: 'pan', x: pt.x, y: pt.y, px: st.panX, py: st.panY }; return; }
-        if (e.button === 2) { st.drag = { mode: 'wl', x: pt.x, y: pt.y, ww: st.ww, wl: st.wl }; return; }
+        if (e.button === 2) { st.drag = { mode: 'wl', x: pt.x, y: pt.y, ww: st.ww, wl: st.wl, btn: 2, cx: e.clientX, cy: e.clientY, moved: false }; return; }
         var p = this.screenToImg(pt.x, pt.y), t = st.tool;
         if (t === 'wl') st.drag = { mode: 'wl', x: pt.x, y: pt.y, ww: st.ww, wl: st.wl };
         else if (t === 'pan') st.drag = { mode: 'pan', x: pt.x, y: pt.y, px: st.panX, py: st.panY };
@@ -423,6 +500,7 @@
     PvViewer.prototype.onMove = function (e) {
         var st = this.st, pt = this._rel(e);
         if (st.drag) {
+            if (st.drag.btn === 2 && (Math.abs(pt.x - st.drag.x) + Math.abs(pt.y - st.drag.y)) > 4) st.drag.moved = true;
             if (st.drag.mode === 'pan') { st.panX = st.drag.px + (pt.x - st.drag.x); st.panY = st.drag.py + (pt.y - st.drag.y); }
             else if (st.drag.mode === 'wl') { var sc = st.isHU ? 4 : 2; st.ww = clamp(st.drag.ww + (pt.x - st.drag.x) * sc, 1, 6000); st.wl = clamp(st.drag.wl - (pt.y - st.drag.y) * sc, -1200, 3000); }
             else if (st.drag.mode === 'zoom') { this._zoomTo(st.drag.z * Math.exp((st.drag.y - pt.y) / 180), pt.x, pt.y); }
@@ -436,7 +514,10 @@
     };
     PvViewer.prototype.onUp = function () {
         var st = this.st;
-        if (st.drag) { st.drag = null; return; }
+        if (st.drag) {
+            if (st.drag.btn === 2 && !st.drag.moved) this.openCtxMenu(st.drag.cx, st.drag.cy);
+            st.drag = null; return;
+        }
         if (st.draft && (st.draft.type === 'rect' || st.draft.type === 'ellipse')) {
             var d = st.draft;
             if (Math.abs(d.fixed[0].x - d.fixed[1].x) > 2 && Math.abs(d.fixed[0].y - d.fixed[1].y) > 2) {
