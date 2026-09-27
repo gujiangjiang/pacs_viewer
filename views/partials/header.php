@@ -66,7 +66,7 @@ $pvPageData = isset($pageData) ? $pageData : array();
         <?php if ($pvUser) { ?>
         <span class="pv-user-name"><?php echo pvw_e($pvUser['display_name'] !== '' ? $pvUser['display_name'] : $pvUser['username']); ?><?php echo $pvUser['role'] === 'admin' ? ' · 管理员' : ''; ?></span>
         <a class="pv-btn pv-btn-ghost pv-btn-sm" href="<?php echo pvw_e(pvw_url('logout')); ?>" data-no-nav="1"
-           onclick="try{sessionStorage.removeItem('pacs_workspace_v1')}catch(e){}">退出</a>
+           onclick="try{sessionStorage.removeItem('pacs_workspace_v1');sessionStorage.removeItem('pacs_search_v1')}catch(e){}">退出</a>
         <?php } ?>
     </div>
 </header>

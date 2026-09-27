@@ -45,12 +45,19 @@
         });
     }
 
+    function saveState(kw, list) {
+        try { sessionStorage.setItem('pacs_search_v1', JSON.stringify({ kw: kw || '', list: list || [] })); } catch (e) {}
+    }
+    function loadState() {
+        try { return JSON.parse(sessionStorage.getItem('pacs_search_v1')); } catch (e) { return null; }
+    }
+
     function doSearch() {
         btn.disabled = true;
-        btn.textContent = '检索中…';
+        btn.classList.add('is-loading');
         empty.style.display = 'none';
         PvApi.search(input.value).then(function (j) {
-            btn.disabled = false; btn.textContent = '检索';
+            btn.disabled = false; btn.classList.remove('is-loading');
             if (!j || j.code !== 200) {
                 box.innerHTML = '';
                 empty.style.display = '';
@@ -61,13 +68,14 @@
             }
             var d = j.data || {};
             render(d.list || []);
+            saveState(input.value, d.list || []);
             var modeEl = document.getElementById('pvMode');
             if (modeEl) {
                 modeEl.textContent = d.remote ? '远程 PACS 接口' : '未配置 PACS 接口';
                 modeEl.className = d.remote ? 'is-remote' : 'is-demo';
             }
         }).catch(function () {
-            btn.disabled = false; btn.textContent = '检索';
+            btn.disabled = false; btn.classList.remove('is-loading');
             empty.style.display = '';
             empty.querySelector('.pv-empty-title').textContent = '网络请求失败';
             PvUI.toast('网络请求失败', 'err');
@@ -97,6 +105,12 @@
                 if (e.key === 'Enter' && document.activeElement === input) { e.preventDefault(); doSearch(); }
             };
             input.addEventListener('keydown', onDocKey);
+            // 恢复本会话上次的检索结果
+            var saved = loadState();
+            if (saved && typeof saved.kw === 'string') {
+                input.value = saved.kw;
+                render(saved.list || []);
+            }
             input.focus();
         },
         destroy: function () {

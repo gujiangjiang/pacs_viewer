@@ -23,3 +23,6 @@
 
 .pv-check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--pv-txt2); cursor: pointer; user-select: none; }
 .pv-check input { accent-color: var(--pv-acc); }
+
+#pvSearchBtn { min-width: 76px; }
+.pv-btn.is-loading { opacity: .65; cursor: progress; }
