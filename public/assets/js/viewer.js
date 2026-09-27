@@ -331,8 +331,23 @@
         e.preventDefault();
         var st = this.st, pt = this._rel(e);
         if (st.tool === 'zoom' || e.ctrlKey || e.metaKey) { this._zoomTo(st.zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12), pt.x, pt.y); this.render(); return; }
-        if (this.frameCount() > 1) this.setFrame(st.fi + (e.deltaY > 0 ? 1 : -1));
-        else { this._zoomTo(st.zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12), pt.x, pt.y); this.render(); }
+        var n = this.frameCount();
+        if (n > 1) {
+            // 归一化滚轮增量并按阈值累积，避免高精度滚轮 / 触控板「一滚到底」
+            var dy = e.deltaY;
+            if (e.deltaMode === 1) dy *= 16;         // 以「行」为单位
+            else if (e.deltaMode === 2) dy *= 100;   // 以「页」为单位
+            this._wheelAcc = (this._wheelAcc || 0) + dy;
+            var step = 0, TH = 100;
+            while (Math.abs(this._wheelAcc) >= TH) {
+                step += this._wheelAcc > 0 ? 1 : -1;
+                this._wheelAcc -= this._wheelAcc > 0 ? TH : -TH;
+            }
+            if (step !== 0) this.setFrame(st.fi + step);
+            return;
+        }
+        this._zoomTo(st.zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12), pt.x, pt.y);
+        this.render();
     };
     PvViewer.prototype._addPoint = function (type, p) {
         var st = this.st;
@@ -402,6 +417,7 @@
     PvViewer.prototype.setSeries = function (i) {
         if (i < 0 || i >= this.st.series.length) return;
         this.st.si = i; this.st.fi = 0;
+        this._wheelAcc = 0;
         this.sidebar.setActive(i);
         this.applyDefaults(); this.fit();
         this.setStatus('序列 ' + (i + 1) + '：' + (this.curSeries().description || ''));
