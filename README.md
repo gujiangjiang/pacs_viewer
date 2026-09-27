@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.7.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.8.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -80,7 +80,8 @@
 │                             #   / toolbar(工具栏) / measurements(测量) / zip(导出打包)
 ├── app/                      # 后端
 │   ├── bootstrap.php         #   引导（部署路径自适应 / 会话 / AJAX 助手 / 布局）
-│   ├── Database.php          #   自带 SQLite（建库建表播种设置）
+│   ├── Database.php          #   自带 SQLite（连接 / 迁移 / 播种设置）
+│   ├── Database/schema/      #   按编号拆分的数据表迁移文件（001_core / 002_user …）
 │   ├── Auth.php              #   独立登录认证
 │   ├── Settings.php          #   管理设置读写
 │   ├── Pacs/                 #   PacsClient(远程接口) + DemoPacs(内置仿真)
