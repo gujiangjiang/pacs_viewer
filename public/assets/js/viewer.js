@@ -483,13 +483,99 @@
             this.toolbar.sync(st); this.resize(); this.render(); return;
         }
         else if (a === 'copy-link') { this.copyDirectLink(); return; }
+        else if (a === 'save-image') { this.saveImage(); return; }
+        else if (a === 'save-series') { this.saveSeries(); return; }
         else if (a === 'back') { if (window.PvNav) window.PvNav.go('search'); return; }
         this.toolbar.sync(st); this.render();
     };
 
+    /* ---------- 导出 / 保存 ---------- */
+    PvViewer.prototype.fileBase = function () {
+        var d = this.st.data || {}, p = d.patient || {}, s = d.study || {}, ser = this.curSeries() || {};
+        return [p.patient_id || 'patient', s.accession_no || s.study_uid || 'study', 'ser' + (ser.series_id || 1)]
+            .join('_').replace(/[^\w.-]+/g, '_');
+    };
+    PvViewer.prototype._triggerDownload = function (url, filename) {
+        var a = document.createElement('a'); a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1800);
+    };
+    /** 将某一帧渲染为独立画布（含当前窗宽窗位 / 反色；不叠加标注与 OSD） */
+    PvViewer.prototype.exportFrameCanvas = function (fi) {
+        var self = this, ser = this.curSeries();
+        var cv = document.createElement('canvas'); cv.width = BASE; cv.height = BASE;
+        var cx = cv.getContext('2d'); cx.fillStyle = '#000'; cx.fillRect(0, 0, BASE, BASE);
+        if (!ser) return Promise.resolve(cv);
+        if (ser.is_mock) {
+            var img = this.getMock(ser, fi);
+            cx.drawImage(this.windowed(img, this.st.isHU, this.st.ww, this.st.wl, this.st.invert), 0, 0);
+            return Promise.resolve(cv);
+        }
+        var src = ser.images && ser.images[fi];
+        if (!src) return Promise.resolve(cv);
+        return new Promise(function (resolve) {
+            var im = new Image();
+            im.onload = function () {
+                var rc = self.raw.getContext('2d');
+                rc.setTransform(1, 0, 0, 1, 0, 0); rc.fillStyle = '#000'; rc.fillRect(0, 0, BASE, BASE);
+                var sc = Math.min(BASE / im.width, BASE / im.height), dw = im.width * sc, dh = im.height * sc;
+                rc.drawImage(im, (BASE - dw) / 2, (BASE - dh) / 2, dw, dh);
+                var data = rc.getImageData(0, 0, BASE, BASE);
+                for (var i = 0; i < data.data.length; i += 4) {
+                    var l = (data.data[i] * .299 + data.data[i + 1] * .587 + data.data[i + 2] * .114) | 0;
+                    data.data[i] = data.data[i + 1] = data.data[i + 2] = l;
+                }
+                cx.drawImage(self.windowed(data, false, self.st.ww, self.st.wl, self.st.invert), 0, 0);
+                resolve(cv);
+            };
+            im.onerror = function () { resolve(cv); };
+            im.src = src;
+        });
+    };
+    /** 保存当前画面（含标注 / OSD 的截图） */
+    PvViewer.prototype.saveImage = function () {
+        var self = this, name = this.fileBase() + '_im' + (this.st.fi + 1) + '.png';
+        try {
+            this.canvas.toBlob(function (blob) {
+                if (!blob) return;
+                self._triggerDownload(URL.createObjectURL(blob), name);
+                self.setStatus('已保存当前图像：' + name);
+            }, 'image/png');
+        } catch (e) { this.setStatus('当前画面包含跨域内容，无法导出'); }
+    };
+    /** 保存整个序列为 ZIP（每帧一张 PNG） */
+    PvViewer.prototype.saveSeries = function () {
+        if (!window.PvZip) { this.setStatus('导出组件未就绪'); return; }
+        var self = this, n = this.frameCount(), base = this.fileBase();
+        if (n <= 0) return;
+        this.setStatus('正在导出序列（0/' + n + '）…');
+        var chain = Promise.resolve(), files = [];
+        for (var i = 0; i < n; i++) {
+            (function (fi) {
+                chain = chain.then(function () {
+                    return self.exportFrameCanvas(fi).then(function (cv) {
+                        return new Promise(function (resolve) {
+                            cv.toBlob(function (blob) {
+                                files.push({ name: base + '_im' + (fi + 1) + '.png', data: blob });
+                                self.setStatus('正在导出序列（' + (fi + 1) + '/' + n + '）…');
+                                resolve();
+                            }, 'image/png');
+                        });
+                    });
+                });
+            })(i);
+        }
+        chain.then(function () {
+            self.setStatus('正在打包 ZIP…');
+            return window.PvZip.create(files);
+        }).then(function (zip) {
+            self._triggerDownload(URL.createObjectURL(zip), base + '.zip');
+            self.setStatus('已导出序列：' + base + '.zip（' + n + ' 帧）');
+        }).catch(function () { self.setStatus('序列导出失败'); });
+    };
+
     /** 复制本检查的阅片直链（地址栏固定时的对外分享 / 外部系统调用入口） */
-    PvViewer.prototype.copyDirectLink = function () {
-        var link = this.direct || (window.PvNav ? window.PvNav.route('viewer', { uid: this.uid }) : '');
+    PvViewer.prototype.copyDirectLink = function () {        var link = this.direct || (window.PvNav ? window.PvNav.route('viewer', { uid: this.uid }) : '');
         if (!link) return;
         var done = function () { this.setStatus('已复制阅片直链：' + link); }.bind(this);
         if (navigator.clipboard && navigator.clipboard.writeText) {
