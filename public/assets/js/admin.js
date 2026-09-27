@@ -201,6 +201,11 @@
                     });
                 });
             }
+
+            // 模拟服务器子 Tab（复用 mock.js 的面板逻辑）
+            if (global.PvPages && global.PvPages.mock && typeof global.PvPages.mock.init === 'function') {
+                try { global.PvPages.mock.init({}); } catch (e) { if (global.console) console.error(e); }
+            }
         },
         destroy: function () {}
     };

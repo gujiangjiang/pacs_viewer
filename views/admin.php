@@ -4,8 +4,8 @@ $page = 'admin';
 $pageTitle = '管理设置';
 $active = 'admin';
 $bodyClass = 'pv-page-admin';
-$extraCss = array('admin.css');
-$extraJs = array('admin.js');
+$extraCss = array('admin.css', 'mock.css');
+$extraJs = array('admin.js', 'mock.js');
 $s = $settings;
 $v = function ($k, $d = '') use ($s) { return isset($s[$k]) ? $s[$k] : $d; };
 $curTab = isset($tab) ? $tab : 'basic';
@@ -17,6 +17,7 @@ $pageData = array('flash' => isset($flash) ? $flash : '');
     <button type="button" class="pv-tab<?php echo $tabCls('pacs'); ?>" data-tab="pacs">DICOM / PACS 接口</button>
     <button type="button" class="pv-tab<?php echo $tabCls('users'); ?>" data-tab="users">账号管理</button>
     <button type="button" class="pv-tab<?php echo $tabCls('logs'); ?>" data-tab="logs">检索日志</button>
+    <button type="button" class="pv-tab<?php echo $tabCls('mock'); ?>" data-tab="mock">模拟服务器</button>
 </div>
 
 <!-- 基础设置 -->
@@ -153,4 +154,12 @@ $pageData = array('flash' => isset($flash) ? $flash : '');
             </tbody>
         </table>
     </div>
+</section>
+
+<!-- 模拟服务器 -->
+<section class="pv-tabpane<?php echo $tabCls('mock'); ?>" data-pane="mock">
+    <?php
+    $source = $v('mock_patient_source', 'builtin');
+    include PV_VIEWS . '/partials/mock_pane.php';
+    ?>
 </section>

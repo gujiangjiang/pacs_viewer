@@ -24,7 +24,7 @@ class PvAdminController {
         $flash = isset($_SESSION['pv_flash']) ? $_SESSION['pv_flash'] : '';
         unset($_SESSION['pv_flash']);
         $tab = (string)pvw_input('tab', 'basic');
-        if (!in_array($tab, array('basic', 'pacs', 'users', 'logs'), true)) $tab = 'basic';
+        if (!in_array($tab, array('basic', 'pacs', 'users', 'logs', 'mock'), true)) $tab = 'basic';
         pvw_page('admin', array(
             'user'     => PvAuth::user(),
             'flash'    => $flash,
@@ -34,6 +34,9 @@ class PvAdminController {
             'users'    => PvUserRepository::all(),
             'logs'     => PvQueryLogRepository::recent(30),
             'logCount' => PvQueryLogRepository::count(),
+            'mockKey'  => PvMockServer::apiKey(),
+            'mockUrl'  => PvMockServer::externalEndpoint(),
+            'pacsEndpoint' => PvSettings::get('pacs_endpoint', ''),
         ));
     }
 

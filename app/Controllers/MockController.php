@@ -4,19 +4,10 @@ class PvMockController {
 
     /* ==================== 管理界面 ==================== */
 
+    /** 模拟服务器已并入【管理设置 → 模拟服务器】子 Tab，此处直接跳转 */
     public static function index() {
         PvAuth::requireAdmin();
-        $flash = isset($_SESSION['pv_flash']) ? $_SESSION['pv_flash'] : '';
-        unset($_SESSION['pv_flash']);
-        pvw_page('mock', array(
-            'user'     => PvAuth::user(),
-            'flash'    => $flash,
-            'site'     => PvSettings::get('site_title', '模拟 PACS 影像浏览器'),
-            'settings' => PvSettings::all(),
-            'mockKey'  => PvMockServer::apiKey(),
-            'mockUrl'  => PvMockServer::externalEndpoint(),
-            'pacsEndpoint' => PvSettings::get('pacs_endpoint', ''),
-        ));
+        pvw_redirect(pvw_url('admin', array('tab' => 'mock')));
     }
 
     /** 保存模拟服务器 / FHIR 来源设置 */

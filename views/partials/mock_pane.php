@@ -1,20 +1,8 @@
 <?php
-/** views/mock.php — 内置模拟 PACS 服务器（管理界面，片段） */
-$page = 'mock';
-$pageTitle = '模拟服务器';
-$active = 'mock';
-$bodyClass = 'pv-page-mock';
-$extraCss = array('mock.css');
-$extraJs = array('mock.js');
-$s = $settings;
-$v = function ($k, $d = '') use ($s) { return isset($s[$k]) ? $s[$k] : $d; };
-$source = $v('mock_patient_source', 'builtin');
-$pageData = array(
-    'mockUrl'      => $mockUrl,
-    'mockKey'      => $mockKey,
-    'pacsEndpoint' => $pacsEndpoint,
-    'flash'        => isset($flash) ? $flash : '',
-);
+/**
+ * views/partials/mock_pane.php — 模拟服务器面板（管理设置子 Tab / 独立页共用）
+ * 需要变量：$v($k,$d) 设置读取、$source、$mockUrl、$mockKey、$pacsEndpoint
+ */
 ?>
 <div class="pv-alert pv-alert-info">
     <b>关于「模拟服务器」</b>：本 PACS 浏览器自身不含数据，仅用于查看影像。
