@@ -14,6 +14,10 @@
         full: { ww: 2500, wl: 250, label: '默认窗' }
     };
     function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
     function PvViewer(root, uid, direct) {
         this.root = root;
@@ -25,7 +29,8 @@
         this.stage = this.q('canvas').parentNode;
         this.statusEl = this.q('status');
         this.titleEl = this.q('title');
-        this.hudEl = this.q('topinfo');
+        this.filmstripEl = this.q('filmstrip');
+        this.pcName = this.q('pc-name'); this.pcSub = this.q('pc-sub'); this.pcBody = this.q('pc-body');
         this.dpr = window.devicePixelRatio || 1;
 
         this.work = document.createElement('canvas'); this.work.width = BASE; this.work.height = BASE;
@@ -33,7 +38,7 @@
         this.raw = document.createElement('canvas'); this.raw.width = BASE; this.raw.height = BASE;
 
         this.cache = {}; this.cacheKeys = []; this.imgCache = {};
-        this.sidebar = new PvSidebar(this.q('filmstrip'));
+        this.sidebar = new PvSidebar(this.q('serieslist'));
         this.toolbar = new PvToolbar(this.q('toolbar'), {
             onTool: this.setTool.bind(this),
             onPreset: this.setPreset.bind(this),
@@ -397,7 +402,14 @@
         else if (a === 'oneone') { st.zoom = 1; st.panX = 0; st.panY = 0; }
         else if (a === 'prev') { this.setFrame(st.fi - 1); return; }
         else if (a === 'next') { this.setFrame(st.fi + 1); return; }
-        else if (a === 'toggle-sidebar') { var vis = this.sidebar.toggle(); this.setStatus(vis ? '序列栏已显示' : '序列栏已隐藏'); this.resize(); this.render(); return; }
+        else if (a === 'toggle-sidebar') {
+            if (this.filmstripEl) {
+                this.filmstripEl.classList.toggle('is-hidden');
+                var visible = !this.filmstripEl.classList.contains('is-hidden');
+                this.setStatus(visible ? '序列栏已显示' : '序列栏已隐藏');
+            }
+            this.toolbar.sync(st); this.resize(); this.render(); return;
+        }
         else if (a === 'copy-link') { this.copyDirectLink(); return; }
         else if (a === 'back') { if (window.PvNav) window.PvNav.go('search'); return; }
         this.toolbar.sync(st); this.render();
@@ -436,9 +448,21 @@
         this.render();
     };
     PvViewer.prototype.updateHud = function () {
-        if (!this.hudEl) return;
-        var p = (this.st.data && this.st.data.patient) || {};
-        this.hudEl.innerHTML = '<span>' + (p.name || '—') + '</span><span>' + (p.gender || '') + ' / ' + (p.age || '') + '</span><span>PID ' + (p.patient_id || '') + '</span>';
+        var data = this.st.data || {}, p = data.patient || {}, s = data.study || {}, ser = this.curSeries() || {};
+        if (this.pcName) this.pcName.textContent = p.name || '—';
+        if (this.pcSub) this.pcSub.textContent = (p.gender || '') + (p.age ? '　/　' + p.age : '');
+        if (this.pcBody) {
+            var rows = [
+                ['患者号', p.patient_id], ['门诊号', p.outpatient_no],
+                ['检查号', s.accession_no], ['检查项目', s.description],
+                ['检查时间', s.study_date], ['设备', s.station_name],
+                ['机构', s.institution],
+                ['序列', ser.series_id ? ('Ser ' + ser.series_id + ' · ' + (ser.description || '')) : '']
+            ];
+            var html = '';
+            rows.forEach(function (r) { if (r[1]) html += '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>'; });
+            this.pcBody.innerHTML = html;
+        }
     };
 
     /* ---------- 启动（页面生命周期由 spa.js / 页脚统一调度） ---------- */

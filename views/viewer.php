@@ -67,12 +67,20 @@ $pageData = array(
         </div>
     </div>
     <div class="pv-vw-body">
-        <aside class="pv-filmstrip" data-pv="filmstrip"></aside>
+        <aside class="pv-filmstrip" data-pv="filmstrip">
+            <details class="pv-patientcard" data-pv="patientcard" open>
+                <summary>
+                    <span class="pv-pc-name" data-pv="pc-name">—</span>
+                    <span class="pv-pc-sub" data-pv="pc-sub"></span>
+                </summary>
+                <dl class="pv-pc-body" data-pv="pc-body"></dl>
+            </details>
+            <div class="pv-serieslist" data-pv="serieslist"></div>
+        </aside>
         <main class="pv-stage">
             <div class="pv-canvas-wrap"><canvas data-pv="canvas"></canvas></div>
             <div class="pv-vw-title" data-pv="title"></div>
             <div class="pv-vw-status" data-pv="status"></div>
-            <div class="pv-vw-hud" data-pv="topinfo"></div>
         </main>
     </div>
 </div>
