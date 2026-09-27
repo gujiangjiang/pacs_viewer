@@ -42,6 +42,9 @@ $routes = array(
     'manifest'              => array('PvPwaController', 'manifest'),
     'sw'                    => array('PvPwaController', 'sw'),
     'icon'                  => array('PvPwaController', 'icon'),
+    'upload'                => array('PvUploadController', 'upload'),
+    'upload/delete'         => array('PvUploadController', 'delete'),
+    'file'                  => array('PvUploadController', 'file'),
 );
 
 /* 首次运行安装门禁：未完成安装时，除安装向导外一律引导至安装页；

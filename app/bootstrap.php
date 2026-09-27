@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '0.3.1');
+define('PV_VERSION', '0.4.0');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -67,6 +67,7 @@ require_once PV_APP . '/Pacs/FhirClient.php';
 require_once PV_APP . '/Pacs/MockServer.php';
 require_once PV_APP . '/Services/StudyService.php';
 require_once PV_APP . '/Services/IconRenderer.php';
+require_once PV_APP . '/Services/UploadStore.php';
 require_once PV_APP . '/Repositories/UserRepository.php';
 require_once PV_APP . '/Repositories/QueryLogRepository.php';
 require_once PV_APP . '/Controllers/AuthController.php';
@@ -76,6 +77,7 @@ require_once PV_APP . '/Controllers/ViewerController.php';
 require_once PV_APP . '/Controllers/AdminController.php';
 require_once PV_APP . '/Controllers/MockController.php';
 require_once PV_APP . '/Controllers/PwaController.php';
+require_once PV_APP . '/Controllers/UploadController.php';
 require_once PV_APP . '/Controllers/ApiController.php';
 
 PvDatabase::init();   // 首次访问自动建库 / 建表 / 播种管理员
@@ -98,6 +100,12 @@ function pvw_url($r = '', array $params = array()) {
 /** 静态资源链接 */
 function pvw_asset($path) { return PV_URL_ASSET . '/' . ltrim($path, '/'); }
 
+/** 上传文件访问地址（经 ?r=file 鉴权下发） */
+function pvw_file_url($token, $download = false, array $params = array()) {
+    $q = array_merge(array('t' => (string)$token), $download ? array('download' => 1) : array(), $params);
+    return pvw_url('file', $q);
+}
+
 /** 是否为站内 AJAX 局部刷新请求 */
 function pvw_is_ajax() {
     if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
@@ -119,7 +127,10 @@ function pvw_redirect($url) { header('Location: ' . $url); exit; }
 
 /** 统一 JSON 输出 */
 function pvw_json($code, $msg = '', $data = null) {
-    if (!headers_sent()) header('Content-Type: application/json; charset=utf-8');
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+        if ((int)$code >= 400) http_response_code((int)$code);   // 错误码同步 HTTP 状态
+    }
     echo json_encode(array('code' => (int)$code, 'msg' => (string)$msg, 'data' => $data), JSON_UNESCAPED_UNICODE);
     exit;
 }

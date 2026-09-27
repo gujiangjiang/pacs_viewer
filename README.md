@@ -1,6 +1,6 @@
 # 模拟 Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.3.1-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.4.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -27,6 +27,8 @@
 - **PWA / 离线**：可「安装到桌面 / 主屏幕」，Service Worker 静态资源缓存优先 +
   后台更新、页面离线回退缓存、接口实时直连；图标由**代码绘制**（无预置图片），
   管理员可上传自定义图标。
+- **通用上传 / 鉴权下载**（基础设施）：文件存于 Web 根之外的 `data/uploads/`，
+  经 `?r=file` 鉴权下发；类型白名单 + 随机令牌 + 防路径穿越，供后续功能复用。
 - **模态框交互**：创建 / 编辑用户、重置密码、删除确认、日志清空等均为模态框。
 - **研究检索**：按姓名 / 患者号 / 检查号 / 门诊号 / 检查项目检索（数据来自 PACS 接口）。
 - **影像阅片器**：
@@ -73,8 +75,8 @@
 │   ├── Settings.php          #   管理设置读写
 │   ├── Pacs/                 #   PacsClient(远程接口) + DemoPacs(内置仿真)
 │   │                         #   + FhirClient(门诊 FHIR) + MockServer(模拟服务器)
-│   ├── Services/             #   StudyService(检查数据聚合) + IconRenderer(代码绘制图标)
-│   ├── Controllers/          #   认证 / 安装 / 检索 / 阅片 / 管理 / 模拟服务器 / PWA / JSON 接口
+│   ├── Services/             #   StudyService(检查聚合) / IconRenderer(代码绘制图标) / UploadStore(上传存储)
+│   ├── Controllers/          #   认证 / 安装 / 检索 / 阅片 / 管理 / 模拟服务器 / PWA / 上传 / JSON 接口
 │   └── Repositories/         #   账号 / 检索日志
 ├── views/                    # 页面模板（auth / install / search / viewer / admin / mock / error）
 ├── tools/                    # 工具（lint.php 语法检查）
@@ -135,6 +137,26 @@ GET {endpoint}?action=ping&key=APIKEY
 ```
 
 管理页【测试接口】按钮即调用 `ping`。可指向内置模拟服务器对外 API，或真实 PACS 网关。
+
+## 通用上传与鉴权下载
+
+供后续功能（如影像 / 资料 / 图标）复用的基础设施：
+
+```
+POST {站点}?r=upload            （需登录 + CSRF）字段：file、category(可选)
+     → {"code":200,"data":{"token","name","mime","size","url","download_url"}}
+
+GET  {站点}?r=file&t=令牌[&download=1]   （需登录）图片内联预览，其余强制下载
+
+POST {站点}?r=upload/delete      （需登录 + CSRF）字段：t；管理员或上传者本人
+```
+
+- 文件存于 Web 根之外的 `data/uploads/<category>/`，**不可通过 URL 直连**；
+- 类型白名单：PNG / JPEG / GIF / WebP / PDF / 纯文本；单文件上限 20MB；
+- 落盘文件名为随机令牌，记录写入 `uploads` 表，删除按记录清理，防路径穿越。
+
+服务端：`PvUploadStore::save()/find()/path()/deleteByToken()`、助手 `pvw_file_url($token)`；
+前端：`PvUI.upload(route, file, fields)`。
 
 ## 与门诊一体化主项目集成（git subtree）
 

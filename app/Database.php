@@ -70,6 +70,18 @@ class PvDatabase {
             ip TEXT DEFAULT '',
             created_at TEXT DEFAULT ''
         )");
+        // 通用上传记录（文件本体存放于 Web 根之外 data/uploads/，经路由鉴权下发）
+        $pdo->exec("CREATE TABLE IF NOT EXISTS uploads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            token TEXT UNIQUE NOT NULL,
+            category TEXT DEFAULT 'general',
+            orig_name TEXT DEFAULT '',
+            stored_name TEXT NOT NULL,
+            mime TEXT DEFAULT '',
+            size INTEGER DEFAULT 0,
+            uploader TEXT DEFAULT '',
+            created_at TEXT DEFAULT ''
+        )");
     }
 
     /** 播种默认设置（仅当为空；不再播种硬编码账号，账号由首次运行安装向导创建） */

@@ -69,7 +69,23 @@
 > 对外 API 使用标准 `{action,q,uid,key}` 约定，既可被本浏览器调用，也可提供给
 > 门诊系统等其他系统集成。
 
-## 四、远程 PACS 接口约定
+## 四、通用上传与鉴权下载（基础设施）
+
+供影像 / 资料 / 图标等上传功能复用，文件 **不在 Web 根下**，经路由鉴权下发：
+
+| 操作 | 路由 | 说明 |
+| --- | --- | --- |
+| 上传 | `POST ?r=upload` | 需登录 + CSRF；字段 `file`、`category`(可选)；返回 `token` 与访问 URL |
+| 下载 / 预览 | `GET ?r=file&t=令牌[&download=1]` | 需登录；图片内联预览，其余强制下载 |
+| 删除 | `POST ?r=upload/delete` | 需登录 + CSRF；管理员或上传者本人 |
+
+- 存放路径：`data/uploads/<category>/`（Web 根之外，不提交）。
+- 类型白名单：PNG / JPEG / GIF / WebP / PDF / 纯文本；单文件上限 20MB。
+- 安全：内容探测类型、随机令牌文件名、`uploads` 表记录、防路径穿越、
+  响应附 `X-Content-Type-Options: nosniff` 与 `CSP: sandbox`。
+- 前端调用：`PvUI.upload('upload', file, { category: 'demo' }).then(...)`。
+
+## 五、远程 PACS 接口约定
 
 ```
 GET {endpoint}?action=search&q=关键词&key=APIKEY
@@ -95,7 +111,7 @@ GET {endpoint}?action=ping&key=APIKEY
 - `series[].images` 若给出图片 URL，前端将加载真实图像。
 - 接口返回 `code!=200` 时前端展示其 `msg`。
 
-## 五、键鼠快捷交互速查表
+## 六、键鼠快捷交互速查表
 
 | 操作 | 效果 |
 | --- | --- |
@@ -111,7 +127,7 @@ GET {endpoint}?action=ping&key=APIKEY
 | 【复制直链】 | 复制当前检查的阅片直链（可分享 / 供外部系统调用） |
 | 【清屏】/【适应窗口】/【1:1 原图】 | 清除标注 / 复位视图 |
 
-## 六、部署与集成
+## 七、部署与集成
 
 - **独立部署**：Web 根指向 `public/`；Nginx 示例（`root …/public; index index.php;`）：
 
@@ -144,7 +160,7 @@ GET {endpoint}?action=ping&key=APIKEY
   ≤4MB）覆盖默认，并可「恢复默认」；自定义图标保存为运行时 `data/uploads/icon.png`
   （Web 根之外，不纳入版本管理，经 `?r=icon` 路由下发）。
 
-## 七、常见问题
+## 八、常见问题
 
 - **检索报「无法连接 PACS 接口」**：检查【管理设置 → DICOM / PACS 接口】的地址与
   网络可达性；本地联调可去【模拟服务器】点【一键应用模拟服务器数据】。

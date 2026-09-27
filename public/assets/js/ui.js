@@ -132,6 +132,21 @@
         }).then(function (r) { return r.json(); });
     }
 
+    /** 通用文件上传：PvUI.upload(route, file, fields) → Promise<{code,msg,data}> */
+    function upload(route, file, fields) {
+        var body = new FormData();
+        if (file) body.append('file', file);
+        fields = fields || {};
+        if (fields._csrf === undefined) fields._csrf = boot.csrf || '';
+        for (var k in fields) { if (fields[k] !== undefined && fields[k] !== null) body.append(k, fields[k]); }
+        var url = route.indexOf('r=') >= 0 ? route : ((global.PvNav ? global.PvNav.route(route) : route));
+        return fetch(url, {
+            method: 'POST', body: body,
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            credentials: 'same-origin'
+        }).then(function (r) { return r.json(); });
+    }
+
     function bindAjaxForms(root) {
         var forms = (root || document).querySelectorAll('form[data-ajax-form]');
         Array.prototype.forEach.call(forms, function (form) {
@@ -159,5 +174,5 @@
     }
 
     global.PvModal = { open: open, close: close, confirm: confirmOpts, alert: alertOpts };
-    global.PvUI = { toast: toast, post: post, bindAjaxForms: bindAjaxForms, esc: esc };
+    global.PvUI = { toast: toast, post: post, upload: upload, bindAjaxForms: bindAjaxForms, esc: esc };
 })(window);
