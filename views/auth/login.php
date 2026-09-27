@@ -31,7 +31,7 @@
         <button type="submit" class="pv-btn pv-btn-primary pv-btn-block">登 录</button>
     </form>
     <div class="pv-auth-hint">
-        默认账号：<code>admin / admin123</code>（管理员）　<code>doctor / doctor123</code>（普通）
+        使用安装时创建的管理员账号登录
     </div>
 </div>
 </body>

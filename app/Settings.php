@@ -33,6 +33,11 @@ class PvSettings {
 
     public static function all() { self::load(); return self::$cache; }
 
+    /** 是否已完成首次运行安装（据此决定是否强制进入安装向导） */
+    public static function isInstalled() {
+        return (string)self::get('installed', '0') === '1';
+    }
+
     /** 批量保存（仅允许已知键，调用方过滤） */
     public static function saveMany(array $pairs) {
         foreach ($pairs as $k => $v) { self::set($k, $v); }

@@ -49,8 +49,15 @@ class PvDatabase {
             display_name TEXT DEFAULT '',
             role TEXT NOT NULL DEFAULT 'user',
             status INTEGER NOT NULL DEFAULT 1,
+            is_owner INTEGER NOT NULL DEFAULT 0,
             created_at TEXT DEFAULT ''
         )");
+        // 兼容旧库：补充 is_owner 列（首次运行安装时创建的管理员受保护，不可删除 / 停用）
+        $cols = $pdo->query("PRAGMA table_info(users)")->fetchAll();
+        $hasOwner = false;
+        foreach ($cols as $c) { if (isset($c['name']) && $c['name'] === 'is_owner') { $hasOwner = true; break; } }
+        if (!$hasOwner) { $pdo->exec("ALTER TABLE users ADD COLUMN is_owner INTEGER NOT NULL DEFAULT 0"); }
+
         $pdo->exec("CREATE TABLE IF NOT EXISTS settings (
             skey TEXT PRIMARY KEY,
             svalue TEXT DEFAULT ''
@@ -65,22 +72,15 @@ class PvDatabase {
         )");
     }
 
-    /** 播种默认账号与设置（仅当为空） */
+    /** 播种默认设置（仅当为空；不再播种硬编码账号，账号由首次运行安装向导创建） */
     private static function seed() {
         $pdo = self::pdo();
-        $now = date('Y-m-d H:i:s');
-        $userCount = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
-        if ($userCount === 0) {
-            $st = $pdo->prepare("INSERT INTO users(username,password_hash,display_name,role,status,created_at) VALUES(?,?,?,?,?,?)");
-            $st->execute(array('admin', password_hash('admin123', PASSWORD_DEFAULT), '系统管理员', 'admin', 1, $now));
-            $st->execute(array('doctor', password_hash('doctor123', PASSWORD_DEFAULT), '演示医生', 'user', 1, $now));
-        }
         $setCount = (int)$pdo->query("SELECT COUNT(*) FROM settings")->fetchColumn();
         if ($setCount === 0) {
             $defaults = array(
+                'installed'        => '0',               // 是否已完成首次运行安装
                 'site_title'       => '模拟 PACS 影像浏览器',
-                'hospital_name'    => '淮海省人民医院',
-                'pacs_query_mode'  => 'Demo',            // Demo 内置模拟 / Remote 远程接口
+                'hospital_name'    => '',
                 'pacs_endpoint'    => '',                // 远程 PACS/DICOMWeb 接口地址
                 'pacs_api_key'     => '',
                 'pacs_ae_title'    => 'CLINIC_OPD',
@@ -90,9 +90,26 @@ class PvDatabase {
                 'pacs_timeout'     => '5',
                 'viewer_default_ww'=> '400',
                 'viewer_default_wl'=> '40',
+                // 内置模拟 PACS 服务器
+                'mock_enabled'        => '1',
+                'mock_api_key'        => bin2hex(random_bytes(8)),
+                'mock_patient_source' => 'builtin',      // builtin 内置仿真 / fhir 门诊 FHIR
+                'fhir_endpoint'       => '',
+                'fhir_api_key'        => '',
+                'fhir_timeout'        => '5',
             );
             $st = $pdo->prepare("INSERT INTO settings(skey,svalue) VALUES(?,?)");
             foreach ($defaults as $k => $v) { $st->execute(array($k, (string)$v)); }
+        }
+        // 兼容旧库：已存在账号则视为已完成安装
+        $userCount = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+        if ($userCount > 0) {
+            $has = (int)$pdo->query("SELECT COUNT(*) FROM settings WHERE skey='installed'")->fetchColumn();
+            if (!$has) {
+                $pdo->prepare("INSERT INTO settings(skey,svalue) VALUES('installed','1')")->execute();
+            } elseif ((string)PvDatabase::val("SELECT svalue FROM settings WHERE skey='installed'") !== '1') {
+                PvDatabase::exec("UPDATE settings SET svalue='1' WHERE skey='installed'");
+            }
         }
     }
 

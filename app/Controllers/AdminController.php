@@ -55,6 +55,18 @@ class PvAdminController {
         pvw_redirect(pvw_url('admin'));
     }
 
+    public static function userUpdate() {
+        PvAuth::requireAdmin();
+        pvw_csrf_check();
+        try {
+            PvUserRepository::updateProfile((int)pvw_input('id'), trim((string)pvw_input('display_name')), (string)pvw_input('role'));
+            $_SESSION['pv_flash'] = '账号资料已更新';
+        } catch (Exception $e) {
+            $_SESSION['pv_flash'] = '更新失败：' . $e->getMessage();
+        }
+        pvw_redirect(pvw_url('admin'));
+    }
+
     public static function userStatus() {
         PvAuth::requireAdmin();
         pvw_csrf_check();
@@ -63,8 +75,29 @@ class PvAdminController {
         if ($id === (int)PvAuth::user()['id'] && $status === 0) {
             $_SESSION['pv_flash'] = '不能停用当前登录的账号';
         } else {
-            PvUserRepository::setStatus($id, $status);
-            $_SESSION['pv_flash'] = '账号状态已更新';
+            try {
+                PvUserRepository::setStatus($id, $status);
+                $_SESSION['pv_flash'] = '账号状态已更新';
+            } catch (Exception $e) {
+                $_SESSION['pv_flash'] = '操作失败：' . $e->getMessage();
+            }
+        }
+        pvw_redirect(pvw_url('admin'));
+    }
+
+    public static function userDelete() {
+        PvAuth::requireAdmin();
+        pvw_csrf_check();
+        $id = (int)pvw_input('id');
+        if ($id === (int)PvAuth::user()['id']) {
+            $_SESSION['pv_flash'] = '不能删除当前登录的账号';
+            pvw_redirect(pvw_url('admin'));
+        }
+        try {
+            PvUserRepository::delete($id);
+            $_SESSION['pv_flash'] = '账号已删除';
+        } catch (Exception $e) {
+            $_SESSION['pv_flash'] = '删除失败：' . $e->getMessage();
         }
         pvw_redirect(pvw_url('admin'));
     }

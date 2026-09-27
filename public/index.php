@@ -15,18 +15,33 @@ $routes = array(
     ''                      => array('PvAuthController', null),
     'login'                 => array('PvAuthController', $isPost ? 'login' : 'showLogin'),
     'logout'                => array('PvAuthController', 'logout'),
+    'install'               => array('PvInstallController', $isPost ? 'submit' : 'show'),
+    'install/submit'        => array('PvInstallController', 'submit'),
     'search'                => array('PvSearchController', 'index'),
     'viewer'                => array('PvViewerController', 'show'),
     'admin'                 => array('PvAdminController', 'index'),
     'admin/save'            => array('PvAdminController', 'save'),
     'admin/user-create'     => array('PvAdminController', 'userCreate'),
+    'admin/user-update'     => array('PvAdminController', 'userUpdate'),
     'admin/user-status'     => array('PvAdminController', 'userStatus'),
     'admin/user-password'   => array('PvAdminController', 'userPassword'),
+    'admin/user-delete'     => array('PvAdminController', 'userDelete'),
     'admin/log-clear'       => array('PvAdminController', 'logClear'),
     'api/search'            => array('PvApiController', 'search'),
     'api/study'             => array('PvApiController', 'study'),
     'api/ping'              => array('PvApiController', 'ping'),
 );
+
+/* 首次运行安装门禁：未完成安装时，除安装向导外一律引导至安装页；
+ * 已完成安装后，安装入口不再可用。 */
+$pvInstalled = PvSettings::isInstalled();
+$isInstallRoute = ($r === 'install' || $r === 'install/submit');
+if (!$pvInstalled && !$isInstallRoute) {
+    pvw_redirect(pvw_url('install'));
+}
+if ($pvInstalled && $r === 'install') {
+    pvw_redirect(pvw_url(PvAuth::check() ? 'search' : 'login'));
+}
 
 if ($r === '') {
     pvw_redirect(pvw_url(PvAuth::check() ? 'search' : 'login'));

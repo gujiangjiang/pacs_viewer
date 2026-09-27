@@ -67,6 +67,7 @@ require_once PV_APP . '/Services/StudyService.php';
 require_once PV_APP . '/Repositories/UserRepository.php';
 require_once PV_APP . '/Repositories/QueryLogRepository.php';
 require_once PV_APP . '/Controllers/AuthController.php';
+require_once PV_APP . '/Controllers/InstallController.php';
 require_once PV_APP . '/Controllers/SearchController.php';
 require_once PV_APP . '/Controllers/ViewerController.php';
 require_once PV_APP . '/Controllers/AdminController.php';

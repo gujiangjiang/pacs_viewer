@@ -10,6 +10,9 @@
     border-radius: 16px; padding: 32px 30px;
     box-shadow: 0 24px 70px rgba(0,0,0,.6);
 }
+.pv-auth-wide { width: 460px; max-height: calc(100vh - 32px); overflow: auto; }
+.pv-auth-wide .pv-form-title { text-align: left; }
+.pv-auth-body { overflow: auto; }
 .pv-auth-head { text-align: center; margin-bottom: 22px; }
 .pv-auth-logo { font-size: 42px; }
 .pv-auth-head h1 { font-size: 19px; margin: 8px 0 4px; color: #f1f5f9; }
