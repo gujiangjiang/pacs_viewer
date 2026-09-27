@@ -37,6 +37,13 @@ $pageData = array('flash' => isset($flash) ? $flash : '');
             <label class="pv-field"><span>默认窗位 WL</span>
                 <input type="number" name="viewer_default_wl" value="<?php echo pvw_e($v('viewer_default_wl', '40')); ?>"></label>
         </div>
+        <label class="pv-field"><span>影像视图序列上限</span>
+            <select name="viewer_study_limit">
+                <?php for ($i = 3; $i <= 10; $i++) { ?>
+                <option value="<?php echo $i; ?>" <?php echo (int)$v('viewer_study_limit', '5') === $i ? 'selected' : ''; ?>><?php echo $i; ?> 个</option>
+                <?php } ?>
+            </select>
+            <em class="pv-hint">影像视图最多同时打开的患者检查数，超出后自动移除最早打开的检查（3-10）</em></label>
         <button type="submit" class="pv-btn pv-btn-primary">保存基础设置</button>
     </form>
 

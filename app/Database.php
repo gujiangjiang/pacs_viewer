@@ -102,6 +102,7 @@ class PvDatabase {
                 'pacs_timeout'     => '5',
                 'viewer_default_ww'=> '400',
                 'viewer_default_wl'=> '40',
+                'viewer_study_limit'=> '5',            // 影像视图最多同时打开的患者检查数（3-10）
                 // 内置模拟 PACS 服务器
                 'mock_enabled'        => '1',
                 'mock_api_key'        => bin2hex(random_bytes(8)),

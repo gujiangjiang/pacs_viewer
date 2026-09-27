@@ -7,7 +7,7 @@ class PvAdminController {
         'site_title', 'hospital_name',
         'pacs_endpoint', 'pacs_api_key',
         'pacs_ae_title', 'pacs_remote_ae', 'pacs_server_host', 'pacs_server_port', 'pacs_timeout',
-        'viewer_default_ww', 'viewer_default_wl',
+        'viewer_default_ww', 'viewer_default_wl', 'viewer_study_limit',
     );
 
     /** 统一响应：AJAX 返回 JSON，普通请求写 flash 并回到管理页 */
@@ -46,6 +46,9 @@ class PvAdminController {
         $pairs = array();
         foreach (self::$settingKeys as $k) {
             if (isset($_POST[$k])) $pairs[$k] = (string)$_POST[$k];
+        }
+        if (isset($pairs['viewer_study_limit'])) {
+            $pairs['viewer_study_limit'] = (string)max(3, min(10, (int)$pairs['viewer_study_limit']));
         }
         PvSettings::saveMany($pairs);
         $tab = (string)pvw_input('tab', 'basic');
