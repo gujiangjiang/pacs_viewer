@@ -7,6 +7,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>首次运行安装 · <?php echo pvw_e($site); ?></title>
+<meta name="theme-color" content="#0b0f17">
+<link rel="icon" type="image/png" sizes="32x32" href="<?php echo pvw_e(PvPwaController::iconUrl(32)); ?>">
+<link rel="apple-touch-icon" sizes="180x180" href="<?php echo pvw_e(PvPwaController::iconUrl(180)); ?>">
 <link rel="stylesheet" href="<?php echo pvw_asset('css/base.css'); ?>">
 <link rel="stylesheet" href="<?php echo pvw_asset('css/ui.css'); ?>">
 <link rel="stylesheet" href="<?php echo pvw_asset('css/auth.css'); ?>">

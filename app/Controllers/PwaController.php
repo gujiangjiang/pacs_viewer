@@ -1,0 +1,146 @@
+<?php
+/**
+ * app/Controllers/PwaController.php — PWA 清单与 Service Worker
+ * 这两个资源不需要登录，且随部署路径自适应生成（支持子目录挂载）。
+ */
+class PvPwaController {
+
+    /** 站点根作用域（以 / 结尾） */
+    private static function scope() {
+        return PV_URL_SITE === '' ? '/' : PV_URL_SITE . '/';
+    }
+
+    /** Web App Manifest（动态生成，保证路径自适应） */
+    public static function manifest() {
+        $site = PvSettings::get('site_title', '模拟 PACS 影像浏览器');
+        $manifest = array(
+            'name'             => $site,
+            'short_name'       => 'PACS 浏览器',
+            'description'      => 'DICOM / PACS 接口联调测试工具',
+            'lang'             => 'zh-CN',
+            'start_url'        => pvw_url(''),
+            'scope'            => self::scope(),
+            'display'          => 'standalone',
+            'orientation'      => 'any',
+            'background_color' => '#0b0f17',
+            'theme_color'      => '#0b0f17',
+            'icons'            => array(
+                array('src' => self::iconUrl(32), 'sizes' => '32x32', 'type' => 'image/png', 'purpose' => 'any'),
+                array('src' => self::iconUrl(192), 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'),
+                array('src' => self::iconUrl(256), 'sizes' => '256x256', 'type' => 'image/png', 'purpose' => 'any'),
+                array('src' => self::iconUrl(512), 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'),
+                array('src' => self::iconUrl(512), 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'),
+            ),
+        );
+        if (!headers_sent()) header('Content-Type: application/manifest+json; charset=utf-8');
+        echo json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        exit;
+    }
+
+    /** 站点图标地址（代码绘制；管理员上传后使用自定义图标，带版本号防止缓存） */
+    public static function iconUrl($size) {
+        return pvw_url('icon', array('size' => (int)$size, 'v' => PvIconRenderer::version()));
+    }
+
+    /** 站点图标端点：按请求尺寸输出 PNG（无预置图片，全部由代码绘制） */
+    public static function icon() {
+        $size = (int)pvw_input('size', 64);
+        $png = PvIconRenderer::pngString($size);
+        if (!headers_sent()) {
+            header('Content-Type: image/png');
+            header('Cache-Control: public, max-age=86400');
+        }
+        echo $png;
+        exit;
+    }
+
+    /** Service Worker（静态资源缓存优先 + 后台更新；接口实时直连） */
+    public static function sw() {
+        if (!headers_sent()) {
+            header('Content-Type: application/javascript; charset=utf-8');
+            header('Service-Worker-Allowed: ' . self::scope());
+            header('Cache-Control: no-cache');
+        }
+        $asset = PV_URL_ASSET;
+        $scope = self::scope();
+        $home = PV_URL_SITE === '' ? '/' : PV_URL_SITE . '/';
+        $cache = 'pacs-viewer-' . PV_VERSION;
+        $core = array(
+            $asset . '/css/base.css', $asset . '/css/ui.css', $asset . '/css/search.css',
+            $asset . '/css/viewer.css', $asset . '/css/admin.css', $asset . '/css/mock.css',
+            $asset . '/js/api.js', $asset . '/js/ui.js', $asset . '/js/spa.js', $asset . '/js/pwa.js',
+            $asset . '/js/search.js', $asset . '/js/admin.js', $asset . '/js/mock.js', $asset . '/js/viewer.js',
+        );
+        ?>
+/* Service Worker — 模拟 PACS 影像浏览器 */
+var CACHE = <?php echo json_encode($cache); ?>;
+var ASSET = <?php echo json_encode($asset); ?>;
+var SCOPE = <?php echo json_encode($scope); ?>;
+var HOME  = <?php echo json_encode($home); ?>;
+var CORE = <?php echo json_encode($core, JSON_UNESCAPED_SLASHES); ?>;
+
+self.addEventListener('install', function (e) {
+    e.waitUntil(
+        caches.open(CACHE).then(function (c) {
+            // 逐个缓存，任一失败不影响安装
+            return Promise.all(CORE.map(function (u) { return c.add(u).catch(function () {}); }));
+        }).then(function () { return self.skipWaiting(); })
+    );
+});
+
+self.addEventListener('activate', function (e) {
+    e.waitUntil(
+        caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (k) {
+                if (k !== CACHE && k.indexOf('pacs-viewer-') === 0) return caches.delete(k);
+            }));
+        }).then(function () { return self.clients.claim(); })
+    );
+});
+
+self.addEventListener('fetch', function (e) {
+    var req = e.request;
+    if (req.method !== 'GET') return;                     // 写操作（POST 等）直连
+    var url = new URL(req.url);
+    if (url.origin !== self.location.origin) return;      // 跨域直连
+
+    var r = url.searchParams.get('r') || '';
+    // 接口 / 清单 / SW 本身：实时直连，不缓存
+    if (r.indexOf('api') === 0 || r === 'mock' || r === 'manifest' || r === 'sw') return;
+
+    // 静态资源：缓存优先 + 后台更新（stale-while-revalidate）
+    if (url.pathname.indexOf(ASSET + '/') === 0) {
+        e.respondWith(
+            caches.match(req).then(function (cached) {
+                var network = fetch(req).then(function (res) {
+                    if (res && res.ok) {
+                        var copy = res.clone();   // 必须在返回前同步克隆，避免响应体被消费
+                        caches.open(CACHE).then(function (c) { c.put(req, copy); });
+                    }
+                    return res;
+                }).catch(function () { return cached; });
+                return cached || network;
+            })
+        );
+        return;
+    }
+
+    // 页面导航：网络优先，离线回退缓存
+    if (req.mode === 'navigate') {
+        e.respondWith(
+            fetch(req).then(function (res) {
+                if (res && res.ok) {
+                    var copy = res.clone();       // 必须在返回前同步克隆
+                    caches.open(CACHE).then(function (c) { c.put(req, copy); });
+                }
+                return res;
+            }).catch(function () {
+                return caches.match(req).then(function (c) { return c || caches.match(HOME); });
+            })
+        );
+    }
+});
+        <?php
+        exit;
+    }
+}

@@ -124,4 +124,31 @@ class PvAdminController {
         PvQueryLogRepository::clear();
         self::reply('检索日志已清空', true, null, 'logs');
     }
+
+    /** 上传自定义站点 / PWA 图标（覆盖代码绘制的默认图标） */
+    public static function iconUpload() {
+        PvAuth::requireAdmin();
+        pvw_csrf_check();
+        try {
+            if (empty($_FILES['icon']) || !isset($_FILES['icon']['error'])) {
+                throw new RuntimeException('未接收到上传文件');
+            }
+            $f = $_FILES['icon'];
+            if ((int)$f['error'] !== UPLOAD_ERR_OK) {
+                throw new RuntimeException('上传失败（错误码 ' . (int)$f['error'] . '）');
+            }
+            PvIconRenderer::saveCustom($f['tmp_name']);
+            self::reply('站点图标已更新', true, array('version' => PvIconRenderer::version()), 'basic');
+        } catch (Exception $e) {
+            self::reply('图标上传失败：' . $e->getMessage(), false, null, 'basic');
+        }
+    }
+
+    /** 恢复默认（代码绘制）图标 */
+    public static function iconReset() {
+        PvAuth::requireAdmin();
+        pvw_csrf_check();
+        PvIconRenderer::clearCustom();
+        self::reply('已恢复默认图标', true, array('version' => PvIconRenderer::version()), 'basic');
+    }
 }

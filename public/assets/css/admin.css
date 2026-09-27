@@ -1,3 +1,8 @@
 /* assets/css/admin.css — 管理设置补充 */
 .pv-page-admin .pv-main { max-width: 1080px; width: 100%; margin: 0 auto; }
 .pv-page-admin .pv-card { margin-bottom: 18px; }
+.pv-icon-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.pv-icon-preview { width: 64px; height: 64px; border-radius: 14px; border: 1px solid var(--pv-line2); background: #0b0f17; }
+.pv-icon-form { display: flex; align-items: center; gap: 10px; margin: 0; }
+.pv-icon-form input[type=file] { color: var(--pv-txt2); font-size: 13px; max-width: 260px; }
+

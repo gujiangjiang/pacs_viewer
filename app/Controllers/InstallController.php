@@ -4,7 +4,7 @@ class PvInstallController {
 
     /** 显示安装向导 */
     public static function show() {
-        if (PvSettings::isInstalled()) pvw_redirect(pvw_url(PvAuth::check() ? 'search' : 'login'));
+        if (PvSettings::isInstalled()) pvw_redirect(pvw_url(PvAuth::check() ? '' : 'login'));
         $error = isset($_SESSION['pv_install_error']) ? $_SESSION['pv_install_error'] : '';
         unset($_SESSION['pv_install_error']);
         pvw_view('auth/install', array(
@@ -61,7 +61,7 @@ class PvInstallController {
         PvAuth::login($username, $password);
         if (!empty($_SESSION['pv_flash'])) unset($_SESSION['pv_flash']);
         $_SESSION['pv_flash'] = '安装完成，欢迎使用！';
-        pvw_redirect(pvw_url('search'));
+        pvw_redirect(pvw_url(''));
     }
 
     private static function fail($msg) {

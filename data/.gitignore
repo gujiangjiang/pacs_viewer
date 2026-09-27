@@ -4,4 +4,5 @@
 *.db-wal
 *.db-shm
 session/
+custom_icon.png
 !.gitignore

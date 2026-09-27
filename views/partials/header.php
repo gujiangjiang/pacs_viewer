@@ -17,21 +17,35 @@ $pvPageData = isset($pageData) ? $pageData : array();
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?php echo pvw_e($pvTitle); ?></title>
+<meta name="theme-color" content="#0b0f17">
+<meta name="color-scheme" content="dark">
+<meta name="application-name" content="<?php echo pvw_e($site); ?>">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="<?php echo pvw_e($site); ?>">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="<?php echo pvw_e(pvw_url('manifest')); ?>">
+<link rel="icon" type="image/png" sizes="32x32" href="<?php echo pvw_e(PvPwaController::iconUrl(32)); ?>">
+<link rel="icon" type="image/png" sizes="16x16" href="<?php echo pvw_e(PvPwaController::iconUrl(16)); ?>">
+<link rel="apple-touch-icon" sizes="180x180" href="<?php echo pvw_e(PvPwaController::iconUrl(180)); ?>">
 <link rel="stylesheet" href="<?php echo pvw_asset('css/base.css'); ?>">
 <link rel="stylesheet" href="<?php echo pvw_asset('css/ui.css'); ?>">
 <?php if (!empty($extraCss)) { foreach ((array)$extraCss as $c) { ?>
 <link rel="stylesheet" href="<?php echo pvw_asset('css/' . $c); ?>">
 <?php } } ?>
 <script>window.PV_BOOT = <?php echo json_encode(array(
-    'home'   => pvw_url(''),
-    'asset'  => PV_URL_ASSET,
-    'api'    => pvw_url('api'),
-    'viewer' => pvw_url('viewer'),
-    'site'   => $site,
-    'page'   => $pvPage,
-    'data'   => $pvPageData,
-    'csrf'   => pvw_csrf(),
-    'roles'  => array('admin' => ($pvUser && $pvUser['role'] === 'admin')),
+    'home'     => pvw_url(''),
+    'asset'    => PV_URL_ASSET,
+    'api'      => pvw_url('api'),
+    'viewer'   => pvw_url('viewer'),
+    'manifest' => pvw_url('manifest'),
+    'sw'       => pvw_url('sw'),
+    'scope'    => PV_URL_SITE === '' ? '/' : PV_URL_SITE . '/',
+    'site'     => $site,
+    'page'     => $pvPage,
+    'data'     => $pvPageData,
+    'csrf'     => pvw_csrf(),
+    'roles'    => array('admin' => ($pvUser && $pvUser['role'] === 'admin')),
 ), JSON_UNESCAPED_UNICODE); ?>;</script>
 </head>
 <body class="<?php echo pvw_e(isset($bodyClass) ? $bodyClass : ''); ?>">

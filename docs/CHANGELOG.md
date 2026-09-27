@@ -14,6 +14,33 @@
 
 ---
 
+## [0.3.0] - 2026-09-27
+
+> PWA 支持与默认图标。
+
+### 新增
+- **PWA 支持**：动态生成 Web App Manifest（`?r=manifest`）与 Service Worker
+  （`?r=sw`，随部署路径自适应设置了正确的 scope）。站内页面可「安装到桌面 /
+  主屏幕」，支持离线：静态资源缓存优先 + 后台更新，页面导航网络优先、离线回退
+  缓存，接口（`?r=api` / `?r=mock`）实时直连不缓存。注册逻辑见 `assets/js/pwa.js`。
+- **代码绘制图标**：**不使用任何预置图片**，站点 / PWA 图标全部由 PHP GD 在
+  请求时按尺寸绘制（`?r=icon&size=N`，4 倍超采样），覆盖标题栏、Apple Touch
+  与 PWA（192/256/512/maskable）。管理员可在【管理设置 → 基础设置】**上传自定义
+  图标**覆盖默认；未设置时自动回退到代码绘制的默认图标，可一键「恢复默认」。
+- 页面 `<head>` 补充 `manifest`、`theme-color`、apple / mobile web-app 等元信息。
+
+### 修复
+- Service Worker 缓存响应时改为**同步克隆** `Response`，修复
+  `Failed to execute 'clone' on 'Response': Response body is already used`。
+- 站点根路径 `/` 直接渲染检索页（不再 302 到 `?r=search`），消除地址栏进入时
+  先闪现 `?r=search` 再变成 `/` 的闪烁；登录成功 / 安装完成同样跳回根路径。
+
+### 变更
+- 移除预置的 `public/assets/icons/` 与图标生成脚本；图标改为运行时绘制 /
+  管理员上传（自定义图标存放于运行时 `data/custom_icon.png`，不提交）。
+
+---
+
 ## [0.2.1] - 2026-09-27
 
 ### 修复

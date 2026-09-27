@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '0.2.1');
+define('PV_VERSION', '0.3.0');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -66,6 +66,7 @@ require_once PV_APP . '/Pacs/PacsClient.php';
 require_once PV_APP . '/Pacs/FhirClient.php';
 require_once PV_APP . '/Pacs/MockServer.php';
 require_once PV_APP . '/Services/StudyService.php';
+require_once PV_APP . '/Services/IconRenderer.php';
 require_once PV_APP . '/Repositories/UserRepository.php';
 require_once PV_APP . '/Repositories/QueryLogRepository.php';
 require_once PV_APP . '/Controllers/AuthController.php';
@@ -74,6 +75,7 @@ require_once PV_APP . '/Controllers/SearchController.php';
 require_once PV_APP . '/Controllers/ViewerController.php';
 require_once PV_APP . '/Controllers/AdminController.php';
 require_once PV_APP . '/Controllers/MockController.php';
+require_once PV_APP . '/Controllers/PwaController.php';
 require_once PV_APP . '/Controllers/ApiController.php';
 
 PvDatabase::init();   // 首次访问自动建库 / 建表 / 播种管理员

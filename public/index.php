@@ -27,6 +27,8 @@ $routes = array(
     'admin/user-password'   => array('PvAdminController', 'userPassword'),
     'admin/user-delete'     => array('PvAdminController', 'userDelete'),
     'admin/log-clear'       => array('PvAdminController', 'logClear'),
+    'admin/icon-upload'     => array('PvAdminController', 'iconUpload'),
+    'admin/icon-reset'      => array('PvAdminController', 'iconReset'),
     'mockserver'            => array('PvMockController', 'index'),
     'mock'                  => array('PvMockController', 'api'),
     'api/mock/save'         => array('PvMockController', 'save'),
@@ -37,21 +39,29 @@ $routes = array(
     'api/search'            => array('PvApiController', 'search'),
     'api/study'             => array('PvApiController', 'study'),
     'api/ping'              => array('PvApiController', 'ping'),
+    'manifest'              => array('PvPwaController', 'manifest'),
+    'sw'                    => array('PvPwaController', 'sw'),
+    'icon'                  => array('PvPwaController', 'icon'),
 );
 
 /* 首次运行安装门禁：未完成安装时，除安装向导外一律引导至安装页；
  * 已完成安装后，安装入口不再可用。 */
 $pvInstalled = PvSettings::isInstalled();
 $isInstallRoute = ($r === 'install' || $r === 'install/submit');
-if (!$pvInstalled && !$isInstallRoute && $r !== 'mock') {
+$pvPublicAsset = ($r === 'mock' || $r === 'manifest' || $r === 'sw' || $r === 'icon');
+if (!$pvInstalled && !$isInstallRoute && !$pvPublicAsset) {
     pvw_redirect(pvw_url('install'));
 }
 if ($pvInstalled && $r === 'install') {
-    pvw_redirect(pvw_url(PvAuth::check() ? 'search' : 'login'));
+    pvw_redirect(pvw_url(PvAuth::check() ? '' : 'login'));
 }
 
+/* 站点根路径直接渲染检索页（避免 / → ?r=search 的重定向导致地址栏闪烁）；
+ * 未登录则引导至登录。 */
 if ($r === '') {
-    pvw_redirect(pvw_url(PvAuth::check() ? 'search' : 'login'));
+    if (!PvAuth::check()) pvw_redirect(pvw_url('login'));
+    PvSearchController::index();
+    exit;
 }
 
 if (!isset($routes[$r])) {

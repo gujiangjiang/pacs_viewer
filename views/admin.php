@@ -38,6 +38,20 @@ $pageData = array('flash' => isset($flash) ? $flash : '');
         </div>
         <button type="submit" class="pv-btn pv-btn-primary">保存基础设置</button>
     </form>
+
+    <div class="pv-card">
+        <h3 class="pv-form-title">站点图标</h3>
+        <div class="pv-icon-row">
+            <img id="pvIconPreview" class="pv-icon-preview" src="<?php echo pvw_e(PvPwaController::iconUrl(64)); ?>" alt="图标预览" width="64" height="64">
+            <form method="post" data-ajax-form action="<?php echo pvw_e(pvw_url('admin/icon-upload')); ?>" enctype="multipart/form-data" class="pv-icon-form">
+                <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
+                <input type="file" name="icon" accept="image/png,image/jpeg,image/gif,image/webp" required>
+                <button type="submit" class="pv-btn pv-btn-primary pv-btn-sm">上传图标</button>
+            </form>
+            <button type="button" id="pvIconReset" class="pv-btn pv-btn-ghost pv-btn-sm">恢复默认</button>
+        </div>
+        <p class="pv-hint">未设置时使用内置<b>代码绘制</b>的默认图标；上传后作为站点标题栏与 PWA 图标（支持 PNG / JPG / GIF / WebP，≤4MB）。</p>
+    </div>
 </section>
 
 <!-- PACS 接口 -->

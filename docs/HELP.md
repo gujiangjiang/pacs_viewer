@@ -134,6 +134,15 @@ GET {endpoint}?action=ping&key=APIKEY
   `tools/pacs_viewer/`，此时可通过 `http://<主项目>/tools/pacs_viewer/` 访问
   （入口路径自适应，无需改代码）。更新同步命令见根目录 `README.md`。
 
+### PWA 与图标
+- 全站支持 PWA：浏览器地址栏出现「安装」图标即可装到桌面 / 主屏幕，离线也能
+  打开（静态资源缓存优先，接口实时直连不缓存）。
+- Manifest 与 Service Worker 由 `?r=manifest` / `?r=sw` 动态生成，随部署路径
+  自适应（子目录挂载也能正确设置 scope）。
+- 默认图标**由代码绘制，无预置图片**（`?r=icon&size=N`）。管理员可在
+  【管理设置 → 基础设置 → 站点图标】上传自定义图标（PNG / JPG / GIF / WebP，
+  ≤4MB）覆盖默认，并可「恢复默认」；自定义图标保存为运行时 `data/custom_icon.png`。
+
 ## 七、常见问题
 
 - **检索报「无法连接 PACS 接口」**：检查【管理设置 → DICOM / PACS 接口】的地址与
@@ -144,5 +153,8 @@ GET {endpoint}?action=ping&key=APIKEY
   `Patient` 与 `ImagingStudy` 资源；可先在【模拟服务器】点【测试 FHIR 连接】。
 - **登录后空白 / 无法安装**：确认 `data/` 目录可写（用于建库与会话）。
 - **端口冲突**：更换 `--listen` 端口即可。
+- **改动前端后仍加载旧文件**：浏览器可能命中 Service Worker 缓存，请强刷
+  （Cmd/Ctrl+Shift+R）或在开发者工具 → Application → Service Workers 中
+  「Update / Unregister」。
 - **忘记管理员密码 / 重新安装**：删除 `data/pacs_viewer.db` 后会再次进入首次运行
   安装向导，重新创建管理员与设置（仅本项目数据，不影响任何宿主系统）。

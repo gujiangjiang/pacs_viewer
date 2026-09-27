@@ -9,6 +9,7 @@
 <script src="<?php echo pvw_asset('js/api.js'); ?>"></script>
 <script src="<?php echo pvw_asset('js/ui.js'); ?>"></script>
 <script src="<?php echo pvw_asset('js/spa.js'); ?>"></script>
+<script src="<?php echo pvw_asset('js/pwa.js'); ?>"></script>
 <?php if (!empty($extraJs)) { foreach ((array)$extraJs as $j) { ?>
 <script src="<?php echo pvw_asset('js/' . $j); ?>"></script>
 <?php } } ?>

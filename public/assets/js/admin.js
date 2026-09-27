@@ -148,6 +148,19 @@
             var addBtn = document.getElementById('pvAddUser');
             if (addBtn) addBtn.addEventListener('click', function () { userModal({ mode: 'add', role: 'user' }); });
 
+            var iconReset = document.getElementById('pvIconReset');
+            if (iconReset) {
+                iconReset.addEventListener('click', function () {
+                    PvModal.confirm({ title: '恢复默认图标', message: '确认恢复为内置代码绘制的默认图标？', okText: '恢复', danger: true }).then(function (ok) {
+                        if (!ok) return;
+                        PvUI.post(PvNav.route('admin/icon-reset'), {}).then(function (j) {
+                            if (j && j.code === 200) { PvUI.toast(j.msg || '已恢复默认图标', 'ok'); goTab('basic'); }
+                            else PvUI.toast((j && j.msg) || '操作失败', 'err');
+                        });
+                    });
+                });
+            }
+
             var table = document.getElementById('pvUserTable');
             if (table) table.addEventListener('click', onUserAction);
 

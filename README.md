@@ -1,6 +1,6 @@
 # 模拟 Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.2.1-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.3.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -24,6 +24,9 @@
   安装管理员受保护，不可删除 / 停用，其余账号可在账号管理中管理。
 - **全站 AJAX 局部刷新**：站内导航不整页重载、**地址栏保持不变**；外部直接链接
   （如阅片器 `?r=viewer&uid=...`）仍可整页进入，阅片器可一键复制直链。
+- **PWA / 离线**：可「安装到桌面 / 主屏幕」，Service Worker 静态资源缓存优先 +
+  后台更新、页面离线回退缓存、接口实时直连；图标由**代码绘制**（无预置图片），
+  管理员可上传自定义图标。
 - **模态框交互**：创建 / 编辑用户、重置密码、删除确认、日志清空等均为模态框。
 - **研究检索**：按姓名 / 患者号 / 检查号 / 门诊号 / 检查项目检索（数据来自 PACS 接口）。
 - **影像阅片器**：
@@ -56,6 +59,7 @@
 │           ├── api.js        #   外部接口请求封装
 │           ├── ui.js         #   PvModal 模态框 / PvUI 轻提示 / AJAX 表单
 │           ├── spa.js        #   站内 AJAX 局部刷新导航（地址栏保持不变）
+│           ├── pwa.js        #   Service Worker 注册
 │           ├── search.js     #   检索页交互
 │           ├── admin.js      #   管理页交互（模态框账号管理）
 │           ├── mock.js       #   模拟服务器页交互
@@ -69,10 +73,11 @@
 │   ├── Settings.php          #   管理设置读写
 │   ├── Pacs/                 #   PacsClient(远程接口) + DemoPacs(内置仿真)
 │   │                         #   + FhirClient(门诊 FHIR) + MockServer(模拟服务器)
-│   ├── Services/             #   StudyService(检查数据聚合)
-│   ├── Controllers/          #   认证 / 安装 / 检索 / 阅片 / 管理 / 模拟服务器 / JSON 接口
+│   ├── Services/             #   StudyService(检查数据聚合) + IconRenderer(代码绘制图标)
+│   ├── Controllers/          #   认证 / 安装 / 检索 / 阅片 / 管理 / 模拟服务器 / PWA / JSON 接口
 │   └── Repositories/         #   账号 / 检索日志
 ├── views/                    # 页面模板（auth / install / search / viewer / admin / mock / error）
+├── tools/                    # 工具（lint.php 语法检查）
 ├── docs/                     # 详细文档（CHANGELOG / HELP）
 └── data/                     # 运行时：pacs_viewer.db + session（自动生成，不提交）
 ```
