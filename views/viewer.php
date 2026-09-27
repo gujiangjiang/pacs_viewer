@@ -15,7 +15,7 @@ $pageData = array(
     'about'      => array(
         'name'     => PvSettings::get('site_title', 'PACS 影像浏览器'),
         'version'  => PV_VERSION,
-        'hospital' => trim((string)PvSettings::get('hospital_name', '')) !== '' ? PvSettings::get('hospital_name', '') : '默认医院',
+        'hospital' => pvw_hospital(),
         'icon'     => PvPwaController::iconUrl(96),
     ),
 );

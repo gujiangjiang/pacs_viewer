@@ -141,7 +141,7 @@ class PvDemoPacs {
         return array('name' => '内置模拟 PACS 服务', 'version' => PV_VERSION, 'mode' => 'Demo', 'studies' => count(self::studies()));
     }
 
-    public static function institution() { return PvSettings::get('hospital_name', '某某门诊诊疗中心'); }
+    public static function institution() { return pvw_hospital(); }
 
     /* ---------- 确定性伪随机 ---------- */
     private static function rng($seedStr) {

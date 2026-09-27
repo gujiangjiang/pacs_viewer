@@ -7,7 +7,7 @@
 $pvActive = isset($active) ? $active : '';
 $pvUser = isset($user) ? $user : null;
 $pvTitle = isset($pageTitle) && $pageTitle !== '' ? $pageTitle . ' · ' . $site : $site;
-$pvHosp = PvSettings::get('hospital_name', '');
+$pvHosp = pvw_hospital();
 $pvPage = isset($page) ? $page : '';
 $pvPageData = isset($pageData) ? $pageData : array();
 ?>

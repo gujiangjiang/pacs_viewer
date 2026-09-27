@@ -86,6 +86,12 @@ PvDatabase::init();   // 首次访问自动建库 / 建表 / 播种管理员
  * 通用助手（统一 pvw_ 前缀，避免与宿主环境冲突）
  * ============================================================ */
 
+/** 医院名称（未设置时回退默认名称） */
+function pvw_hospital() {
+    $h = trim((string)PvSettings::get('hospital_name', ''));
+    return $h !== '' ? $h : '默认医院';
+}
+
 /** HTML 转义 */
 function pvw_e($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 

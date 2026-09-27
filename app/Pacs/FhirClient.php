@@ -117,7 +117,7 @@ class PvFhirClient {
             'modality'      => $modality !== '' ? $modality : 'OT',
             'description'   => $desc !== '' ? $desc : '影像检查',
             'study_date'    => self::fmtDate($started),
-            'institution'   => PvSettings::get('hospital_name', ''),
+            'institution'   => pvw_hospital(),
             'station_name'  => ($modality !== '' ? $modality : 'OT') . '-ROOM',
             'apply_dept'    => '',
             'apply_doctor'  => '',

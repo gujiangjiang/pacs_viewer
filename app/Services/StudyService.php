@@ -9,7 +9,7 @@ class PvStudyService {
     /** 检索（附加医院展示名、状态标签） */
     public static function search($keyword) {
         $list = PvPacsClient::search($keyword);
-        $site = PvSettings::get('hospital_name', '');
+        $site = pvw_hospital();
         foreach ($list as &$row) {
             if (empty($row['institution'])) $row['institution'] = $site;
             $row['status_name'] = '已完成';
@@ -21,7 +21,7 @@ class PvStudyService {
     /** 调阅（补齐展示字段） */
     public static function study($uid) {
         $d = PvPacsClient::study($uid);
-        $site = PvSettings::get('hospital_name', '');
+        $site = pvw_hospital();
         if (empty($d['study']['institution'])) $d['study']['institution'] = $site;
         if (empty($d['study']['station_name'])) $d['study']['station_name'] = ($d['study']['modality'] . '-ROOM');
         $d['study']['default_ww'] = (int)PvSettings::get('viewer_default_ww', '400');

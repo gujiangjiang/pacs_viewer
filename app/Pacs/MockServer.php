@@ -81,7 +81,7 @@ class PvMockServer {
 
     public static function search($keyword = '') {
         $rows = self::rows($keyword);
-        $site = PvSettings::get('hospital_name', '');
+        $site = pvw_hospital();
         foreach ($rows as &$r) {
             if (empty($r['institution'])) $r['institution'] = $site;
             $r['status_name'] = '已完成';
