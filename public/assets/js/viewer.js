@@ -406,8 +406,14 @@
                 { label: '水平镜像', act: 'flip-h', icon: '⇋' },
                 { label: '垂直镜像', act: 'flip-v', icon: '⇅' },
                 { label: '正负片反色', act: 'invert', icon: '◑' }
-            ] }
+            ] },
+            { sep: true },
+            { label: '关于', icon: 'ℹ️', act: 'about' }
         ];
+        // 无影像时仅保留「关于」
+        if (!this.st.series || !this.st.series.length) {
+            items = [{ label: '关于', icon: 'ℹ️', act: 'about' }];
+        }
         el.innerHTML = items.map(this._ctxItem.bind(this)).join('');
         el.classList.add('open');
         var w = el.offsetWidth, h = el.offsetHeight;
