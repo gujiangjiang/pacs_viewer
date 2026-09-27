@@ -60,7 +60,7 @@
             render(d.list || []);
             var modeEl = document.getElementById('pvMode');
             if (modeEl) {
-                modeEl.textContent = d.remote ? '远程 PACS 接口' : '内置模拟 PACS 服务';
+                modeEl.textContent = d.remote ? '远程 PACS 接口' : '未配置 PACS 接口';
                 modeEl.className = d.remote ? 'is-remote' : 'is-demo';
             }
         }).catch(function () {

@@ -15,7 +15,7 @@ $pageData = array('mode' => $mode);
         <button type="button" id="pvSearchBtn" class="pv-btn pv-btn-primary">检索</button>
     </form>
     <div class="pv-search-meta">
-        <span>数据来源：<b id="pvMode" class="<?php echo $mode === 'Remote' ? 'is-remote' : 'is-demo'; ?>"><?php echo $mode === 'Remote' ? '远程 PACS 接口' : '内置模拟 PACS'; ?></b></span>
+        <span>数据来源：<b id="pvMode" class="<?php echo $mode === 'Remote' ? 'is-remote' : 'is-demo'; ?>"><?php echo $mode === 'Remote' ? '远程 PACS 接口' : '未配置 PACS 接口'; ?></b></span>
         <span class="pv-dim">仅显示已开单、已缴费、已登记并完成检查的患者</span>
     </div>
 </div>

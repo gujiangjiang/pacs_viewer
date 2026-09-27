@@ -3,9 +3,11 @@
  * ============================================================
  * app/Pacs/PacsClient.php — 外部 DICOM / PACS 接口客户端
  * ============================================================
- * 依据管理设置中的查询模式与接口地址，向远程 PACS / DICOMWeb 网关
- * 发起检索（search / study / ping），所有患者、医院等数据均来自该接口。
- * 未配置远程接口（Demo 模式）时由内置模拟服务 PvDemoPacs 提供数据。
+ * 本 PACS 浏览器自身不含数据：检索（search / study / ping）全部指向管理设置
+ * 中配置的远程 PACS / DICOMWeb 网关。未配置接口地址时明确报错，不再内置回退。
+ *
+ * 本地联调可把接口地址指向【内置模拟 PACS 服务器】提供的对外 API
+ * （由「模拟服务器」页一键填入）。
  *
  * 远程接口约定（JSON）：
  *   GET {endpoint}?action=search&q=关键词&key=APIKEY
@@ -19,18 +21,17 @@
  * ============================================================ */
 class PvPacsClient {
 
+    /** 数据来源模式：Remote（已配置接口地址）/ Unset（未配置） */
     public static function mode() {
-        $m = PvSettings::get('pacs_query_mode', 'Demo');
-        return $m === 'Remote' ? 'Remote' : 'Demo';
+        return self::isRemote() ? 'Remote' : 'Unset';
     }
 
     public static function isRemote() {
-        return self::mode() === 'Remote' && trim((string)PvSettings::get('pacs_endpoint', '')) !== '';
+        return trim((string)PvSettings::get('pacs_endpoint', '')) !== '';
     }
 
     /** 检索检查列表 */
     public static function search($keyword) {
-        if (!self::isRemote()) return PvDemoPacs::search($keyword);
         $res = self::request('search', array('q' => (string)$keyword));
         $list = isset($res['data']['list']) && is_array($res['data']['list']) ? $res['data']['list'] : array();
         return $list;
@@ -38,7 +39,6 @@ class PvPacsClient {
 
     /** 调阅单次检查（患者 + 检查 + 序列） */
     public static function study($uid) {
-        if (!self::isRemote()) return PvDemoPacs::study($uid);
         $res = self::request('study', array('uid' => (string)$uid));
         $d = isset($res['data']) && is_array($res['data']) ? $res['data'] : array();
         if (!isset($d['patient']) || !isset($d['study'])) {
@@ -50,14 +50,10 @@ class PvPacsClient {
 
     /** 接口连通性测试 */
     public static function ping() {
-        if (!self::isRemote()) {
-            $p = PvDemoPacs::ping();
-            $p['endpoint'] = 'builtin://demo';
-            return $p;
-        }
         $res = self::request('ping', array());
         $p = isset($res['data']) && is_array($res['data']) ? $res['data'] : array();
         $p['endpoint'] = PvSettings::get('pacs_endpoint', '');
+        $p['mode'] = 'Remote';
         return $p;
     }
 
