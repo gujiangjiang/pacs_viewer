@@ -936,6 +936,8 @@
             try { sessionStorage.removeItem('pacs_search_v1'); } catch (e) {}
             if (window.PvNav) window.PvNav.go('search');
         };
+        // 未加载任何影像时直接退出，无需确认
+        if (!this.ws.studies.length) { go(); return; }
         if (window.PvModal) {
             PvModal.confirm({
                 title: '退出阅片',
