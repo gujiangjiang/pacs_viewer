@@ -201,3 +201,13 @@
 .pv-splitter { flex: 0 0 5px; cursor: col-resize; background: transparent; position: relative; z-index: 7; }
 .pv-splitter:hover, .pv-splitter.dragging { background: rgba(14,165,233,.45); }
 .pv-filmstrip.is-hidden + .pv-splitter { display: none; }
+
+/* 分栏视图：窗格网格与激活态 */
+.pv-panes {
+    position: relative; flex: 1 1 auto; min-width: 0; background: #000;
+    overflow: hidden; display: grid; gap: 2px;
+}
+.pv-pane { position: relative; background: #000; overflow: hidden; }
+.pv-pane.active { box-shadow: inset 0 0 0 2px var(--pv-acc); z-index: 1; }
+.pv-pane .pv-canvas-wrap { position: absolute; inset: 0; }
+.pv-pane canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }

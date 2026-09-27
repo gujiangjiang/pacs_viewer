@@ -44,16 +44,18 @@
             var menuBtn = e.target.closest ? e.target.closest('[data-pv-menu]') : null;
             if (menuBtn && el.contains(menuBtn)) { e.stopPropagation(); toggleMenu(menuBtn); return; }
 
-            // 工具 / 预设 / 动作
+            // 工具 / 预设 / 动作 / 布局
             var node = e.target;
-            while (node && node !== el && !node.getAttribute('data-pv-tool') && !node.getAttribute('data-pv-preset') && !node.getAttribute('data-pv-act')) {
+            while (node && node !== el && !node.getAttribute('data-pv-tool') && !node.getAttribute('data-pv-preset') && !node.getAttribute('data-pv-act') && !node.getAttribute('data-pv-layout')) {
                 node = node.parentNode;
             }
             if (!node || node === el) { closeMenus(); return; }
             var tool = node.getAttribute('data-pv-tool');
             var preset = node.getAttribute('data-pv-preset');
             var act = node.getAttribute('data-pv-act');
-            if (tool && self.h.onTool) self.h.onTool(tool);
+            var layout = node.getAttribute('data-pv-layout');
+            if (layout && self.h.onLayout) self.h.onLayout(layout);
+            else if (tool && self.h.onTool) self.h.onTool(tool);
             else if (preset && self.h.onPreset) self.h.onPreset(preset);
             else if (act && self.h.onAction) self.h.onAction(act);
             closeMenus();   // 选择任意项后收起菜单

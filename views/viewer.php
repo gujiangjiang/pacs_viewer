@@ -83,6 +83,16 @@ $pageData = array(
                 <button type="button" data-pv-act="save-series">🗂 保存序列（ZIP）</button>
             </div>
         </div>
+        <div class="pv-menu-wrap">
+            <button type="button" class="pv-bigbtn" data-pv-menu="layout" title="视图分栏布局">
+                <span class="pv-bi">▦</span><span class="pv-bl">布局 ▾</span></button>
+            <div class="pv-menu" data-pv-menu-panel="layout">
+                <button type="button" data-pv-layout="1"><span class="ic">▢</span> 单视图</button>
+                <button type="button" data-pv-layout="2h"><span class="ic">◫</span> 左右双视图</button>
+                <button type="button" data-pv-layout="2v"><span class="ic">⬓</span> 上下双视图</button>
+                <button type="button" data-pv-layout="4"><span class="ic">⊞</span> 四视图</button>
+            </div>
+        </div>
         <button type="button" class="pv-bigbtn" data-pv-act="about" title="关于本软件">
             <span class="pv-bi">ℹ️</span><span class="pv-bl">关于</span></button>
         <span class="pv-spacer"></span>
@@ -95,18 +105,7 @@ $pageData = array(
             <button type="button" class="pv-closeall" data-pv="closeall" title="清空影像视图中全部检查序列">关闭全部</button>
         </aside>
         <div class="pv-splitter" data-pv="splitter" title="拖动调节序列栏宽度"></div>
-        <main class="pv-stage">
-            <div class="pv-canvas-wrap"><canvas data-pv="canvas"></canvas></div>
-            <div class="pv-vw-title" data-pv="title"></div>
-            <div class="pv-vw-status" data-pv="status"></div>
-            <div class="pv-vw-hu" data-pv="hu"></div>
-            <div class="pv-vw-scroll" data-pv="vscroll" hidden>
-                <div class="pv-vw-scroll-track" data-pv="vscroll-track">
-                    <div class="pv-vw-scroll-thumb" data-pv="vscroll-thumb"></div>
-                </div>
-                <div class="pv-vw-scroll-bubble" data-pv="vscroll-bubble"></div>
-            </div>
-        </main>
+        <main class="pv-panes" data-pv="panes"></main>
     </div>
     <div class="pv-ctxmenu" data-pv="ctxmenu"></div>
 </div>

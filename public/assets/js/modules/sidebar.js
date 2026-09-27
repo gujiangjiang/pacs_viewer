@@ -19,9 +19,9 @@
         return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     };
 
-    /** 渲染多个检查分组 */
-    PvSidebar.prototype.renderStudies = function (studies, activeIndex, handlers) {
-        this.studies = studies || []; this.active = activeIndex || 0; this.h = handlers || {};
+    /** 渲染多个检查分组；activeRef = { uid, si } 标识当前激活窗格加载的检查/序列 */
+    PvSidebar.prototype.renderStudies = function (studies, activeRef, handlers) {
+        this.studies = studies || []; this.activeRef = activeRef || {}; this.h = handlers || {};
         var self = this;
         if (!this.el) return;
         if (!this.studies.length) { this.el.innerHTML = '<div class="pv-film-empty">暂无已打开的检查</div>'; return; }
@@ -29,7 +29,7 @@
         var html = '';
         this.studies.forEach(function (st, gi) {
             var d = st.data || {}, p = d.patient || {}, s = d.study || {};
-            var active = (gi === self.active);
+            var active = (st.uid === self.activeRef.uid);
             html += '<div class="pv-sg' + (active ? ' active' : '') + (st.collapsed ? ' collapsed' : '') + '">'
                 + '<div class="pv-sg-head" data-toggle="' + gi + '">'
                 +   '<div class="pv-sg-title"><span class="pv-sg-name">' + self.esc(p.name || '—') + '</span>'
@@ -39,7 +39,7 @@
                 + '</div>'
                 + '<div class="pv-sg-series">';
             (st.series || []).forEach(function (se, si) {
-                html += '<div class="pv-thumb' + (active && si === (st.si || 0) ? ' active' : '') + '" data-g="' + gi + '" data-s="' + si + '">'
+                html += '<div class="pv-thumb' + (active && si === (self.activeRef.si || 0) ? ' active' : '') + '" data-g="' + gi + '" data-s="' + si + '">'
                     + '<canvas class="pv-thumb-cv" width="' + THUMB + '" height="' + THUMB + '"></canvas>'
                     + '<div class="pv-thumb-meta"><span class="pv-thumb-id">Ser ' + self.esc(se.series_id) + '</span>'
                     + '<span class="pv-thumb-n">' + (se.slice_count || (se.images ? se.images.length : 1)) + ' 帧</span></div>'
