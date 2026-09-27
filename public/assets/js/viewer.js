@@ -39,6 +39,7 @@
         this.filmstripEl = this.q('filmstrip');
         this.seriesListEl = this.q('serieslist');
         this.closeAllEl = this.q('closeall');
+        this.splitterEl = this.q('splitter');
         this.dpr = window.devicePixelRatio || 1;
 
         this.work = document.createElement('canvas'); this.work.width = BASE; this.work.height = BASE;
@@ -64,7 +65,9 @@
         this._bind();
         this._bindScrollbar();
         this._bindCloseAll();
+        this._bindSplitter();
         this._bindCtxMenu();
+        this.restoreSidebarWidth();
         this.resize();
         var self = this;
         if (window.ResizeObserver) { this._ro = new ResizeObserver(function () { self.resize(); self.render(); }); this._ro.observe(this.stage); }
@@ -196,6 +199,45 @@
         this.refreshControlState();
         this.render();
         this.setStatus('');
+    };
+
+    /** 序列栏宽度调节（仅本次登录有效，存入 sessionStorage） */
+    PvViewer.prototype.applySidebarWidth = function (w) {
+        if (!this.filmstripEl) return;
+        w = Math.max(120, Math.min(480, Math.round(w)));
+        this.filmstripEl.style.flexBasis = w + 'px';
+        this.filmstripEl.style.width = w + 'px';
+        this.sidebarWidth = w;
+        this.resize();
+    };
+    PvViewer.prototype.restoreSidebarWidth = function () {
+        try {
+            var w = parseInt(sessionStorage.getItem('pacs_sidebar_w'), 10);
+            if (w >= 120 && w <= 480) this.applySidebarWidth(w);
+        } catch (e) {}
+    };
+    PvViewer.prototype._bindSplitter = function () {
+        var self = this, sp = this.splitterEl;
+        if (!sp || !this.filmstripEl) return;
+        var dragging = false, startX = 0, startW = 0;
+        sp.addEventListener('pointerdown', function (e) {
+            dragging = true; startX = e.clientX; startW = self.filmstripEl.getBoundingClientRect().width;
+            sp.classList.add('dragging');
+            if (sp.setPointerCapture) { try { sp.setPointerCapture(e.pointerId); } catch (err) {} }
+            e.preventDefault();
+        });
+        sp.addEventListener('pointermove', function (e) {
+            if (!dragging) return;
+            self.applySidebarWidth(startW + (e.clientX - startX));
+        });
+        function stop() {
+            if (!dragging) return;
+            dragging = false; sp.classList.remove('dragging');
+            try { sessionStorage.setItem('pacs_sidebar_w', String(self.sidebarWidth || 168)); } catch (e) {}
+        }
+        sp.addEventListener('pointerup', stop);
+        sp.addEventListener('pointercancel', stop);
+        sp.addEventListener('dblclick', function () { self.applySidebarWidth(168); try { sessionStorage.setItem('pacs_sidebar_w', '168'); } catch (e) {} });
     };
 
     /* ---------- 影像视图（多检查工作区） ---------- */

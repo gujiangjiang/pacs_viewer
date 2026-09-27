@@ -196,3 +196,8 @@
 .pv-bigbtn:disabled { opacity: .35; cursor: not-allowed; }
 .pv-bigbtn:disabled:hover { background: transparent; color: inherit; }
 .pv-menu button:disabled { opacity: .4; cursor: not-allowed; }
+
+/* 序列栏与视图之间的可拖动分隔条 */
+.pv-splitter { flex: 0 0 5px; cursor: col-resize; background: transparent; position: relative; z-index: 7; }
+.pv-splitter:hover, .pv-splitter.dragging { background: rgba(14,165,233,.45); }
+.pv-filmstrip.is-hidden + .pv-splitter { display: none; }

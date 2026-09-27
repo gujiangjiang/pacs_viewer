@@ -94,6 +94,7 @@ $pageData = array(
             <div class="pv-serieslist" data-pv="serieslist"></div>
             <button type="button" class="pv-closeall" data-pv="closeall" title="清空影像视图中全部检查序列">关闭全部</button>
         </aside>
+        <div class="pv-splitter" data-pv="splitter" title="拖动调节序列栏宽度"></div>
         <main class="pv-stage">
             <div class="pv-canvas-wrap"><canvas data-pv="canvas"></canvas></div>
             <div class="pv-vw-title" data-pv="title"></div>
