@@ -1,6 +1,6 @@
 # 模拟 Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.1.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.2.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -8,15 +8,23 @@
 ## 简介
 
 本项目用于在**没有真实 PACS 硬件**的环境下，验证 DICOM / PACS 接口的检索、
-调阅与影像展示链路。所有患者、检查、医院名称等数据均通过 PACS 接口获取；
-未配置远程接口时，由内置模拟 PACS 服务返回「已开单、已缴费、已登记并完成检查」
-的确定性仿真数据。
+调阅与影像展示链路。**本浏览器自身不含数据**：所有患者、检查、医院名称等数据
+均通过所配置的远程 PACS / DICOMWeb 接口获取。
+
+为便于联调，项目内置了一个**模拟 PACS 服务器**（见「模拟服务器」页）：它通过
+对外 API 提供标准 PACS 接口，患者数据可来自内置确定性仿真，或通过 **FHIR R4**
+从门诊一体化系统获取「已缴费、已登记」的患者及其检查；影像由前端算法确定性生成，
+用于验证完整阅片链路。对外地址与密钥可**一键填入** DICOM / PACS 接口。
 
 部署形态为标准 PHP 网站：Web 根指向本仓库的 `public/`，入口为 `public/index.php`。
 
 ## 功能
 
-- 独立登录（用户名 / 密码，自带 SQLite 账号库）。
+- **首次运行安装向导**：首次访问创建管理员账号（不再硬编码默认账号）；
+  安装管理员受保护，不可删除 / 停用，其余账号可在账号管理中管理。
+- **全站 AJAX 局部刷新**：站内导航不整页重载、**地址栏保持不变**；外部直接链接
+  （如阅片器 `?r=viewer&uid=...`）仍可整页进入，阅片器可一键复制直链。
+- **模态框交互**：创建 / 编辑用户、重置密码、删除确认、日志清空等均为模态框。
 - **研究检索**：按姓名 / 患者号 / 检查号 / 门诊号 / 检查项目检索（数据来自 PACS 接口）。
 - **影像阅片器**：
   - 窗宽窗位（WW/WL）拖拽调节 + 预设（软组织窗 / 肺窗 / 骨窗 / 默认窗）；
@@ -25,8 +33,11 @@
   - 顺时针 / 逆时针旋转 90°、水平 / 垂直镜像、正负片反色；
   - 线段测距（mm）、三点测角（°）、矩形 / 椭圆 ROI（mm² + 平均灰度）；
   - 四角医学水印 OSD（不随平移缩放位移）。
+- **内置模拟 PACS 服务器**：对外 API（`search` / `study` / `ping`）供本浏览器或
+  门诊系统调用；患者来源支持内置仿真 / 门诊 FHIR R4；可预览已缴费已登记患者、
+  一键应用模拟数据、重新生成密钥、整体启停。
 - **管理设置**：站点 / 医院信息、DICOM/PACS 接口配置、接口连通性测试、
-  账号管理、检索日志。
+  账号管理（模态框）、检索日志。
 - 无真实图像时由算法确定性生成仿真切片（同一检查花纹恒定）。
 
 ## 目录结构
@@ -38,26 +49,30 @@
 ├── AGENTS.md / CLAUDE.md      # 开发约定（AI / 协作者维护指南）
 ├── index.php                 # 目录默认入口（以仓库根为站点时命中）
 ├── public/                   # Web 根（部署时 Web 服务器指向这里）
-│   ├── index.php             #   唯一前端控制器（?r= 路由）
+│   ├── index.php             #   唯一前端控制器（?r= 路由；含 AJAX 片段响应）
 │   └── assets/
-│       ├── css/              #   base / auth / search / viewer / admin
+│       ├── css/              #   base / ui / auth / search / viewer / admin / mock
 │       └── js/
 │           ├── api.js        #   外部接口请求封装
+│           ├── ui.js         #   PvModal 模态框 / PvUI 轻提示 / AJAX 表单
+│           ├── spa.js        #   站内 AJAX 局部刷新导航（地址栏保持不变）
 │           ├── search.js     #   检索页交互
-│           ├── admin.js      #   管理页交互
+│           ├── admin.js      #   管理页交互（模态框账号管理）
+│           ├── mock.js       #   模拟服务器页交互
 │           ├── viewer.js     #   阅片器主控制器
 │           └── modules/      #   render(虚拟影像) / osd(水印) / sidebar(序列栏)
 │                             #   / toolbar(工具栏) / measurements(测量)
 ├── app/                      # 后端
-│   ├── bootstrap.php         #   引导（部署路径自适应 / 会话 / 助手）
-│   ├── Database.php          #   自带 SQLite（建库建表播种）
+│   ├── bootstrap.php         #   引导（部署路径自适应 / 会话 / AJAX 助手 / 布局）
+│   ├── Database.php          #   自带 SQLite（建库建表播种设置）
 │   ├── Auth.php              #   独立登录认证
 │   ├── Settings.php          #   管理设置读写
-│   ├── Pacs/                 #   PacsClient(远程接口) + DemoPacs(内置模拟)
+│   ├── Pacs/                 #   PacsClient(远程接口) + DemoPacs(内置仿真)
+│   │                         #   + FhirClient(门诊 FHIR) + MockServer(模拟服务器)
 │   ├── Services/             #   StudyService(检查数据聚合)
-│   ├── Controllers/          #   认证 / 检索 / 阅片 / 管理 / JSON 接口
+│   ├── Controllers/          #   认证 / 安装 / 检索 / 阅片 / 管理 / 模拟服务器 / JSON 接口
 │   └── Repositories/         #   账号 / 检索日志
-├── views/                    # 页面模板（auth / search / viewer / admin / error）
+├── views/                    # 页面模板（auth / install / search / viewer / admin / mock / error）
 ├── docs/                     # 详细文档（CHANGELOG / HELP）
 └── data/                     # 运行时：pacs_viewer.db + session（自动生成，不提交）
 ```
@@ -71,22 +86,35 @@
 # 浏览器访问 http://localhost:8090/
 ```
 
-首次访问自动创建 `data/pacs_viewer.db` 并播种账号与设置。
+首次访问自动创建 `data/pacs_viewer.db`，并进入**首次运行安装向导**：创建管理员
+账号并填写站点信息后即可登录使用（不再有硬编码默认账号）。
 
 > 入口已做部署路径自适应：若以仓库根或子目录方式挂载（如主项目的
 > `tools/pacs_viewer/`），页面 / 接口 / 静态资源链接会自动适配，无需改代码。
 
-## 默认账号
+## 首次运行
 
-| 用户名 | 密码 | 角色 |
-| --- | --- | --- |
-| `admin` | `admin123` | 管理员（可进入管理设置） |
-| `doctor` | `doctor123` | 普通用户 |
+1. 打开站点首页，自动跳转至「首次运行安装」向导；
+2. 填写站点 / 医院信息与管理员用户名、密码，提交后自动登录；
+3. 该安装管理员**不可删除、不可停用**；其余用户可在【管理设置 → 账号管理】新增与管理。
+
+## 内置模拟 PACS 服务器
+
+本浏览器自身不含数据。若暂无真实 PACS，可在【模拟服务器】页：
+
+1. 查看 / 复制**对外 API 地址**与**接口密钥**（对外接口：`{地址}&action=search|study|ping&key=密钥`）；
+2. 选择患者来源：
+   - **内置仿真数据**：开箱即用；
+   - **门诊系统 FHIR R4**：填写 FHIR 地址（可选密钥），按 `Patient` + `ImagingStudy`
+     获取「已缴费、已登记」患者及其检查，可先「测试 FHIR 连接」；
+3. 点击【一键应用模拟服务器数据】，自动把地址与密钥填入【管理设置 → DICOM / PACS 接口】；
+4. 回到【研究检索】即可检索并阅片（影像由前端算法确定性生成）。
+
+对外 API 也可提供给门诊系统等其他系统调用（需携带 `key`）。
 
 ## PACS 接口约定
 
-在【管理设置 → DICOM / PACS 接口】选择「远程 PACS / DICOMWeb 接口」后，
-检索与调阅数据全部来自所配置地址：
+在【管理设置 → DICOM / PACS 接口】配置接口地址后，检索与调阅数据全部来自该地址：
 
 ```
 GET {endpoint}?action=search&q=关键词&key=APIKEY
@@ -101,7 +129,7 @@ GET {endpoint}?action=ping&key=APIKEY
     → {"code":200,"data":{name,version}}
 ```
 
-管理页【测试接口】按钮即调用 `ping`。留空 / 选择内置模式时使用模拟数据。
+管理页【测试接口】按钮即调用 `ping`。可指向内置模拟服务器对外 API，或真实 PACS 网关。
 
 ## 与门诊一体化主项目集成（git subtree）
 
