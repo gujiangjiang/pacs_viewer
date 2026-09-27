@@ -53,7 +53,6 @@ $pvPageData = isset($pageData) ? $pageData : array();
     <a class="pv-brand" href="<?php echo pvw_e(pvw_url('search')); ?>" data-nav="search">
         <span class="pv-logo">🩻</span>
         <span class="pv-brand-name"><?php echo pvw_e($site); ?></span>
-        <?php if ($pvHosp !== '') { ?><span class="pv-brand-hosp"><?php echo pvw_e($pvHosp); ?></span><?php } ?>
     </a>
     <nav class="pv-nav" id="pvNav">
         <a class="<?php echo $pvActive === 'search' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('search')); ?>" data-nav="search">研究检索</a>

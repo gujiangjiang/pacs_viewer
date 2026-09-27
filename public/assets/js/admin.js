@@ -132,9 +132,7 @@
             document.title = document.title.replace(/·\s.*$/, '· ' + site);
         }
         if (data.hospital_name !== undefined) {
-            var brandEl = document.querySelector('.pv-brand');
-            var hosp = document.querySelector('.pv-brand-hosp');
-            if (!hosp && brandEl) { hosp = document.createElement('span'); hosp.className = 'pv-brand-hosp'; brandEl.appendChild(hosp); }
+            var hosp = document.querySelector('.pv-footer-hosp');
             if (hosp) hosp.textContent = (data.hospital_name && data.hospital_name.trim() !== '') ? data.hospital_name : '默认医院';
         }
         var ver = iconVersion || data.icon_version || data.version;
