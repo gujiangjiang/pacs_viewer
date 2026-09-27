@@ -29,6 +29,7 @@
         this.stage = this.q('canvas').parentNode;
         this.statusEl = this.q('status');
         this.titleEl = this.q('title');
+        this.huEl = this.q('hu');
         this.filmstripEl = this.q('filmstrip');
         this.pcName = this.q('pc-name'); this.pcSub = this.q('pc-sub'); this.pcMeta = this.q('pc-meta');
         this.seriesHeadEl = this.q('series-head'); this.seriesListEl = this.q('serieslist');
@@ -154,6 +155,32 @@
         var collapsed = this.seriesListEl.classList.toggle('is-collapsed');
         this.seriesHeadEl.classList.toggle('collapsed', collapsed);
         this.setStatus(collapsed ? '序列已收起' : '序列已展开');
+    };
+
+    /* ---------- 鼠标处 CT 值 ---------- */
+    PvViewer.prototype._setHU = function (text) {
+        if (!this.huEl) return;
+        if (text) { this.huEl.textContent = text; this.huEl.style.display = 'block'; }
+        else { this.huEl.style.display = 'none'; }
+    };
+    PvViewer.prototype._updateHU = function (e) {
+        if (!this.huEl) return;
+        var ser = this.curSeries();
+        if (!ser) { this._setHU(''); return; }
+        var pt = this._rel(e), p = this.screenToImg(pt.x, pt.y);
+        var x = Math.floor(p.x), y = Math.floor(p.y);
+        if (x < 0 || y < 0 || x >= BASE || y >= BASE) { this._setHU(''); return; }
+        if (ser.is_mock) {
+            var img = this.getMock(ser, this.st.fi);
+            var b = img.data[(y * BASE + x) * 4];
+            var hu = Math.round(b / 255 * (PvRender.HU_MAX - PvRender.HU_MIN) + PvRender.HU_MIN);
+            this._setHU('HU ' + hu + '　(' + x + ', ' + y + ')');
+        } else {
+            try {
+                var d = this.raw.getContext('2d').getImageData(x, y, 1, 1).data;
+                this._setHU('灰度 ' + d[0] + '　(' + x + ', ' + y + ')');
+            } catch (err) { this._setHU('(' + x + ', ' + y + ')'); }
+        }
     };
 
     PvViewer.prototype.load = function () {
@@ -376,7 +403,8 @@
         cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
         cv.addEventListener('wheel', function (e) { self.onWheel(e); }, { passive: false });
         cv.addEventListener('pointerdown', function (e) { self.onDown(e); });
-        cv.addEventListener('pointermove', function (e) { self.onMove(e); });
+        cv.addEventListener('pointermove', function (e) { self.onMove(e); self._updateHU(e); });
+        cv.addEventListener('pointerleave', function () { self._setHU(''); });
         window.addEventListener('pointerup', this._upH = function (e) { self.onUp(e); });
     };
     PvViewer.prototype.onDown = function (e) {
