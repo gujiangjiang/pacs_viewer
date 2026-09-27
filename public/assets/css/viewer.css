@@ -120,7 +120,7 @@
 
 /* 右侧帧滚动条（CT/MR 多帧时显示，可拖动实现连续滚动） */
 .pv-vw-scroll {
-    position: absolute; right: 8px; top: 64px; bottom: 72px; width: 16px; z-index: 6;
+    position: absolute; right: 8px; top: 76px; bottom: 86px; width: 16px; z-index: 6;
     display: flex; justify-content: center;
 }
 .pv-vw-scroll[hidden] { display: none; }

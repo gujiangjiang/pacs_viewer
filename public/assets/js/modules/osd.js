@@ -28,13 +28,12 @@
                   'Rot: ' + zdeg + '\u00b0 Flip: ' + flip, 'Slice: ' + (ser.orientation || '')];
 
         var pad = 10, lh = 15;
-        var padR = o.cssW - pad - (o.gutter || 0);   // 右侧预留滚动条空隙，避免与帧滚动条重叠
         ctx.textAlign = 'left';
         TL.forEach(function (t, i) { if (t) ctx.fillText(' ' + t, pad, pad + i * lh); });
         BL.forEach(function (t, i) { if (t) ctx.fillText(' ' + t, pad, o.cssH - pad - (BL.length - i) * lh); });
         ctx.textAlign = 'right';
-        TR.forEach(function (t, i) { if (t) ctx.fillText(t + ' ', padR, pad + i * lh); });
-        BR.forEach(function (t, i) { if (t) ctx.fillText(t + ' ', padR, o.cssH - pad - (BR.length - i) * lh); });
+        TR.forEach(function (t, i) { if (t) ctx.fillText(t + ' ', o.cssW - pad, pad + i * lh); });
+        BR.forEach(function (t, i) { if (t) ctx.fillText(t + ' ', o.cssW - pad, o.cssH - pad - (BR.length - i) * lh); });
         ctx.restore();
     }
     global.PvOsd = { draw: draw };
