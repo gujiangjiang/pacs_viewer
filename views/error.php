@@ -1,7 +1,7 @@
 <?php
 /** views/error.php — 通用错误页 */
 $user = PvAuth::user();
-$site = PvSettings::get('site_title', '模拟 PACS 影像浏览器');
+$site = PvSettings::get('site_title', 'PACS 影像浏览器');
 $pageTitle = '出错了';
 $active = '';
 include PV_VIEWS . '/partials/header.php';

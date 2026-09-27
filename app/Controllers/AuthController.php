@@ -6,7 +6,7 @@ class PvAuthController {
         if (PvAuth::check()) pvw_redirect(pvw_url(''));
         $error = isset($_SESSION['pv_login_error']) ? $_SESSION['pv_login_error'] : '';
         unset($_SESSION['pv_login_error']);
-        pvw_view('auth/login', array('error' => $error, 'site' => PvSettings::get('site_title', '模拟 PACS 影像浏览器')));
+        pvw_view('auth/login', array('error' => $error, 'site' => PvSettings::get('site_title', 'PACS 影像浏览器')));
     }
 
     public static function login() {

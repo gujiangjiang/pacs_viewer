@@ -10,7 +10,7 @@ class PvViewerController {
             'user' => PvAuth::user(),
             'uid'  => $uid,
             'mode' => $mode,
-            'site' => PvSettings::get('site_title', '模拟 PACS 影像浏览器'),
+            'site' => PvSettings::get('site_title', 'PACS 影像浏览器'),
             'isAdmin' => PvAuth::isAdmin(),
         ));
     }

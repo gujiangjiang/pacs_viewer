@@ -195,7 +195,7 @@ function pvw_page($name, array $data = array()) {
     ob_start();
     require $file;
     $body = ob_get_clean();
-    $site = isset($site) ? $site : PvSettings::get('site_title', '模拟 PACS 影像浏览器');
+    $site = isset($site) ? $site : PvSettings::get('site_title', 'PACS 影像浏览器');
 
     if (pvw_is_ajax()) {
         pvw_json(200, 'success', array(

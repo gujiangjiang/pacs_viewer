@@ -9,10 +9,10 @@ class PvInstallController {
         unset($_SESSION['pv_install_error']);
         pvw_view('auth/install', array(
             'error'   => $error,
-            'site'    => PvSettings::get('site_title', '模拟 PACS 影像浏览器'),
+            'site'    => PvSettings::get('site_title', 'PACS 影像浏览器'),
             'host'    => PvSettings::get('hospital_name', ''),
             'default' => array(
-                'site_title'    => PvSettings::get('site_title', '模拟 PACS 影像浏览器'),
+                'site_title'    => PvSettings::get('site_title', 'PACS 影像浏览器'),
                 'hospital_name' => PvSettings::get('hospital_name', ''),
             ),
         ));
@@ -31,7 +31,7 @@ class PvInstallController {
         $confirm  = (string)pvw_input('password_confirm');
 
         $_SESSION['pv_install_error'] = '';
-        if ($site === '') $site = '模拟 PACS 影像浏览器';
+        if ($site === '') $site = 'PACS 影像浏览器';
         if ($username === '' || $password === '') {
             return self::fail('管理员用户名与密码不能为空');
         }

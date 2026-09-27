@@ -26,7 +26,7 @@
         <h3 class="pv-form-title">站点信息</h3>
         <label class="pv-field">
             <span>站点名称</span>
-            <input type="text" name="site_title" value="<?php echo pvw_e($default['site_title']); ?>" placeholder="如：模拟 PACS 影像浏览器">
+            <input type="text" name="site_title" value="<?php echo pvw_e($default['site_title']); ?>" placeholder="如：PACS 影像浏览器">
         </label>
         <label class="pv-field">
             <span>医院 / 机构名称<span class="pv-hint" style="display:inline">（作为接口未返回机构名时的兜底展示）</span></span>

@@ -29,7 +29,7 @@ class PvAdminController {
             'user'     => PvAuth::user(),
             'flash'    => $flash,
             'tab'      => $tab,
-            'site'     => PvSettings::get('site_title', '模拟 PACS 影像浏览器'),
+            'site'     => PvSettings::get('site_title', 'PACS 影像浏览器'),
             'settings' => PvSettings::all(),
             'users'    => PvUserRepository::all(),
             'logs'     => PvQueryLogRepository::recent(30),

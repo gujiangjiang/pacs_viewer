@@ -1,6 +1,6 @@
 # 📗 使用帮助（HELP）
 
-模拟 Web PACS 影像浏览器 · 独立 PHP 网站
+Web PACS 影像浏览器 · 独立 PHP 网站
 
 ## 一、快速开始
 

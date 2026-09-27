@@ -12,7 +12,7 @@ class PvPwaController {
 
     /** Web App Manifest（动态生成，保证路径自适应） */
     public static function manifest() {
-        $site = PvSettings::get('site_title', '模拟 PACS 影像浏览器');
+        $site = PvSettings::get('site_title', 'PACS 影像浏览器');
         $manifest = array(
             'name'             => $site,
             'short_name'       => 'PACS 浏览器',
@@ -72,7 +72,7 @@ class PvPwaController {
             $asset . '/js/search.js', $asset . '/js/admin.js', $asset . '/js/mock.js', $asset . '/js/viewer.js',
         );
         ?>
-/* Service Worker — 模拟 PACS 影像浏览器 */
+/* Service Worker — PACS 影像浏览器 */
 var CACHE = <?php echo json_encode($cache); ?>;
 var ASSET = <?php echo json_encode($asset); ?>;
 var SCOPE = <?php echo json_encode($scope); ?>;

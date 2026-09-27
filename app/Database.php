@@ -104,7 +104,7 @@ class PvDatabase {
         if ($setCount === 0) {
             $defaults = array(
                 'installed'        => '0',               // 是否已完成首次运行安装
-                'site_title'       => '模拟 PACS 影像浏览器',
+                'site_title'       => 'PACS 影像浏览器',
                 'hospital_name'    => '',
                 'pacs_endpoint'    => '',                // 远程 PACS/DICOMWeb 接口地址
                 'pacs_api_key'     => '',
@@ -127,6 +127,11 @@ class PvDatabase {
             $st = $pdo->prepare("INSERT INTO settings(skey,svalue) VALUES(?,?)");
             foreach ($defaults as $k => $v) { $st->execute(array($k, (string)$v)); }
         }
+        // 品牌更名迁移：旧默认站点名更新为「PACS 影像浏览器」
+        if ((string)PvSettings::get('site_title', '') === '模拟 PACS 影像浏览器') {
+            PvSettings::set('site_title', 'PACS 影像浏览器');
+        }
+
         // 兼容旧库：已存在账号则视为已完成安装
         $userCount = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
         if ($userCount > 0) {
