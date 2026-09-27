@@ -513,13 +513,15 @@
             ctx.drawImage(winCanvas, -BASE / 2, -BASE / 2);
             ctx.restore();
         }
-        this.drawAnnotations();
-        PvOsd.draw(ctx, {
-            cssW: this.cssW, cssH: this.cssH, dpr: this.dpr, data: this.st.data,
-            series: this.curSeries(), fi: st.fi, count: this.frameCount(),
-            ww: st.ww, wl: st.wl, zoom: st.zoom, rot: st.rot, flipH: st.flipH, flipV: st.flipV,
-            gutter: (this.scrollEl && !this.scrollEl.hidden) ? 22 : 0
-        });
+        if (this.st.data && this.st.series.length) {
+            this.drawAnnotations();
+            PvOsd.draw(ctx, {
+                cssW: this.cssW, cssH: this.cssH, dpr: this.dpr, data: this.st.data,
+                series: this.curSeries(), fi: st.fi, count: this.frameCount(),
+                ww: st.ww, wl: st.wl, zoom: st.zoom, rot: st.rot, flipH: st.flipH, flipV: st.flipV,
+                gutter: (this.scrollEl && !this.scrollEl.hidden) ? 22 : 0
+            });
+        }
     };
     PvViewer.prototype.placeholder = function (t, big) {
         var ctx = this.ctx;
