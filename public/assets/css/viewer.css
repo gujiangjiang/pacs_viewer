@@ -182,3 +182,11 @@
     box-shadow: 0 16px 40px rgba(0,0,0,.6);
 }
 .pv-ctx-item:hover > .pv-ctx-sub { display: block; }
+
+/* 关于模态框 */
+.pv-about { text-align: center; padding: 8px 0 4px; }
+.pv-about-icon { width: 96px; height: 96px; border-radius: 20px; border: 1px solid var(--pv-line2); background: #0b0f17; }
+.pv-about-name { margin: 12px 0 4px; font-size: 18px; color: #f1f5f9; }
+.pv-about-ver { font-size: 13px; color: var(--pv-txt2); font-family: "SFMono-Regular", Consolas, monospace; }
+.pv-about-lic { margin-top: 12px; font-size: 13px; color: var(--pv-txt); }
+.pv-about-lic b { color: var(--pv-acc); }

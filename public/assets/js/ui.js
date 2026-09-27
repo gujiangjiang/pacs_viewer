@@ -89,8 +89,37 @@
         document.body.appendChild(mask);
         document.addEventListener('keydown', onKey);
         currentMask = mask;
+        if (opts.draggable !== false) makeDraggable(box, head);
         if (opts.onOpen) opts.onOpen({ mask: mask, body: body, close: close });
         return { close: close, body: body, mask: mask };
+    }
+
+    /** 按住标题栏拖动模态框 */
+    function makeDraggable(modal, head) {
+        var dragging = false, sx = 0, sy = 0, sl = 0, st = 0;
+        head.style.cursor = 'move';
+        head.addEventListener('pointerdown', function (e) {
+            if (e.target.closest && e.target.closest('.pv-modal-x')) return;
+            var r = modal.getBoundingClientRect();
+            modal.style.position = 'fixed';
+            modal.style.margin = '0';
+            modal.style.left = r.left + 'px';
+            modal.style.top = r.top + 'px';
+            modal.style.maxHeight = Math.min(r.height, window.innerHeight - 16) + 'px';
+            sx = e.clientX; sy = e.clientY; sl = r.left; st = r.top; dragging = true;
+            if (head.setPointerCapture) { try { head.setPointerCapture(e.pointerId); } catch (err) {} }
+            e.preventDefault();
+        });
+        head.addEventListener('pointermove', function (e) {
+            if (!dragging) return;
+            var l = sl + (e.clientX - sx), t = st + (e.clientY - sy);
+            l = Math.max(4, Math.min(l, window.innerWidth - modal.offsetWidth - 4));
+            t = Math.max(4, Math.min(t, window.innerHeight - 40));
+            modal.style.left = l + 'px'; modal.style.top = t + 'px';
+        });
+        function stop() { dragging = false; }
+        head.addEventListener('pointerup', stop);
+        head.addEventListener('pointercancel', stop);
     }
 
     function confirmOpts(opts) {

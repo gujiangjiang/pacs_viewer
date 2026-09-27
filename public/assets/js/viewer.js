@@ -24,6 +24,7 @@
         this.root = root;
         this.route = { uid: opts.uid || '', mode: opts.mode || 'append' };
         this.direct = opts.direct || '';
+        this.about = opts.about || {};
         this.studyLimit = parseInt(opts.limit, 10) || 5;
         if (this.studyLimit < 3) this.studyLimit = 3;
         if (this.studyLimit > 10) this.studyLimit = 10;
@@ -746,6 +747,7 @@
             this.toolbar.sync(st); this.resize(); this.render(); return;
         }
         else if (a === 'copy-link') { this.copyDirectLink(); return; }
+        else if (a === 'about') { this.showAbout(); return; }
         else if (a === 'dicom-info') { this.showDicomInfo(); return; }
         else if (a === 'save-image') { this.saveImage(); return; }
         else if (a === 'save-series') { this.saveSeries(); return; }
@@ -855,6 +857,19 @@
                 okText: '退出', danger: true
             }).then(function (ok) { if (ok) go(); });
         } else go();
+    };
+
+    /* ---------- 关于 ---------- */
+    PvViewer.prototype.showAbout = function () {
+        if (!window.PvModal) return;
+        var a = this.about || {};
+        var html = '<div class="pv-about">'
+            + '<img class="pv-about-icon" src="' + esc(a.icon || '') + '" width="96" height="96" alt="软件图标">'
+            + '<h3 class="pv-about-name">' + esc(a.name || 'PACS 影像浏览器') + '</h3>'
+            + '<div class="pv-about-ver">版本 v' + esc(a.version || '') + '</div>'
+            + '<div class="pv-about-lic">授权给　<b>' + esc(a.hospital || '默认医院') + '</b></div>'
+            + '</div>';
+        window.PvModal.open({ title: '关于', body: html });
     };
 
     /* ---------- DICOM 详情 ---------- */
@@ -983,7 +998,8 @@
                 uid: data.uid || '',
                 mode: data.mode || 'append',
                 direct: data.direct || '',
-                limit: data.studyLimit || 5
+                limit: data.studyLimit || 5,
+                about: data.about || {}
             });
         },
         destroy: function () {

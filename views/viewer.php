@@ -12,6 +12,12 @@ $pageData = array(
     'studyLimit' => (int)PvSettings::get('viewer_study_limit', '5'),
     'isAdmin'    => PvAuth::isAdmin(),
     'direct'     => $uid !== '' ? pvw_url('viewer', array('uid' => $uid)) : '',
+    'about'      => array(
+        'name'     => PvSettings::get('site_title', 'PACS 影像浏览器'),
+        'version'  => PV_VERSION,
+        'hospital' => trim((string)PvSettings::get('hospital_name', '')) !== '' ? PvSettings::get('hospital_name', '') : '默认医院',
+        'icon'     => PvPwaController::iconUrl(96),
+    ),
 );
 ?>
 <div id="pvViewer" class="pv-app" data-pv="app">
@@ -77,6 +83,8 @@ $pageData = array(
                 <button type="button" data-pv-act="save-series">🗂 保存序列（ZIP）</button>
             </div>
         </div>
+        <button type="button" class="pv-bigbtn" data-pv-act="about" title="关于本软件">
+            <span class="pv-bi">ℹ️</span><span class="pv-bl">关于</span></button>
         <span class="pv-spacer"></span>
         <button type="button" class="pv-bigbtn pv-bigbtn-exit" data-pv-act="back" title="退出阅片，返回检索">
             <span class="pv-bi">⏻</span><span class="pv-bl">退出</span></button>
