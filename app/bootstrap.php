@@ -93,6 +93,22 @@ function pvw_url($r = '', array $params = array()) {
 /** 静态资源链接 */
 function pvw_asset($path) { return PV_URL_ASSET . '/' . ltrim($path, '/'); }
 
+/** 是否为站内 AJAX 局部刷新请求 */
+function pvw_is_ajax() {
+    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+        strtolower((string)$_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') return true;
+    return isset($_GET['pv_ajax']) && (string)$_GET['pv_ajax'] === '1';
+}
+
+/** 站点内部链接的绝对地址（用于模拟服务器对外地址等） */
+function pvw_abs_url($r = '', array $params = array()) {
+    $https = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+    $scheme = $https ? 'https' : 'http';
+    $host = isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== '' ? (string)$_SERVER['HTTP_HOST'] : 'localhost';
+    return $scheme . '://' . $host . pvw_url($r, $params);
+}
+
 /** 302 跳转 */
 function pvw_redirect($url) { header('Location: ' . $url); exit; }
 
@@ -124,8 +140,55 @@ function pvw_csrf_check() {
 
 /** 渲染视图 */
 function pvw_view($name, array $data = array()) {
-    $file = PV_VIEWS . '/' . str_replace('..', '', $name) . '.php';
-    if (!is_file($file)) { http_response_code(500); echo 'view not found: ' . pvw_e($name); exit; }
+    $file = pvw_view_file($name);
     extract($data, EXTR_SKIP);
     require $file;
+}
+
+/** 解析视图文件路径 */
+function pvw_view_file($name) {
+    $file = PV_VIEWS . '/' . str_replace('..', '', (string)$name) . '.php';
+    if (!is_file($file)) { http_response_code(500); echo 'view not found: ' . pvw_e($name); exit; }
+    return $file;
+}
+
+/**
+ * 渲染「受外壳包裹」的页面（研究检索 / 阅片 / 管理 / 模拟服务器）。
+ * - 普通请求：输出完整 HTML（页头 + 主区 + 页脚）。
+ * - AJAX 请求：输出 JSON 片段（html + css + js + data），由前端 spa.js 局部替换，
+ *   地址栏保持不变。
+ *
+ * 视图文件只需输出主体内容，并按需设置：$page / $pageTitle / $active /
+ * $bodyClass / $extraCss / $extraJs / $pageData。
+ */
+function pvw_page($name, array $data = array()) {
+    $file = pvw_view_file($name);
+    extract($data, EXTR_SKIP);
+    // 布局元数据默认值（视图内可覆盖）
+    $page = isset($page) ? $page : '';
+    $pageTitle = '';
+    $active = isset($active) ? $active : '';
+    $bodyClass = isset($bodyClass) ? $bodyClass : '';
+    $extraCss = array(); $extraJs = array(); $pageData = array();
+    ob_start();
+    require $file;
+    $body = ob_get_clean();
+    $site = isset($site) ? $site : PvSettings::get('site_title', '模拟 PACS 影像浏览器');
+
+    if (pvw_is_ajax()) {
+        pvw_json(200, 'success', array(
+            'page'      => $page,
+            'title'     => ($pageTitle !== '' ? $pageTitle . ' · ' : '') . $site,
+            'active'    => $active,
+            'bodyClass' => $bodyClass,
+            'html'      => $body,
+            'css'       => array_values((array)$extraCss),
+            'js'        => array_values((array)$extraJs),
+            'data'      => $pageData,
+        ));
+    }
+
+    include pvw_view_file('partials/header');
+    echo $body;
+    include pvw_view_file('partials/footer');
 }

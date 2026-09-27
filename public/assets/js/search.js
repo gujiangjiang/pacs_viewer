@@ -1,19 +1,15 @@
 /* ============================================================
- * assets/js/search.js — 检索页交互
+ * assets/js/search.js — 检索页交互（PvPages.search）
  * ============================================================ */
-(function () {
+(function (global) {
     'use strict';
-    var input = document.getElementById('pvKeyword');
-    var btn = document.getElementById('pvSearchBtn');
-    var box = document.getElementById('pvResults');
-    var empty = document.getElementById('pvEmpty');
-    var meta = document.getElementById('pvResultMeta');
-    if (!input || !btn) return;
 
     function esc(s) {
         return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
             .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
+
+    var input, btn, box, empty, meta, onDocKey;
 
     function render(list) {
         box.innerHTML = '';
@@ -41,7 +37,9 @@
                 '</div>' +
                 '<div class="pv-study-foot"><span class="pv-study-status">' + esc(s.status_name || '已完成') + '</span>' +
                 '<span class="pv-study-open">打开影像 →</span></div>';
-            el.addEventListener('click', function () { location.href = PvApi.viewerUrl(s.study_uid || s.accession_no); });
+            el.addEventListener('click', function () {
+                global.PvNav.go('viewer', { uid: s.study_uid || s.accession_no });
+            });
             box.appendChild(el);
         });
     }
@@ -58,7 +56,13 @@
                 empty.querySelector('.pv-empty-title').textContent = (j && j.msg) || '检索失败';
                 return;
             }
-            render(j.data.list || []);
+            var d = j.data || {};
+            render(d.list || []);
+            var modeEl = document.getElementById('pvMode');
+            if (modeEl) {
+                modeEl.textContent = d.remote ? '远程 PACS 接口' : '内置模拟 PACS 服务';
+                modeEl.className = d.remote ? 'is-remote' : 'is-demo';
+            }
         }).catch(function () {
             btn.disabled = false; btn.textContent = '检索';
             empty.style.display = '';
@@ -66,7 +70,25 @@
         });
     }
 
-    btn.addEventListener('click', doSearch);
-    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doSearch(); } });
-    input.focus();
-})();
+    global.PvPages = global.PvPages || {};
+    global.PvPages.search = {
+        init: function () {
+            input = document.getElementById('pvKeyword');
+            btn = document.getElementById('pvSearchBtn');
+            box = document.getElementById('pvResults');
+            empty = document.getElementById('pvEmpty');
+            meta = document.getElementById('pvResultMeta');
+            if (!input || !btn || !box) return;
+            btn.addEventListener('click', doSearch);
+            onDocKey = function (e) {
+                if (e.key === 'Enter' && document.activeElement === input) { e.preventDefault(); doSearch(); }
+            };
+            input.addEventListener('keydown', onDocKey);
+            input.focus();
+        },
+        destroy: function () {
+            if (input && onDocKey) input.removeEventListener('keydown', onDocKey);
+            input = btn = box = empty = meta = onDocKey = null;
+        }
+    };
+})(window);

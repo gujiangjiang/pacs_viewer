@@ -19,9 +19,13 @@
         return u;
     }
     function get(sub, params) {
-        return fetch(buildUrl(sub, params), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        return fetch(buildUrl(sub, params), { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
             .then(function (r) {
-                if (r.status === 401) { location.href = (boot.site ? '' : '') || location.href; throw new Error('未登录'); }
+                if (r.status === 401) {
+                    var home = boot.home || '/';
+                    location.href = home + (home.indexOf('?') < 0 ? '?' : '') + 'r=login';
+                    throw new Error('未登录');
+                }
                 return r.json();
             });
     }

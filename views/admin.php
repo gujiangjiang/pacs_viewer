@@ -1,11 +1,12 @@
 <?php
-/** views/admin.php — 管理员设置 */
+/** views/admin.php — 管理员设置（片段） */
+$page = 'admin';
 $pageTitle = '管理设置';
 $active = 'admin';
 $bodyClass = 'pv-page-admin';
+$extraCss = array('admin.css');
 $s = $settings;
 $v = function ($k, $d = '') use ($s) { return isset($s[$k]) ? $s[$k] : $d; };
-include PV_VIEWS . '/partials/header.php';
 ?>
 <?php if (!empty($flash)) { ?><div class="pv-alert pv-alert-ok"><?php echo pvw_e($flash); ?></div><?php } ?>
 
@@ -162,6 +163,4 @@ include PV_VIEWS . '/partials/header.php';
     </div>
 </section>
 <?php
-$extraCss = array('admin.css');
-$extraJs = array('api.js', 'admin.js');
-include PV_VIEWS . '/partials/footer.php';
+$extraJs = array('admin.js');

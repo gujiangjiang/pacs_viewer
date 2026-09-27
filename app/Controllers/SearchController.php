@@ -7,7 +7,7 @@ class PvSearchController {
         $u = PvAuth::user();
         $flash = isset($_SESSION['pv_flash']) ? $_SESSION['pv_flash'] : '';
         unset($_SESSION['pv_flash']);
-        pvw_view('search', array(
+        pvw_page('search', array(
             'user'    => $u,
             'flash'   => $flash,
             'site'    => PvSettings::get('site_title', '模拟 PACS 影像浏览器'),

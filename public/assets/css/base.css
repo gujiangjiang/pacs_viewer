@@ -49,6 +49,8 @@ code { background: #1e293b; padding: 1px 5px; border-radius: 4px; font-size: 12p
 
 /* ---------- 主区 / 页脚 ---------- */
 .pv-main { flex: 1 1 auto; min-height: 0; padding: 18px; overflow: auto; }
+body.pv-nav-busy { cursor: progress; }
+body.pv-nav-busy #pvMain { opacity: .55; transition: opacity .12s; }
 .pv-page-viewer .pv-main { padding: 0; overflow: hidden; display: flex; }
 .pv-page-viewer body, .pv-page-viewer { }
 .pv-footer {

@@ -14,7 +14,7 @@ class PvAdminController {
         PvAuth::requireAdmin();
         $flash = isset($_SESSION['pv_flash']) ? $_SESSION['pv_flash'] : '';
         unset($_SESSION['pv_flash']);
-        pvw_view('admin', array(
+        pvw_page('admin', array(
             'user'     => PvAuth::user(),
             'flash'    => $flash,
             'site'     => PvSettings::get('site_title', '模拟 PACS 影像浏览器'),

@@ -15,9 +15,10 @@
     };
     function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
 
-    function PvViewer(root, uid) {
+    function PvViewer(root, uid, direct) {
         this.root = root;
         this.uid = uid;
+        this.direct = direct || '';
         this.q = function (k) { return root.querySelector('[data-pv="' + k + '"]'); };
         this.canvas = this.q('canvas');
         this.ctx = this.canvas.getContext('2d');
@@ -54,6 +55,14 @@
     }
 
     PvViewer.prototype.setStatus = function (m) { if (this.statusEl) this.statusEl.textContent = m || ''; };
+
+    /** 释放资源（SPA 切换页面时调用） */
+    PvViewer.prototype.destroy = function () {
+        try { if (this._ro) this._ro.disconnect(); } catch (e) {}
+        if (this._upH) window.removeEventListener('pointerup', this._upH);
+        if (this._onWinResize) window.removeEventListener('resize', this._onWinResize);
+        this.st.drag = null; this.st.draft = null;
+    };
 
     PvViewer.prototype.load = function () {
         var self = this;
@@ -373,7 +382,22 @@
         else if (a === 'prev') { this.setFrame(st.fi - 1); return; }
         else if (a === 'next') { this.setFrame(st.fi + 1); return; }
         else if (a === 'toggle-sidebar') { var vis = this.sidebar.toggle(); this.setStatus(vis ? '序列栏已显示' : '序列栏已隐藏'); this.resize(); this.render(); return; }
+        else if (a === 'copy-link') { this.copyDirectLink(); return; }
+        else if (a === 'back') { if (window.PvNav) window.PvNav.go('search'); return; }
         this.toolbar.sync(st); this.render();
+    };
+
+    /** 复制本检查的阅片直链（地址栏固定时的对外分享 / 外部系统调用入口） */
+    PvViewer.prototype.copyDirectLink = function () {
+        var link = this.direct || (window.PvNav ? window.PvNav.route('viewer', { uid: this.uid }) : '');
+        if (!link) return;
+        var done = function () { this.setStatus('已复制阅片直链：' + link); }.bind(this);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(link).then(done, done);
+        } else {
+            var ta = document.createElement('textarea'); ta.value = link; document.body.appendChild(ta);
+            ta.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(ta); done();
+        }
     };
     PvViewer.prototype.setSeries = function (i) {
         if (i < 0 || i >= this.st.series.length) return;
@@ -400,12 +424,20 @@
         this.hudEl.innerHTML = '<span>' + (p.name || '—') + '</span><span>' + (p.gender || '') + ' / ' + (p.age || '') + '</span><span>PID ' + (p.patient_id || '') + '</span>';
     };
 
-    /* ---------- 启动 ---------- */
-    if (typeof document !== 'undefined' && document.addEventListener) {
-        document.addEventListener('DOMContentLoaded', function () {
+    /* ---------- 启动（页面生命周期由 spa.js / 页脚统一调度） ---------- */
+    var instance = null;
+    global.PvPages = global.PvPages || {};
+    global.PvPages.viewer = {
+        init: function (data) {
+            data = data || {};
             var root = document.querySelector('[data-pv="app"]');
-            if (root && window.PV_VIEWER) new PvViewer(root, window.PV_VIEWER.uid);
-        });
-    }
+            if (!root || !data.uid) return;
+            if (instance) { try { instance.destroy(); } catch (e) {} instance = null; }
+            instance = new PvViewer(root, data.uid, data.direct);
+        },
+        destroy: function () {
+            if (instance) { try { instance.destroy(); } catch (e) {} instance = null; }
+        }
+    };
     global.PvViewer = PvViewer;
 })(window);

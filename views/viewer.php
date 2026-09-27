@@ -1,9 +1,16 @@
 <?php
-/** views/viewer.php — 阅片器页面 */
+/** views/viewer.php — 阅片器页面（片段） */
+$page = 'viewer';
 $pageTitle = '影像阅片';
 $active = 'search';
 $bodyClass = 'pv-page-viewer';
-include PV_VIEWS . '/partials/header.php';
+$extraCss = array('viewer.css');
+$extraJs = array('modules/render.js', 'modules/osd.js', 'modules/sidebar.js', 'modules/toolbar.js', 'modules/measurements.js', 'viewer.js');
+$pageData = array(
+    'uid'     => $uid,
+    'isAdmin' => PvAuth::isAdmin(),
+    'direct'  => pvw_url('viewer', array('uid' => $uid)),
+);
 ?>
 <div id="pvViewer" class="pv-app" data-pv="app">
     <div class="pv-vw-toolbar" data-pv="toolbar">
@@ -39,6 +46,8 @@ include PV_VIEWS . '/partials/header.php';
         <button type="button" class="pv-tbtn" data-pv-act="fit">⤢ 适应窗口</button>
         <button type="button" class="pv-tbtn" data-pv-act="oneone">1:1 原图</button>
         <button type="button" class="pv-tbtn pv-tbtn-accent" data-pv-act="toggle-sidebar" title="显示 / 隐藏左侧序列栏">⇤ 序列栏</button>
+        <button type="button" class="pv-tbtn" data-pv-act="copy-link" title="复制本检查的阅片直链（可分享或供外部系统调用）">🔗 复制直链</button>
+        <button type="button" class="pv-tbtn" data-pv-act="back">← 返回检索</button>
     </div>
     <div class="pv-vw-body">
         <aside class="pv-filmstrip" data-pv="filmstrip"></aside>
@@ -50,12 +59,3 @@ include PV_VIEWS . '/partials/header.php';
         </main>
     </div>
 </div>
-<script>window.PV_VIEWER = <?php echo json_encode(array(
-    'uid' => $uid,
-    'api' => pvw_url('api'),
-    'isAdmin' => PvAuth::isAdmin(),
-), JSON_UNESCAPED_UNICODE); ?>;</script>
-<?php
-$extraCss = array('viewer.css');
-$extraJs = array('api.js', 'modules/render.js', 'modules/osd.js', 'modules/sidebar.js', 'modules/toolbar.js', 'modules/measurements.js', 'viewer.js');
-include PV_VIEWS . '/partials/footer.php';
