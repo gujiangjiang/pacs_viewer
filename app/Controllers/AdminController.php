@@ -52,7 +52,11 @@ class PvAdminController {
         }
         PvSettings::saveMany($pairs);
         $tab = (string)pvw_input('tab', 'basic');
-        self::reply('设置已保存', true, null, $tab === 'pacs' ? 'pacs' : 'basic');
+        self::reply('设置已保存', true, array(
+            'site_title'    => PvSettings::get('site_title', ''),
+            'hospital_name' => PvSettings::get('hospital_name', ''),
+            'icon_version'  => PvIconRenderer::version(),
+        ), $tab === 'pacs' ? 'pacs' : 'basic');
     }
 
     public static function userCreate() {

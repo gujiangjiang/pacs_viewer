@@ -122,6 +122,35 @@
         }
     }
 
+    /** 保存后实时刷新顶栏站点名 / 医院名 / 图标（无需整页刷新） */
+    function applyChrome(data, iconVersion) {
+        data = data || {};
+        var site = data.site_title;
+        if (site !== undefined && site !== '') {
+            var brand = document.querySelector('.pv-brand-name');
+            if (brand) brand.textContent = site;
+            document.title = document.title.replace(/·\s.*$/, '· ' + site);
+        }
+        if (data.hospital_name !== undefined) {
+            var brandEl = document.querySelector('.pv-brand');
+            var hosp = document.querySelector('.pv-brand-hosp');
+            if (!hosp && brandEl) { hosp = document.createElement('span'); hosp.className = 'pv-brand-hosp'; brandEl.appendChild(hosp); }
+            if (hosp) hosp.textContent = (data.hospital_name && data.hospital_name.trim() !== '') ? data.hospital_name : '默认医院';
+        }
+        var ver = iconVersion || data.icon_version || data.version;
+        if (ver) {
+            var preview = document.getElementById('pvIconPreview');
+            if (preview) preview.src = preview.src.replace(/v=\d+/, 'v=' + ver) || preview.src;
+            Array.prototype.forEach.call(document.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"]'), function (l) {
+                var href = l.getAttribute('href') || '';
+                if (href.indexOf('r=icon') < 0) return;
+                if (/v=\d+/.test(href)) href = href.replace(/v=\d+/, 'v=' + ver);
+                else href += (href.indexOf('?') < 0 ? '?' : '&') + 'v=' + ver;
+                l.setAttribute('href', href);
+            });
+        }
+    }
+
     global.PvPages = global.PvPages || {};
     global.PvPages.admin = {
         init: function (data) {
@@ -139,9 +168,12 @@
                 });
             });
 
-            // 设置表单：保存后停留在当前页签
+            // 设置表单：保存后停留在当前页签，并实时刷新顶栏/图标
             Array.prototype.forEach.call(document.querySelectorAll('form[data-ajax-form]'), function (form) {
-                form.__pvOnOk = function () { goTab(form.querySelector('[name=tab]') ? form.querySelector('[name=tab]').value : 'basic'); };
+                form.__pvOnOk = function (j) {
+                    applyChrome(j && j.data);
+                    goTab(form.querySelector('[name=tab]') ? form.querySelector('[name=tab]').value : 'basic');
+                };
             });
             PvUI.bindAjaxForms(document);
 
@@ -154,7 +186,7 @@
                     PvModal.confirm({ title: '恢复默认图标', message: '确认恢复为内置代码绘制的默认图标？', okText: '恢复', danger: true }).then(function (ok) {
                         if (!ok) return;
                         PvUI.post(PvNav.route('admin/icon-reset'), {}).then(function (j) {
-                            if (j && j.code === 200) { PvUI.toast(j.msg || '已恢复默认图标', 'ok'); goTab('basic'); }
+                            if (j && j.code === 200) { PvUI.toast(j.msg || '已恢复默认图标', 'ok'); applyChrome({}, j.data && j.data.version); goTab('basic'); }
                             else PvUI.toast((j && j.msg) || '操作失败', 'err');
                         });
                     });
