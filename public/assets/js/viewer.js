@@ -67,6 +67,7 @@
         this._bindCloseAll();
         this._bindSplitter();
         this._bindCtxMenu();
+        this._disableChromeContext();
         this.restoreSidebarWidth();
         this.resize();
         var self = this;
@@ -199,6 +200,16 @@
         this.refreshControlState();
         this.render();
         this.setStatus('');
+    };
+
+    /** 禁用工具栏 / 序列栏 / 底栏的右击，避免误操作（视图画布仍保留右键菜单） */
+    PvViewer.prototype._disableChromeContext = function () {
+        var targets = [this.q('toolbar'), this.filmstripEl, document.querySelector('.pv-footer')];
+        targets.forEach(function (el) {
+            if (!el || el.__pvNoCtx) return;
+            el.__pvNoCtx = true;
+            el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+        });
     };
 
     /** 序列栏宽度调节（仅本次登录有效，存入 sessionStorage） */
