@@ -69,10 +69,10 @@
 .pv-sg-head:hover { background: #0e1626; }
 .pv-sg-head::after { content: '▾'; position: absolute; right: 20px; color: var(--pv-txt2); font-size: 11px; }
 .pv-sg.collapsed .pv-sg-head::after { content: '▸'; }
-.pv-sg-title { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
-.pv-sg-name { font-size: 13px; font-weight: 700; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pv-sg-sub { font-size: 10px; color: var(--pv-txt2); }
-.pv-sg-mod { font-size: 10px; padding: 1px 6px; border-radius: 6px; background: rgba(14,165,233,.16); color: #7dd3fc; }
+.pv-sg-title { display: flex; align-items: baseline; gap: 6px; min-width: 0; flex: 1 1 auto; }
+.pv-sg-name { flex: 0 1 auto; min-width: 0; font-size: 13px; font-weight: 700; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-sg-sub { flex: 0 0 auto; font-size: 10px; color: var(--pv-txt2); white-space: nowrap; }
+.pv-sg-mod { flex: 0 0 auto; font-size: 10px; padding: 1px 6px; border-radius: 6px; background: rgba(14,165,233,.16); color: #7dd3fc; }
 .pv-sg-close {
     border: 0; background: transparent; color: var(--pv-txt2); cursor: pointer;
     font-size: 15px; line-height: 1; padding: 0 2px;
