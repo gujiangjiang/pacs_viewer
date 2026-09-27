@@ -34,6 +34,17 @@
         search: function (q) { return get('search', { q: q }); },
         study:  function (uid) { return get('study', { uid: uid }); },
         ping:   function () { return get('ping', {}); },
+        /** 记录操作日志（读片 / 下载 / 阅读 DICOM），失败静默 */
+        log: function (action, detail) {
+            var fd = new FormData();
+            fd.append('_csrf', boot.csrf || '');
+            fd.append('action', action || '');
+            fd.append('detail', detail || '');
+            return fetch(buildUrl('log', {}), {
+                method: 'POST', body: fd,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin'
+            }).then(function (r) { return r.json(); }).catch(function () { return null; });
+        },
         viewerUrl: function (uid) {
             var u = boot.viewer || '?r=viewer';
             return u + (u.indexOf('?') < 0 ? '?' : '&') + 'uid=' + encodeURIComponent(uid);

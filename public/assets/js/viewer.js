@@ -164,6 +164,14 @@
         this.setStatus(collapsed ? '序列已收起' : '序列已展开');
     };
 
+    /* ---------- 操作日志 ---------- */
+    PvViewer.prototype.logEvent = function (action, extra) {
+        if (!window.PvApi || !PvApi.log) return;
+        var d = this.st.data || {}, p = d.patient || {}, s = d.study || {};
+        var info = (p.name || '') + ' / ' + (s.modality || '') + ' / ' + (s.description || '');
+        PvApi.log(action, extra ? (info + ' / ' + extra) : info);
+    };
+
     /* ---------- 鼠标处 CT 值 ---------- */
     PvViewer.prototype._setHU = function (text) {
         if (!this.huEl) return;
@@ -285,6 +293,7 @@
         this.updateHud();
         this.toolbar.sync(this.st);
         this.updateScrollbar();
+        this.logEvent('read');
     };
 
     PvViewer.prototype.applyDefaults = function () {
@@ -668,6 +677,7 @@
                 if (!blob) return;
                 self._triggerDownload(URL.createObjectURL(blob), name);
                 self.setStatus('已保存当前图像：' + name);
+                self.logEvent('download', '当前图像 ' + name);
             }, 'image/png');
         } catch (e) { this.setStatus('当前画面包含跨域内容，无法导出'); }
     };
@@ -699,6 +709,7 @@
         }).then(function (zip) {
             self._triggerDownload(URL.createObjectURL(zip), base + '.zip');
             self.setStatus('已导出序列：' + base + '.zip（' + n + ' 帧）');
+            self.logEvent('download', '序列 ZIP ' + base + '（' + n + ' 帧）');
         }).catch(function () { self.setStatus('序列导出失败'); });
     };
 
@@ -772,6 +783,7 @@
                 ['IsMock（是否仿真影像）', ser.is_mock ? '是（前端算法生成）' : '否（真实图像）']
             ]) + '</div>';
         window.PvModal.open({ title: 'DICOM 详情 · ' + (s.accession_no || s.study_uid || ''), size: 'lg', body: html });
+        this.logEvent('dicom');
     };
 
     /** 复制本检查的阅片直链（地址栏固定时的对外分享 / 外部系统调用入口） */

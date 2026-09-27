@@ -149,13 +149,19 @@ $pageData = array('flash' => isset($flash) ? $flash : '');
             <button type="button" id="pvLogClear" class="pv-btn pv-btn-outline pv-btn-sm">清空</button>
         </div>
         <table class="pv-table">
-            <thead><tr><th>时间</th><th>账号</th><th>关键词</th><th>结果数</th><th>IP</th></tr></thead>
+            <thead><tr><th>时间</th><th>账号</th><th>操作</th><th>详情</th><th>关键词</th><th>结果数</th><th>IP</th></tr></thead>
             <tbody>
             <?php if (!$logs) { ?>
-                <tr><td colspan="5" class="pv-dim" style="text-align:center">暂无记录</td></tr>
-            <?php } foreach ($logs as $l) { ?>
-                <tr><td class="pv-dim"><?php echo pvw_e($l['created_at']); ?></td><td><?php echo pvw_e($l['username']); ?></td>
-                    <td><?php echo pvw_e($l['keyword']); ?></td><td><?php echo (int)$l['result_count']; ?></td>
+                <tr><td colspan="7" class="pv-dim" style="text-align:center">暂无记录</td></tr>
+            <?php } foreach ($logs as $l) {
+                $act = isset($l['action']) ? $l['action'] : 'search';
+            ?>
+                <tr><td class="pv-dim"><?php echo pvw_e($l['created_at']); ?></td>
+                    <td><?php echo pvw_e($l['username']); ?></td>
+                    <td><span class="pv-badge op-<?php echo pvw_e($act); ?>"><?php echo pvw_e(PvQueryLogRepository::actionName($act)); ?></span></td>
+                    <td><?php echo pvw_e(isset($l['detail']) ? $l['detail'] : ''); ?></td>
+                    <td><?php echo pvw_e($l['keyword']); ?></td>
+                    <td><?php echo $act === 'search' ? (int)$l['result_count'] : '—'; ?></td>
                     <td class="pv-dim"><?php echo pvw_e($l['ip']); ?></td></tr>
             <?php } ?>
             </tbody>

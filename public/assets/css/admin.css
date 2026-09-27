@@ -6,3 +6,10 @@
 .pv-icon-form { display: flex; align-items: center; gap: 10px; margin: 0; }
 .pv-icon-form input[type=file] { color: var(--pv-txt2); font-size: 13px; max-width: 260px; }
 
+
+/* 操作日志徽章 */
+.pv-badge[class*="op-"] { padding: 2px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap; }
+.pv-badge.op-search { background: rgba(14,165,233,.16); color: #7dd3fc; }
+.pv-badge.op-read { background: rgba(16,185,129,.16); color: #34d399; }
+.pv-badge.op-download { background: rgba(245,158,11,.16); color: #fbbf24; }
+.pv-badge.op-dicom { background: rgba(168,85,247,.18); color: #c4b5fd; }

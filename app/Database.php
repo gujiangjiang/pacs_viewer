@@ -68,8 +68,16 @@ class PvDatabase {
             keyword TEXT DEFAULT '',
             result_count INTEGER DEFAULT 0,
             ip TEXT DEFAULT '',
+            action TEXT DEFAULT 'search',
+            detail TEXT DEFAULT '',
             created_at TEXT DEFAULT ''
         )");
+        // 兼容旧库：补充 action / detail 列
+        $logCols = $pdo->query("PRAGMA table_info(query_log)")->fetchAll();
+        $logNames = array();
+        foreach ($logCols as $c) { if (isset($c['name'])) $logNames[$c['name']] = true; }
+        if (!isset($logNames['action'])) $pdo->exec("ALTER TABLE query_log ADD COLUMN action TEXT DEFAULT 'search'");
+        if (!isset($logNames['detail'])) $pdo->exec("ALTER TABLE query_log ADD COLUMN detail TEXT DEFAULT ''");
         // 通用上传记录（文件本体存放于 Web 根之外 data/uploads/，经路由鉴权下发）
         $pdo->exec("CREATE TABLE IF NOT EXISTS uploads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
