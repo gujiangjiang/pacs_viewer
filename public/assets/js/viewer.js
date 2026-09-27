@@ -501,6 +501,7 @@
             this.toolbar.sync(st); this.resize(); this.render(); return;
         }
         else if (a === 'copy-link') { this.copyDirectLink(); return; }
+        else if (a === 'dicom-info') { this.showDicomInfo(); return; }
         else if (a === 'save-image') { this.saveImage(); return; }
         else if (a === 'save-series') { this.saveSeries(); return; }
         else if (a === 'back') { if (window.PvNav) window.PvNav.go('search'); return; }
@@ -590,6 +591,78 @@
             self._triggerDownload(URL.createObjectURL(zip), base + '.zip');
             self.setStatus('已导出序列：' + base + '.zip（' + n + ' 帧）');
         }).catch(function () { self.setStatus('序列导出失败'); });
+    };
+
+    /* ---------- DICOM 详情 ---------- */
+    PvViewer.prototype.showDicomInfo = function () {
+        if (!window.PvModal) return;
+        var d = this.st.data || {}, p = d.patient || {}, s = d.study || {}, ser = this.curSeries() || {};
+        var meta = d.meta || {};
+        var isHU = this.frameIsHU();
+        var count = this.frameCount();
+        var seriesUid = /^\d[\d.]*$/.test(s.study_uid || '')
+            ? (s.study_uid + '.' + (ser.series_id || 1))
+            : ('1.2.826.0.1.3680043.8.498.' + (ser.seed || ser.series_id || '1'));
+        var section = function (title, rows) {
+            var h = '<div class="pv-dicom-sec"><h4>' + esc(title) + '</h4><table class="pv-dicom-table">';
+            rows.forEach(function (r) {
+                if (r[1] === undefined || r[1] === null || r[1] === '') return;
+                h += '<tr><th>' + esc(r[0]) + '</th><td>' + esc(r[1]) + '</td></tr>';
+            });
+            return h + '</table></div>';
+        };
+        var seriesList = (d.series || []).map(function (x) {
+            return 'Ser ' + x.series_id + ' · ' + (x.description || '') + '（' + (x.slice_count || 0) + ' 帧）';
+        }).join('；');
+        var html = '<div class="pv-dicom">' +
+            section('患者信息 (Patient)', [
+                ['PatientName（姓名）', p.name],
+                ['PatientID（患者号）', p.patient_id],
+                ['PatientBirthDate（出生日期）', p.birth_date],
+                ['PatientSex（性别）', p.gender],
+                ['Age（年龄）', p.age],
+                ['OutpatientNo（门诊号）', p.outpatient_no]
+            ]) +
+            section('检查信息 (Study)', [
+                ['StudyInstanceUID', s.study_uid],
+                ['AccessionNumber（检查号）', s.accession_no],
+                ['StudyDate（检查时间）', s.study_date],
+                ['Modality（模态）', s.modality],
+                ['StudyDescription（检查项目）', s.description],
+                ['InstitutionName（机构）', s.institution],
+                ['StationName（设备）', s.station_name],
+                ['ReferringDept（申请科室）', s.apply_dept],
+                ['ReferringPhysician（申请医生）', s.apply_doctor],
+                ['NumberOfSeries（序列数）', (d.series || []).length]
+            ]) +
+            section('序列信息 (Series)', [
+                ['SeriesNumber（序列号）', ser.series_id],
+                ['SeriesInstanceUID', seriesUid],
+                ['SeriesDescription（序列描述）', ser.description],
+                ['ImageOrientation（方位）', ser.orientation],
+                ['NumberOfFrames（帧数）', count],
+                ['SliceThickness（层厚）', ser.slice_thickness != null ? ser.slice_thickness : s.slice_thickness],
+                ['PixelSpacing（像素间距）', ser.pixel_spacing],
+                ['SeriesList（本检查序列）', seriesList]
+            ]) +
+            section('当前图像 (Instance)', [
+                ['InstanceNumber（帧号）', (this.st.fi + 1) + ' / ' + count],
+                ['Rows × Columns（矩阵）', '512 × 512'],
+                ['BitsAllocated（位深）', 16],
+                ['PhotometricInterpretation', 'MONOCHROME2'],
+                ['RescaleIntercept / Slope', '0 / 1'],
+                ['WindowWidth / WindowCenter', Math.round(this.st.ww) + ' / ' + Math.round(this.st.wl)],
+                ['PixelRepresentation（是否 HU）', isHU ? '有符号（HU）' : '无符号'],
+                ['Zoom / Rotation', Math.round(this.st.zoom * 100) + '% / ' + (((this.st.rot % 360) + 360) % 360) + '°'],
+                ['Flip（镜像）', (this.st.flipH ? 'H' : '') + (this.st.flipV ? 'V' : '') || 'N'],
+                ['Annotations（标注数）', this.st.annos.length]
+            ]) +
+            section('数据来源', [
+                ['Source（来源）', meta.source],
+                ['Mode（接口模式）', meta.mode],
+                ['IsMock（是否仿真影像）', ser.is_mock ? '是（前端算法生成）' : '否（真实图像）']
+            ]) + '</div>';
+        window.PvModal.open({ title: 'DICOM 详情 · ' + (s.accession_no || s.study_uid || ''), size: 'lg', body: html });
     };
 
     /** 复制本检查的阅片直链（地址栏固定时的对外分享 / 外部系统调用入口） */

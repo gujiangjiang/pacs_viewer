@@ -67,6 +67,7 @@ $pageData = array(
             <button type="button" class="pv-bigbtn" data-pv-menu="tools" title="更多工具">
                 <span class="pv-bi">🧰</span><span class="pv-bl">工具 ▾</span></button>
             <div class="pv-menu" data-pv-menu-panel="tools">
+                <button type="button" data-pv-act="dicom-info">🩻 DICOM 详情</button>
                 <button type="button" data-pv-act="copy-link">🔗 复制阅片直链</button>
                 <button type="button" data-pv-act="save-image">💾 保存当前图像</button>
                 <button type="button" data-pv-act="save-series">🗂 保存序列（ZIP）</button>

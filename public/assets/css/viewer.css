@@ -124,3 +124,22 @@
     font-family: "SFMono-Regular", Consolas, monospace; padding: 2px 8px; border-radius: 6px; white-space: nowrap; pointer-events: none;
 }
 .pv-vw-scroll.show-bubble .pv-vw-scroll-bubble { display: block; }
+
+/* DICOM 详情（模态框） */
+.pv-dicom { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; }
+.pv-dicom-sec { break-inside: avoid; }
+.pv-dicom-sec h4 {
+    margin: 0 0 6px; font-size: 13px; color: #7dd3fc;
+    border-bottom: 1px solid var(--pv-line); padding-bottom: 4px;
+}
+.pv-dicom-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pv-dicom-table th {
+    text-align: left; font-weight: 500; color: #64748b; padding: 3px 10px 3px 0;
+    white-space: nowrap; vertical-align: top; width: 44%;
+}
+.pv-dicom-table td {
+    color: var(--pv-txt); padding: 3px 0; word-break: break-all;
+    font-family: "SFMono-Regular", Consolas, "Courier New", monospace;
+}
+.pv-dicom-table tr { border-bottom: 1px solid rgba(30,41,59,.5); }
+@media (max-width: 640px) { .pv-dicom { grid-template-columns: 1fr; } }
