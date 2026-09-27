@@ -1,6 +1,6 @@
 # 模拟 Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.4.1-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.5.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -32,12 +32,15 @@
 - **模态框交互**：创建 / 编辑用户、重置密码、删除确认、日志清空等均为模态框。
 - **研究检索**：按姓名 / 患者号 / 检查号 / 门诊号 / 检查项目检索（数据来自 PACS 接口）。
 - **影像阅片器**：
+  - 商用 PACS 风格**大图标工具栏** + 下拉菜单（预设窗 / 测量 / 变换 / 工具）；
   - 窗宽窗位（WW/WL）拖拽调节 + 预设（软组织窗 / 肺窗 / 骨窗 / 默认窗）；
-  - 左侧序列栏（常驻，可由工具栏一键显隐）、多序列切换；
+  - 左侧栏**可展开 / 收起的患者信息卡**与序列缩略图（可整体隐藏）；
+  - **右侧帧滚动条**：多帧序列可拖动连续滚动（单帧自动隐藏）；
   - 滚轮连续翻帧（CT/MR Cine）、以指针为中心缩放、平移；
   - 顺时针 / 逆时针旋转 90°、水平 / 垂直镜像、正负片反色；
   - 线段测距（mm）、三点测角（°）、矩形 / 椭圆 ROI（mm² + 平均灰度）；
-  - 四角医学水印 OSD（不随平移缩放位移）。
+  - 四角医学水印 OSD（不随平移缩放位移）；
+  - **保存当前图像**（PNG）与**保存序列**（多帧打包 ZIP）。
 - **内置模拟 PACS 服务器**：对外 API（`search` / `study` / `ping`）供本浏览器或
   门诊系统调用；患者来源支持内置仿真 / 门诊 FHIR R4；可预览已缴费已登记患者、
   一键应用模拟数据、重新生成密钥、整体启停。
@@ -67,7 +70,7 @@
 │           ├── mock.js       #   模拟服务器页交互
 │           ├── viewer.js     #   阅片器主控制器
 │           └── modules/      #   render(虚拟影像) / osd(水印) / sidebar(序列栏)
-│                             #   / toolbar(工具栏) / measurements(测量)
+│                             #   / toolbar(工具栏) / measurements(测量) / zip(导出打包)
 ├── app/                      # 后端
 │   ├── bootstrap.php         #   引导（部署路径自适应 / 会话 / AJAX 助手 / 布局）
 │   ├── Database.php          #   自带 SQLite（建库建表播种设置）
