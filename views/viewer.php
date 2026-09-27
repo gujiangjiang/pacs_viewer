@@ -74,7 +74,7 @@ $pageData = array(
         </div>
         <div class="pv-menu-wrap">
             <button type="button" class="pv-bigbtn" data-pv-menu="transform" title="图像变换">
-                <span class="pv-bi">🔄</span><span class="pv-bl">变换 ▾</span></button>
+                <span class="pv-bi">⟳</span><span class="pv-bl">变换 ▾</span></button>
             <div class="pv-menu" data-pv-menu-panel="transform">
                 <button type="button" data-pv-act="rotate-ccw">↺ 逆时针 90°</button>
                 <button type="button" data-pv-act="rotate-cw">↻ 顺时针 90°</button>
@@ -85,7 +85,7 @@ $pageData = array(
         </div>
         <div class="pv-menu-wrap">
             <button type="button" class="pv-bigbtn" data-pv-menu="tools" title="更多工具">
-                <span class="pv-bi">🧰</span><span class="pv-bl">工具 ▾</span></button>
+                <span class="pv-bi">⚙</span><span class="pv-bl">工具 ▾</span></button>
             <div class="pv-menu" data-pv-menu-panel="tools">
                 <button type="button" data-pv-act="dicom-info">🩻 DICOM 详情</button>
                 <button type="button" data-pv-act="copy-link">🔗 复制阅片直链</button>
@@ -94,7 +94,7 @@ $pageData = array(
             </div>
         </div>
         <button type="button" class="pv-bigbtn" data-pv-act="about" title="关于本软件">
-            <span class="pv-bi">ℹ️</span><span class="pv-bl">关于</span></button>
+            <span class="pv-bi">ⓘ</span><span class="pv-bl">关于</span></button>
         <span class="pv-spacer"></span>
         <button type="button" class="pv-bigbtn pv-bigbtn-exit" data-pv-act="back" title="退出阅片，返回检索">
             <span class="pv-bi">⏻</span><span class="pv-bl">退出</span></button>
