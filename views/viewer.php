@@ -81,6 +81,12 @@ $pageData = array(
             <div class="pv-canvas-wrap"><canvas data-pv="canvas"></canvas></div>
             <div class="pv-vw-title" data-pv="title"></div>
             <div class="pv-vw-status" data-pv="status"></div>
+            <div class="pv-vw-scroll" data-pv="vscroll" hidden>
+                <div class="pv-vw-scroll-track" data-pv="vscroll-track">
+                    <div class="pv-vw-scroll-thumb" data-pv="vscroll-thumb"></div>
+                </div>
+                <div class="pv-vw-scroll-bubble" data-pv="vscroll-bubble"></div>
+            </div>
         </main>
     </div>
 </div>

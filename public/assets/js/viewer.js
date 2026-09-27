@@ -39,6 +39,8 @@
 
         this.cache = {}; this.cacheKeys = []; this.imgCache = {};
         this.sidebar = new PvSidebar(this.q('serieslist'));
+        this.scrollEl = this.q('vscroll'); this.scrollTrack = this.q('vscroll-track');
+        this.scrollThumb = this.q('vscroll-thumb'); this.scrollBubble = this.q('vscroll-bubble');
         this.toolbar = new PvToolbar(this.q('toolbar'), {
             onTool: this.setTool.bind(this),
             onPreset: this.setPreset.bind(this),
@@ -51,6 +53,7 @@
             tool: 'wl', annos: [], draft: null, drag: null
         };
         this._bind();
+        this._bindScrollbar();
         this.resize();
         var self = this;
         if (window.ResizeObserver) { this._ro = new ResizeObserver(function () { self.resize(); self.render(); }); this._ro.observe(this.stage); }
@@ -67,6 +70,70 @@
         if (this._upH) window.removeEventListener('pointerup', this._upH);
         if (this._onWinResize) window.removeEventListener('resize', this._onWinResize);
         this.st.drag = null; this.st.draft = null;
+    };
+
+    /** 右侧帧滚动条：多帧时显示，单帧隐藏；拖动/点击实现连续滚动 */
+    PvViewer.prototype.updateScrollbar = function () {
+        if (!this.scrollEl || !this.scrollTrack || !this.scrollThumb) return;
+        var n = this.frameCount();
+        if (n <= 1) { this.scrollEl.hidden = true; this.scrollEl.classList.remove('show-bubble'); return; }
+        this.scrollEl.hidden = false;
+        var trackH = this.scrollTrack.clientHeight || this.scrollEl.clientHeight || 1;
+        var thumbH = Math.max(28, Math.round(trackH / n));
+        if (thumbH > trackH) thumbH = trackH;
+        var maxTop = Math.max(0, trackH - thumbH);
+        var ratio = this.st.fi / (n - 1);
+        this.scrollThumb.style.height = thumbH + 'px';
+        this.scrollThumb.style.top = Math.round(maxTop * ratio) + 'px';
+    };
+    PvViewer.prototype._bindScrollbar = function () {
+        var self = this, track = this.scrollTrack, thumb = this.scrollThumb;
+        if (!track) return;
+        this._sb = { dragging: false, startY: 0, startTop: 0, hideTimer: null };
+        function bubble(n, fi) {
+            if (!self.scrollBubble) return;
+            self.scrollBubble.textContent = (fi + 1) + ' / ' + n;
+            self.scrollBubble.style.top = (thumb.offsetTop + thumb.offsetHeight / 2) + 'px';
+            self.scrollEl.classList.add('show-bubble');
+        }
+        function scheduleHide() {
+            clearTimeout(self._sb.hideTimer);
+            self._sb.hideTimer = setTimeout(function () { self.scrollEl.classList.remove('show-bubble'); }, 900);
+        }
+        function setFromY(clientY, fromThumb) {
+            var n = self.frameCount(); if (n <= 1) return;
+            var rect = track.getBoundingClientRect();
+            var trackH = rect.height;
+            var thumbH = thumb.offsetHeight;
+            var maxTop = Math.max(0, trackH - thumbH);
+            var top;
+            if (fromThumb) top = Math.max(0, Math.min(maxTop, self._sb.startTop + (clientY - self._sb.startY)));
+            else top = Math.max(0, Math.min(maxTop, clientY - rect.top - thumbH / 2));
+            var ratio = maxTop > 0 ? top / maxTop : 0;
+            var fi = Math.round(ratio * (n - 1));
+            self.setFrame(fi);
+            bubble(n, fi); scheduleHide();
+        }
+        function onMove(e) { if (!self._sb.dragging) return; e.preventDefault(); setFromY(e.clientY, true); }
+        function onUp() {
+            if (!self._sb.dragging) return;
+            self._sb.dragging = false;
+            self.scrollEl.classList.remove('dragging');
+            document.removeEventListener('pointermove', onMove);
+            document.removeEventListener('pointerup', onUp);
+        }
+        track.addEventListener('pointerdown', function (e) {
+            e.preventDefault();
+            if (e.target === thumb) {
+                self._sb.dragging = true; self._sb.startY = e.clientY; self._sb.startTop = thumb.offsetTop;
+                self.scrollEl.classList.add('dragging');
+                document.addEventListener('pointermove', onMove);
+                document.addEventListener('pointerup', onUp);
+            } else {
+                setFromY(e.clientY, false);
+            }
+        });
+        track.addEventListener('mouseleave', function () { if (!self._sb.dragging) self.scrollEl.classList.remove('show-bubble'); });
     };
 
     PvViewer.prototype.load = function () {
@@ -93,6 +160,7 @@
         this.fit();
         this.updateHud();
         this.toolbar.sync(this.st);
+        this.updateScrollbar();
     };
 
     PvViewer.prototype.applyDefaults = function () {
@@ -114,6 +182,7 @@
         this.cssW = w; this.cssH = h;
         this.canvas.width = Math.floor(w * this.dpr); this.canvas.height = Math.floor(h * this.dpr);
         this.canvas.style.width = w + 'px'; this.canvas.style.height = h + 'px';
+        this.updateScrollbar();
     };
 
     PvViewer.prototype.getMock = function (series, frame) {
@@ -195,7 +264,8 @@
         PvOsd.draw(ctx, {
             cssW: this.cssW, cssH: this.cssH, dpr: this.dpr, data: this.st.data,
             series: this.curSeries(), fi: st.fi, count: this.frameCount(),
-            ww: st.ww, wl: st.wl, zoom: st.zoom, rot: st.rot, flipH: st.flipH, flipV: st.flipV
+            ww: st.ww, wl: st.wl, zoom: st.zoom, rot: st.rot, flipH: st.flipH, flipV: st.flipV,
+            gutter: (this.scrollEl && !this.scrollEl.hidden) ? 22 : 0
         });
     };
     PvViewer.prototype.placeholder = function (t) {
@@ -434,13 +504,14 @@
         this.sidebar.setActive(i);
         this.applyDefaults(); this.fit();
         this.setStatus('序列 ' + (i + 1) + '：' + (this.curSeries().description || ''));
-        this.toolbar.sync(this.st); this.render(); this.updateHud();
+        this.toolbar.sync(this.st); this.render(); this.updateHud(); this.updateScrollbar();
     };
     PvViewer.prototype.setFrame = function (i) {
         var n = this.frameCount();
         i = clamp(i, 0, n - 1);
         this.st.fi = i; this.render();
         this.setStatus('切片 ' + (i + 1) + ' / ' + n);
+        this.updateScrollbar();
     };
     PvViewer.prototype.fit = function () {
         this.st.zoom = clamp(Math.min(this.cssW / BASE, this.cssH / BASE) * 0.92, 0.05, 16);
