@@ -1,0 +1,22 @@
+/* assets/css/mock.css — 模拟服务器页 */
+.pv-page-mock .pv-main { max-width: 1080px; width: 100%; margin: 0 auto; }
+.pv-page-mock .pv-card { margin-bottom: 18px; }
+.pv-alert-info { background: rgba(14,165,233,.12); border: 1px solid rgba(14,165,233,.35); color: #bae6fd; line-height: 1.8; }
+.pv-alert-info b { color: #e0f2fe; }
+.pv-copy-row { display: flex; gap: 8px; align-items: center; max-width: 760px; }
+.pv-copy-row input { flex: 1 1 auto; }
+.pv-inline-field { display: flex; flex-direction: column; }
+.pv-inline-field input[type=checkbox] { width: auto; max-width: none; margin: 2px 0 0; }
+.pv-btn-accent { background: #0ea5e9; border-color: #0ea5e9; color: #04121f; font-weight: 600; }
+.pv-btn-accent:hover { background: #38bdf8; color: #04121f; }
+.pv-hidden { display: none; }
+.pv-page-mock .pv-searchbox { display: flex; gap: 10px; padding: 6px 0 12px; }
+.pv-page-mock .pv-search-input { flex: 1 1 auto; }
+.pv-result-meta { font-size: 13px; color: var(--pv-txt2); margin: 4px 2px 10px; }
+.pv-mock-patients { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; margin-top: 8px; }
+.pv-mock-patient { background: #0b0f17; border: 1px solid var(--pv-line); border-radius: 10px; padding: 12px 14px; }
+.pv-mock-patient-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.pv-mock-patient-head b { color: #f1f5f9; font-size: 15px; }
+.pv-mock-patient-meta { font-size: 12px; color: var(--pv-txt2); line-height: 1.8; }
+.pv-mock-exam { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pv-mock-exam span { font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(14,165,233,.14); color: #7dd3fc; }

@@ -64,6 +64,12 @@ class PvPacsClient {
         $params['action'] = $action;
         $key = trim((string)PvSettings::get('pacs_api_key', ''));
         if ($key !== '') $params['key'] = $key;
+
+        // 指向内置模拟服务器时进程内直连，避免服务器向自身发起 HTTP 请求
+        if (PvMockServer::isSelfEndpoint($endpoint)) {
+            return self::mockRequest($action, $params);
+        }
+
         $url = $endpoint . (strpos($endpoint, '?') === false ? '?' : '&') . http_build_query($params);
         $timeout = max(1, (int)PvSettings::get('pacs_timeout', '5'));
 
@@ -75,6 +81,27 @@ class PvPacsClient {
             throw new RuntimeException('PACS 接口返回错误：' . (isset($j['msg']) ? $j['msg'] : '未知错误'));
         }
         return $j;
+    }
+
+    /** 进程内直连内置模拟服务器（等价于对外 API，返回同样的 JSON 结构） */
+    private static function mockRequest($action, array $params) {
+        if (!PvMockServer::enabled()) throw new RuntimeException('内置模拟服务器未启用');
+        $key = isset($params['key']) ? (string)$params['key'] : '';
+        if (!PvMockServer::checkKey($key)) throw new RuntimeException('内置模拟服务器密钥校验失败');
+        if ($action === 'ping') {
+            return array('code' => 200, 'msg' => 'success', 'data' => PvMockServer::ping());
+        }
+        if ($action === 'search') {
+            $q = isset($params['q']) ? (string)$params['q'] : '';
+            return array('code' => 200, 'msg' => 'success', 'data' => array('list' => PvMockServer::search($q)));
+        }
+        if ($action === 'study') {
+            $uid = isset($params['uid']) ? (string)$params['uid'] : '';
+            $d = PvMockServer::study($uid);
+            if (!$d) return array('code' => 404, 'msg' => '未找到该检查', 'data' => null);
+            return array('code' => 200, 'msg' => 'success', 'data' => $d);
+        }
+        return array('code' => 400, 'msg' => '未知操作', 'data' => null);
     }
 
     private static function httpGet($url, $timeout) {

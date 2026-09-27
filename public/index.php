@@ -27,6 +27,13 @@ $routes = array(
     'admin/user-password'   => array('PvAdminController', 'userPassword'),
     'admin/user-delete'     => array('PvAdminController', 'userDelete'),
     'admin/log-clear'       => array('PvAdminController', 'logClear'),
+    'mockserver'            => array('PvMockController', 'index'),
+    'mock'                  => array('PvMockController', 'api'),
+    'api/mock/save'         => array('PvMockController', 'save'),
+    'api/mock/key'          => array('PvMockController', 'regenKey'),
+    'api/mock/apply'        => array('PvMockController', 'apply'),
+    'api/mock/patients'     => array('PvMockController', 'patients'),
+    'api/mock/fhir-test'    => array('PvMockController', 'fhirTest'),
     'api/search'            => array('PvApiController', 'search'),
     'api/study'             => array('PvApiController', 'study'),
     'api/ping'              => array('PvApiController', 'ping'),
@@ -36,7 +43,7 @@ $routes = array(
  * 已完成安装后，安装入口不再可用。 */
 $pvInstalled = PvSettings::isInstalled();
 $isInstallRoute = ($r === 'install' || $r === 'install/submit');
-if (!$pvInstalled && !$isInstallRoute) {
+if (!$pvInstalled && !$isInstallRoute && $r !== 'mock') {
     pvw_redirect(pvw_url('install'));
 }
 if ($pvInstalled && $r === 'install') {

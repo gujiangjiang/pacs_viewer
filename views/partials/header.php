@@ -44,6 +44,7 @@ $pvPageData = isset($pageData) ? $pageData : array();
     <nav class="pv-nav" id="pvNav">
         <a class="<?php echo $pvActive === 'search' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('search')); ?>" data-nav="search">研究检索</a>
         <?php if ($pvUser && $pvUser['role'] === 'admin') { ?>
+        <a class="<?php echo $pvActive === 'mock' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('mockserver')); ?>" data-nav="mockserver">模拟服务器</a>
         <a class="<?php echo $pvActive === 'admin' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('admin')); ?>" data-nav="admin">管理设置</a>
         <?php } ?>
     </nav>

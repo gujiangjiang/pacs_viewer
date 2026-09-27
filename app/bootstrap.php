@@ -63,6 +63,8 @@ require_once PV_APP . '/Settings.php';
 require_once PV_APP . '/Auth.php';
 require_once PV_APP . '/Pacs/DemoPacs.php';
 require_once PV_APP . '/Pacs/PacsClient.php';
+require_once PV_APP . '/Pacs/FhirClient.php';
+require_once PV_APP . '/Pacs/MockServer.php';
 require_once PV_APP . '/Services/StudyService.php';
 require_once PV_APP . '/Repositories/UserRepository.php';
 require_once PV_APP . '/Repositories/QueryLogRepository.php';
@@ -71,6 +73,7 @@ require_once PV_APP . '/Controllers/InstallController.php';
 require_once PV_APP . '/Controllers/SearchController.php';
 require_once PV_APP . '/Controllers/ViewerController.php';
 require_once PV_APP . '/Controllers/AdminController.php';
+require_once PV_APP . '/Controllers/MockController.php';
 require_once PV_APP . '/Controllers/ApiController.php';
 
 PvDatabase::init();   // 首次访问自动建库 / 建表 / 播种管理员
