@@ -7,11 +7,21 @@
 }
 .pv-app * { user-select: none; -webkit-user-select: none; }
 
-/* 工具条 */
+/* 工具条（按功能分组的子 Tab） */
 .pv-vw-toolbar {
-    display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+    display: flex; flex-direction: column; align-items: stretch; gap: 6px;
     padding: 6px 10px; background: #0b0f17; border-bottom: 1px solid var(--pv-line);
 }
+.pv-vw-tabs { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.pv-tabbtn {
+    padding: 4px 12px; border: 1px solid var(--pv-line); border-radius: 6px;
+    background: #0f172a; color: var(--pv-txt2); cursor: pointer; font-size: 12px; white-space: nowrap;
+}
+.pv-tabbtn:hover { background: #1e293b; color: #fff; }
+.pv-tabbtn.active { background: rgba(14,165,233,.16); border-color: var(--pv-acc2); color: #7dd3fc; }
+.pv-vw-panes { display: flex; min-height: 30px; }
+.pv-vw-pane { display: none; align-items: center; gap: 4px; flex-wrap: wrap; }
+.pv-vw-pane.active { display: flex; }
 .pv-tbtn {
     display: inline-flex; align-items: center; gap: 4px;
     padding: 5px 9px; border: 1px solid var(--pv-line); border-radius: 6px;
@@ -19,7 +29,6 @@
 }
 .pv-tbtn:hover { background: #1e293b; color: #fff; border-color: var(--pv-line2); }
 .pv-tbtn.active { background: rgba(16,185,129,.18); border-color: var(--pv-acc); color: #6ee7b7; }
-.pv-tbtn-accent { margin-left: auto; }
 .pv-tsep { width: 1px; height: 20px; background: var(--pv-line); margin: 0 4px; }
 .pv-dd { position: relative; }
 .pv-dd > summary {
