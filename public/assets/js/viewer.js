@@ -639,6 +639,7 @@
         else if (layout === '4') { cols = '1fr 1fr'; rows = '1fr 1fr'; }
         this.panesEl.style.gridTemplateColumns = cols;
         this.panesEl.style.gridTemplateRows = rows;
+        this.panesEl.classList.toggle('multi', layout !== '1');
         var need = layout === '1' ? 1 : (layout === '4' ? 4 : 2);
         while (this.panes.length > need) { var p = this.panes.pop(); p.destroy(); }
         while (this.panes.length < need) { this.panes.push(new PvPane(this)); }
