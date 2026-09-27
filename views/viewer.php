@@ -2,7 +2,7 @@
 /** views/viewer.php — 阅片器页面（片段） */
 $page = 'viewer';
 $pageTitle = '影像';
-$active = 'imaging';
+$active = 'viewer';
 $bodyClass = 'pv-page-viewer';
 $extraCss = array('viewer.css');
 $extraJs = array('modules/render.js', 'modules/osd.js', 'modules/sidebar.js', 'modules/toolbar.js', 'modules/measurements.js', 'modules/zip.js', 'viewer.js');
