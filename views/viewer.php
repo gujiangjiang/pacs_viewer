@@ -23,12 +23,12 @@ $pageData = array(
 <div id="pvViewer" class="pv-app" data-pv="app">
     <div class="pv-vw-toolbar" data-pv="toolbar">
         <button type="button" class="pv-bigbtn" data-pv-act="toggle-sidebar" title="显示 / 隐藏左侧序列栏">
-            <span class="pv-bi">☰</span><span class="pv-bl">序列栏</span></button>
+            <span class="pv-bi"><?php echo pvw_icon('sidebar'); ?></span><span class="pv-bl">序列栏</span></button>
         <button type="button" class="pv-bigbtn" data-pv-tool="wl" title="窗宽窗位工具：选中后在图像上左右拖动改窗宽(WW)，上下拖动改窗位(WL)；亦可随时用右键拖拽调节">
-            <span class="pv-bi">◐</span><span class="pv-bl">窗宽窗位</span></button>
+            <span class="pv-bi"><?php echo pvw_icon('wl'); ?></span><span class="pv-bl">窗宽窗位</span></button>
         <div class="pv-menu-wrap">
             <button type="button" class="pv-bigbtn" data-pv-menu="preset" title="常用窗宽窗位预设">
-                <span class="pv-bi">🎚</span><span class="pv-bl">预设窗 ▾</span></button>
+                <span class="pv-bi"><?php echo pvw_icon('preset'); ?></span><span class="pv-bl">预设窗 ▾</span></button>
             <div class="pv-menu" data-pv-menu-panel="preset">
                 <button type="button" data-pv-preset="soft"><span class="ic">🟫</span> 软组织窗 (400 / 40)</button>
                 <button type="button" data-pv-preset="lung"><span class="ic">🫁</span> 肺窗 (1500 / -600)</button>
@@ -38,16 +38,16 @@ $pageData = array(
         </div>
         <span class="pv-tsep"></span>
         <button type="button" class="pv-bigbtn" data-pv-tool="zoom" title="缩放：拖动或滚轮以指针为中心缩放">
-            <span class="pv-bi">🔍</span><span class="pv-bl">缩放</span></button>
+            <span class="pv-bi"><?php echo pvw_icon('zoom'); ?></span><span class="pv-bl">缩放</span></button>
         <button type="button" class="pv-bigbtn" data-pv-tool="pan" title="平移：拖动移动画布">
-            <span class="pv-bi">✥</span><span class="pv-bl">平移</span></button>
+            <span class="pv-bi"><?php echo pvw_icon('pan'); ?></span><span class="pv-bl">平移</span></button>
         <button type="button" class="pv-bigbtn" data-pv-act="prev" title="上一帧">
-            <span class="pv-bi">⏮</span><span class="pv-bl">上一帧</span></button>
+            <span class="pv-bi"><?php echo pvw_icon('prev'); ?></span><span class="pv-bl">上一帧</span></button>
         <button type="button" class="pv-bigbtn" data-pv-act="next" title="下一帧 / 滚轮连续翻帧">
-            <span class="pv-bi">⏭</span><span class="pv-bl">下一帧</span></button>
+            <span class="pv-bi"><?php echo pvw_icon('next'); ?></span><span class="pv-bl">下一帧</span></button>
         <div class="pv-menu-wrap">
             <button type="button" class="pv-bigbtn" data-pv-menu="layout" title="视图分栏布局">
-                <span class="pv-bi">▦</span><span class="pv-bl">布局 ▾</span></button>
+                <span class="pv-bi"><?php echo pvw_icon('layout'); ?></span><span class="pv-bl">布局 ▾</span></button>
             <div class="pv-menu" data-pv-menu-panel="layout">
                 <button type="button" data-pv-layout="1"><span class="ic">▢</span> 单视图</button>
                 <button type="button" data-pv-layout="2h"><span class="ic">◫</span> 左右双视图</button>
@@ -56,13 +56,13 @@ $pageData = array(
             </div>
         </div>
         <button type="button" class="pv-bigbtn" data-pv-act="fit" title="图像适应窗口">
-            <span class="pv-bi">⛶</span><span class="pv-bl">适应窗口</span></button>
+            <span class="pv-bi"><?php echo pvw_icon('fit'); ?></span><span class="pv-bl">适应窗口</span></button>
         <button type="button" class="pv-bigbtn" data-pv-act="oneone" title="1:1 原始比例">
-            <span class="pv-bi">1:1</span><span class="pv-bl">原图</span></button>
+            <span class="pv-bi"><?php echo pvw_icon('oneone'); ?></span><span class="pv-bl">原图</span></button>
         <span class="pv-tsep"></span>
         <div class="pv-menu-wrap">
             <button type="button" class="pv-bigbtn" data-pv-menu="measure" title="测量工具">
-                <span class="pv-bi">📏</span><span class="pv-bl">测量 ▾</span></button>
+                <span class="pv-bi"><?php echo pvw_icon('measure'); ?></span><span class="pv-bl">测量 ▾</span></button>
             <div class="pv-menu" data-pv-menu-panel="measure">
                 <button type="button" data-pv-tool="length">📏 测距（mm）</button>
                 <button type="button" data-pv-tool="angle">📐 测角（°）</button>
@@ -74,7 +74,7 @@ $pageData = array(
         </div>
         <div class="pv-menu-wrap">
             <button type="button" class="pv-bigbtn" data-pv-menu="transform" title="图像变换">
-                <span class="pv-bi">⟳</span><span class="pv-bl">变换 ▾</span></button>
+                <span class="pv-bi"><?php echo pvw_icon('transform'); ?></span><span class="pv-bl">变换 ▾</span></button>
             <div class="pv-menu" data-pv-menu-panel="transform">
                 <button type="button" data-pv-act="rotate-ccw">↺ 逆时针 90°</button>
                 <button type="button" data-pv-act="rotate-cw">↻ 顺时针 90°</button>
@@ -85,7 +85,7 @@ $pageData = array(
         </div>
         <div class="pv-menu-wrap">
             <button type="button" class="pv-bigbtn" data-pv-menu="tools" title="更多工具">
-                <span class="pv-bi">⚙</span><span class="pv-bl">工具 ▾</span></button>
+                <span class="pv-bi"><?php echo pvw_icon('tools'); ?></span><span class="pv-bl">工具 ▾</span></button>
             <div class="pv-menu" data-pv-menu-panel="tools">
                 <button type="button" data-pv-act="dicom-info">🩻 DICOM 详情</button>
                 <button type="button" data-pv-act="copy-link">🔗 复制阅片直链</button>
@@ -94,10 +94,10 @@ $pageData = array(
             </div>
         </div>
         <button type="button" class="pv-bigbtn" data-pv-act="about" title="关于本软件">
-            <span class="pv-bi">ⓘ</span><span class="pv-bl">关于</span></button>
+            <span class="pv-bi"><?php echo pvw_icon('about'); ?></span><span class="pv-bl">关于</span></button>
         <span class="pv-spacer"></span>
         <button type="button" class="pv-bigbtn pv-bigbtn-exit" data-pv-act="back" title="关闭阅片，返回研究检索">
-            <span class="pv-bi">✕</span><span class="pv-bl">关闭</span></button>
+            <span class="pv-bi"><?php echo pvw_icon('close'); ?></span><span class="pv-bl">关闭</span></button>
     </div>
     <div class="pv-vw-body">
         <aside class="pv-filmstrip" data-pv="filmstrip">

@@ -25,7 +25,8 @@
 }
 .pv-bigbtn:hover { background: #141d30; color: #fff; }
 .pv-bigbtn.active { background: rgba(16,185,129,.16); border-color: var(--pv-acc); color: #6ee7b7; }
-.pv-bi { font-size: 19px; line-height: 1.15; }
+.pv-bi { display: flex; align-items: center; justify-content: center; height: 24px; }
+.pv-bi svg { width: 22px; height: 22px; display: block; }
 .pv-bl { font-size: 11px; color: var(--pv-txt2); }
 .pv-bigbtn.active .pv-bl, .pv-bigbtn:hover .pv-bl { color: inherit; }
 .pv-bigbtn-exit .pv-bi { color: #fca5a5; }
@@ -216,3 +217,6 @@
 }
 .pv-pane .pv-canvas-wrap { position: absolute; inset: 0; }
 .pv-pane canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+/* 菜单项图标统一占位，保证对齐 */
+.pv-menu button .ic, .pv-ctx-item .ic { display: inline-block; width: 16px; text-align: center; }
