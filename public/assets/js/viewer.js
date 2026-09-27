@@ -209,7 +209,11 @@
             this.restore(function () { self.openStudy(self.route.uid, 'append'); });
             return;
         }
-        this.restore(function () { if (!self.ws.studies.length) self.showEmpty(); else self.activate(self.pickRestoreActive(), false); });
+        this.restore(function () {
+            if (!self.ws.studies.length) { self.showEmpty(); return; }
+            self.activate(self.pickRestoreActive(), false);
+            self.setStatus('');
+        });
     };
     PvViewer.prototype.pickRestoreActive = function () {
         var saved = this.loadState();
@@ -306,6 +310,7 @@
         this.updateScrollbar();
         this.refreshControlState();
         this.render();
+        this.setStatus('');
     };
 
     PvViewer.prototype.updateTitle = function () {
