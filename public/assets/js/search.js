@@ -9,7 +9,7 @@
             .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    var input, btn, box, empty, meta, onDocKey;
+    var input, btn, box, empty, meta, onDocKey, clearChk;
 
     function render(list) {
         box.innerHTML = '';
@@ -38,7 +38,8 @@
                 '<div class="pv-study-foot"><span class="pv-study-status">' + esc(s.status_name || '已完成') + '</span>' +
                 '<span class="pv-study-open">打开影像 →</span></div>';
             el.addEventListener('click', function () {
-                global.PvNav.go('viewer', { uid: s.study_uid || s.accession_no });
+                var mode = (clearChk && clearChk.checked) ? 'replace' : 'append';
+                global.PvNav.go('viewer', { uid: s.study_uid || s.accession_no, mode: mode });
             });
             box.appendChild(el);
         });
@@ -84,6 +85,13 @@
             meta = document.getElementById('pvResultMeta');
             if (!input || !btn || !box) return;
             if (data.flash) PvUI.toast(data.flash, 'ok');
+            clearChk = document.getElementById('pvClearOnOpen');
+            if (clearChk) {
+                try { clearChk.checked = localStorage.getItem('pacs_clear_on_open') === '1'; } catch (e) {}
+                clearChk.addEventListener('change', function () {
+                    try { localStorage.setItem('pacs_clear_on_open', clearChk.checked ? '1' : '0'); } catch (e) {}
+                });
+            }
             btn.addEventListener('click', doSearch);
             onDocKey = function (e) {
                 if (e.key === 'Enter' && document.activeElement === input) { e.preventDefault(); doSearch(); }

@@ -57,6 +57,7 @@ $pvPageData = isset($pageData) ? $pageData : array();
     </a>
     <nav class="pv-nav" id="pvNav">
         <a class="<?php echo $pvActive === 'search' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('search')); ?>" data-nav="search">研究检索</a>
+        <a class="<?php echo $pvActive === 'imaging' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('viewer')); ?>" data-nav="viewer">影像</a>
         <?php if ($pvUser && $pvUser['role'] === 'admin') { ?>
         <a class="<?php echo $pvActive === 'admin' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('admin')); ?>" data-nav="admin">管理设置</a>
         <?php } ?>
@@ -64,7 +65,8 @@ $pvPageData = isset($pageData) ? $pageData : array();
     <div class="pv-user">
         <?php if ($pvUser) { ?>
         <span class="pv-user-name"><?php echo pvw_e($pvUser['display_name'] !== '' ? $pvUser['display_name'] : $pvUser['username']); ?><?php echo $pvUser['role'] === 'admin' ? ' · 管理员' : ''; ?></span>
-        <a class="pv-btn pv-btn-ghost pv-btn-sm" href="<?php echo pvw_e(pvw_url('logout')); ?>" data-no-nav="1">退出</a>
+        <a class="pv-btn pv-btn-ghost pv-btn-sm" href="<?php echo pvw_e(pvw_url('logout')); ?>" data-no-nav="1"
+           onclick="try{sessionStorage.removeItem('pacs_workspace_v1')}catch(e){}">退出</a>
         <?php } ?>
     </div>
 </header>

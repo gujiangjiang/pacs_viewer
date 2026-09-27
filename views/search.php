@@ -16,7 +16,9 @@ $pageData = array('mode' => $mode, 'flash' => isset($flash) ? $flash : '');
     </form>
     <div class="pv-search-meta">
         <span>数据来源：<b id="pvMode" class="<?php echo $mode === 'Remote' ? 'is-remote' : 'is-demo'; ?>"><?php echo $mode === 'Remote' ? '远程 PACS 接口' : '未配置 PACS 接口'; ?></b></span>
-        <span class="pv-dim">仅显示已开单、已缴费、已登记并完成检查的患者</span>
+        <label class="pv-check" title="勾选后打开影像会先清空影像视图；不勾选则追加到已打开的检查之后">
+            <input type="checkbox" id="pvClearOnOpen"> 打开影像时清空已加载序列
+        </label>
     </div>
 </div>
 

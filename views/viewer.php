@@ -1,15 +1,17 @@
 <?php
 /** views/viewer.php — 阅片器页面（片段） */
 $page = 'viewer';
-$pageTitle = '影像阅片';
-$active = 'search';
+$pageTitle = '影像';
+$active = 'imaging';
 $bodyClass = 'pv-page-viewer';
 $extraCss = array('viewer.css');
 $extraJs = array('modules/render.js', 'modules/osd.js', 'modules/sidebar.js', 'modules/toolbar.js', 'modules/measurements.js', 'modules/zip.js', 'viewer.js');
 $pageData = array(
-    'uid'     => $uid,
-    'isAdmin' => PvAuth::isAdmin(),
-    'direct'  => pvw_url('viewer', array('uid' => $uid)),
+    'uid'        => $uid,
+    'mode'       => $mode,
+    'studyLimit' => (int)PvSettings::get('viewer_study_limit', '5'),
+    'isAdmin'    => PvAuth::isAdmin(),
+    'direct'     => $uid !== '' ? pvw_url('viewer', array('uid' => $uid)) : '',
 );
 ?>
 <div id="pvViewer" class="pv-app" data-pv="app">
@@ -81,15 +83,8 @@ $pageData = array(
     </div>
     <div class="pv-vw-body">
         <aside class="pv-filmstrip" data-pv="filmstrip">
-            <div class="pv-series-head" data-pv="series-head" role="button" tabindex="0"
-                 title="点击展开 / 收起序列图像">
-                <div class="pv-sh-row">
-                    <span class="pv-pc-name" data-pv="pc-name">—</span>
-                    <span class="pv-pc-sub" data-pv="pc-sub"></span>
-                </div>
-                <div class="pv-sh-meta" data-pv="pc-meta"></div>
-            </div>
             <div class="pv-serieslist" data-pv="serieslist"></div>
+            <button type="button" class="pv-closeall" data-pv="closeall" title="清空影像视图中全部检查序列">关闭全部</button>
         </aside>
         <main class="pv-stage">
             <div class="pv-canvas-wrap"><canvas data-pv="canvas"></canvas></div>

@@ -19,10 +19,14 @@
             .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    function PvViewer(root, uid, direct) {
+    function PvViewer(root, opts) {
+        opts = opts || {};
         this.root = root;
-        this.uid = uid;
-        this.direct = direct || '';
+        this.route = { uid: opts.uid || '', mode: opts.mode || 'append' };
+        this.direct = opts.direct || '';
+        this.studyLimit = parseInt(opts.limit, 10) || 5;
+        if (this.studyLimit < 3) this.studyLimit = 3;
+        if (this.studyLimit > 10) this.studyLimit = 10;
         this.q = function (k) { return root.querySelector('[data-pv="' + k + '"]'); };
         this.canvas = this.q('canvas');
         this.ctx = this.canvas.getContext('2d');
@@ -32,8 +36,8 @@
         this.huEl = this.q('hu');
         this.ctxEl = this.q('ctxmenu');
         this.filmstripEl = this.q('filmstrip');
-        this.pcName = this.q('pc-name'); this.pcSub = this.q('pc-sub'); this.pcMeta = this.q('pc-meta');
-        this.seriesHeadEl = this.q('series-head'); this.seriesListEl = this.q('serieslist');
+        this.seriesListEl = this.q('serieslist');
+        this.closeAllEl = this.q('closeall');
         this.dpr = window.devicePixelRatio || 1;
 
         this.work = document.createElement('canvas'); this.work.width = BASE; this.work.height = BASE;
@@ -55,16 +59,17 @@
             zoom: 1, panX: 0, panY: 0, rot: 0, flipH: false, flipV: false, invert: false,
             tool: 'wl', annos: [], draft: null, drag: null
         };
+        this.ws = { studies: [], active: -1 };
         this._bind();
         this._bindScrollbar();
-        this._bindSeriesHead();
+        this._bindCloseAll();
         this._bindCtxMenu();
         this.resize();
         var self = this;
         if (window.ResizeObserver) { this._ro = new ResizeObserver(function () { self.resize(); self.render(); }); this._ro.observe(this.stage); }
         else window.addEventListener('resize', this._onWinResize = function () { self.resize(); self.render(); });
         this.render();
-        this.load();
+        this.boot();
     }
 
     PvViewer.prototype.setStatus = function (m) { if (this.statusEl) this.statusEl.textContent = m || ''; };
@@ -148,23 +153,166 @@
         track.addEventListener('mouseleave', function () { if (!self._sb.dragging) self.scrollEl.classList.remove('show-bubble'); });
     };
 
-    /** 序列标题：点击展开 / 收起下方序列图像 */
-    PvViewer.prototype._bindSeriesHead = function () {
-        var self = this, head = this.seriesHeadEl;
-        if (!head) return;
-        head.addEventListener('click', function () { self.toggleSeriesList(); });
-        head.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); self.toggleSeriesList(); }
+    /** 底部「关闭全部」按钮 */
+    PvViewer.prototype._bindCloseAll = function () {
+        var self = this, btn = this.closeAllEl;
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+            if (!self.ws.studies.length) return;
+            var run = function () { self.closeAll(); };
+            if (window.PvModal) {
+                PvModal.confirm({ title: '关闭全部', message: '确认清空影像视图中的全部检查序列？', okText: '关闭全部', danger: true }).then(function (ok) { if (ok) run(); });
+            } else run();
         });
     };
-    PvViewer.prototype.toggleSeriesList = function () {
-        if (!this.seriesListEl || !this.seriesHeadEl) return;
-        var collapsed = this.seriesListEl.classList.toggle('is-collapsed');
-        this.seriesHeadEl.classList.toggle('collapsed', collapsed);
-        this.setStatus(collapsed ? '序列已收起' : '序列已展开');
+    PvViewer.prototype.closeAll = function () {
+        this.ws.studies = []; this.ws.active = -1;
+        this.st.data = null; this.st.series = []; this.st.si = 0; this.st.fi = 0;
+        this.clearState();
+        this.renderSidebar();
+        this.updateTitle();
+        this.updateScrollbar();
+        this.render();
+        this.setStatus('');
     };
 
-    /* ---------- 操作日志 ---------- */
+    /* ---------- 影像视图（多检查工作区） ---------- */
+    PvViewer.prototype.indexOf = function (uid) {
+        for (var i = 0; i < this.ws.studies.length; i++) if (this.ws.studies[i].uid === uid) return i;
+        return -1;
+    };
+    PvViewer.prototype.activeStudy = function () { return this.ws.studies[this.ws.active] || null; };
+
+    /** 启动：URL 指定检查则打开；追加模式下先恢复本会话已打开的影像再追加 */
+    PvViewer.prototype.boot = function () {
+        var self = this;
+        if (this.route.uid) {
+            if (this.route.mode === 'replace') { this.openStudy(this.route.uid, 'replace'); return; }
+            this.restore(function () { self.openStudy(self.route.uid, 'append'); });
+            return;
+        }
+        this.restore(function () { if (!self.ws.studies.length) self.showEmpty(); else self.activate(self.pickRestoreActive(), false); });
+    };
+    PvViewer.prototype.pickRestoreActive = function () {
+        var saved = this.loadState();
+        if (saved && typeof saved.active === 'number' && saved.active >= 0 && saved.active < this.ws.studies.length) return saved.active;
+        return this.ws.studies.length - 1;
+    };
+    /** 恢复本会话已打开检查（不重放读片日志） */
+    PvViewer.prototype.restore = function (cb) {
+        var self = this, saved = this.loadState();
+        if (!saved || !saved.studies || !saved.studies.length) { if (cb) cb(); return; }
+        this.setStatus('正在恢复影像视图…');
+        var restored = [], chain = Promise.resolve();
+        saved.studies.forEach(function (item) {
+            chain = chain.then(function () {
+                return PvApi.study(item.uid).then(function (j) {
+                    if (j && j.code === 200 && j.data) {
+                        restored.push({
+                            uid: item.uid, data: j.data, series: j.data.series || [],
+                            si: item.si || 0, fi: item.fi || 0, collapsed: !!item.collapsed
+                        });
+                    }
+                }).catch(function () {});
+            });
+        });
+        chain.then(function () { self.ws.studies = restored; if (cb) cb(); });
+    };
+
+    /** 打开检查：已存在则定位展开；replace 清空后打开，append 追加并收起其他 */
+    PvViewer.prototype.openStudy = function (uid, mode) {
+        var self = this;
+        var idx = this.indexOf(uid);
+        if (idx >= 0) { this.activate(idx, true); this.setStatus('该检查已在影像视图中打开，已定位'); return; }
+        this.setStatus('正在加载影像数据…');
+        PvApi.study(uid).then(function (j) {
+            if (!j || j.code !== 200 || !j.data) { self.setStatus((j && j.msg) || '数据加载失败'); return; }
+            if (mode === 'replace') { self.ws.studies = []; self.ws.active = -1; }
+            self.ws.studies.push({ uid: uid, data: j.data, series: j.data.series || [], si: 0, fi: 0, collapsed: false });
+            while (self.ws.studies.length > self.studyLimit) self.ws.studies.shift();
+            self.ws.studies.forEach(function (x, k) { x.collapsed = (k !== self.ws.studies.length - 1); });
+            self.activate(self.ws.studies.length - 1, false);
+            self.logEvent('read');
+            self.setStatus('');
+        }).catch(function () { self.setStatus('网络请求失败'); });
+    };
+
+    /** 激活某个检查（expand=true 时展开其序列） */
+    PvViewer.prototype.activate = function (i, expand) {
+        if (i < 0 || i >= this.ws.studies.length) return;
+        this.ws.active = i;
+        var s = this.ws.studies[i];
+        if (expand) s.collapsed = false;
+        this.st.data = s.data;
+        this.st.series = s.series || [];
+        this.st.si = (s.si >= 0 && s.si < this.st.series.length) ? s.si : 0;
+        this.st.fi = s.fi || 0;
+        this._wheelAcc = 0;
+        this.st.annos = []; this.st.draft = null;
+        this.renderSidebar();
+        this.updateTitle();
+        this.applyDefaults();
+        this.fit();
+        this.toolbar.sync(this.st);
+        this.updateScrollbar();
+        this.persist();
+    };
+
+    PvViewer.prototype.renderSidebar = function () {
+        var self = this;
+        this.sidebar.renderStudies(this.ws.studies, this.ws.active, {
+            onSeries: function (gi, si) { if (gi !== self.ws.active) { self.activate(gi, true); } self.setSeries(si); },
+            onToggle: function (gi) { var s = self.ws.studies[gi]; if (!s) return; s.collapsed = !s.collapsed; self.renderSidebar(); self.persist(); },
+            onClose: function (gi) { self.removeStudy(gi); }
+        });
+    };
+    PvViewer.prototype.removeStudy = function (gi) {
+        if (gi < 0 || gi >= this.ws.studies.length) return;
+        var wasActive = this.ws.active;
+        this.ws.studies.splice(gi, 1);
+        if (!this.ws.studies.length) { this.closeAll(); return; }
+        var act;
+        if (gi < wasActive) act = wasActive - 1;
+        else if (gi === wasActive) act = Math.min(gi, this.ws.studies.length - 1);
+        else act = wasActive;
+        this.ws.active = -1;
+        this.activate(act, false);
+    };
+
+    PvViewer.prototype.showEmpty = function () {
+        this.ws.studies = []; this.ws.active = -1;
+        this.st.data = null; this.st.series = []; this.st.si = 0; this.st.fi = 0;
+        this.renderSidebar();
+        this.updateTitle();
+        this.updateScrollbar();
+        this.render();
+    };
+
+    PvViewer.prototype.updateTitle = function () {
+        if (!this.titleEl) return;
+        var s = (this.st.data && this.st.data.study) || {};
+        this.titleEl.textContent = this.st.series.length
+            ? ((s.modality || '') + ' · ' + (s.description || '') + (s.accession_no ? ' · ' + s.accession_no : ''))
+            : '';
+    };
+
+    /* ---------- 会话记忆 ---------- */
+    PvViewer.prototype.persist = function () {
+        try {
+            var state = {
+                active: this.ws.active,
+                studies: this.ws.studies.map(function (x) { return { uid: x.uid, si: x.si, fi: x.fi, collapsed: !!x.collapsed }; })
+            };
+            sessionStorage.setItem('pacs_workspace_v1', JSON.stringify(state));
+        } catch (e) {}
+    };
+    PvViewer.prototype.loadState = function () {
+        try { return JSON.parse(sessionStorage.getItem('pacs_workspace_v1')); } catch (e) { return null; }
+    };
+    PvViewer.prototype.clearState = function () {
+        try { sessionStorage.removeItem('pacs_workspace_v1'); } catch (e) {}
+    };
+
     PvViewer.prototype.logEvent = function (action, extra) {
         if (!window.PvApi || !PvApi.log) return;
         var d = this.st.data || {}, p = d.patient || {}, s = d.study || {};
@@ -268,34 +416,6 @@
         window.addEventListener('scroll', this._ctxViewport, true);
     };
 
-    PvViewer.prototype.load = function () {
-        var self = this;
-        this.setStatus('正在加载影像数据…');
-        PvApi.study(this.uid).then(function (j) {
-            if (!j || j.code !== 200 || !j.data) { self.setStatus((j && j.msg) || '数据加载失败'); return; }
-            self.setData(j.data);
-            self.setStatus('');   // 加载完成后清除加载提示
-        }).catch(function () { self.setStatus('网络请求失败'); });
-    };
-
-    PvViewer.prototype.setData = function (data) {
-        this.st.data = data;
-        this.st.series = (data.series && data.series.length) ? data.series : [];
-        this.st.si = 0; this.st.fi = 0;
-        if (this.titleEl) {
-            var s = data.study || {};
-            this.titleEl.textContent = (s.modality || '') + ' · ' + (s.description || '') + (s.accession_no ? ' · ' + s.accession_no : '');
-        }
-        var self = this;
-        this.sidebar.render(this.st.series, 0, function (i) { self.setSeries(i); });
-        this.applyDefaults();
-        this.fit();
-        this.updateHud();
-        this.toolbar.sync(this.st);
-        this.updateScrollbar();
-        this.logEvent('read');
-    };
-
     PvViewer.prototype.applyDefaults = function () {
         var s = this.st.data && this.st.data.study ? this.st.data.study : {};
         if (this.frameIsHU()) {
@@ -382,7 +502,7 @@
         } else if (src && src.kind === 'loading') {
             this.placeholder('正在解码图像…');
         } else {
-            this.placeholder('暂无影像');
+            this.placeholder(this.st.series.length ? '暂无影像' : '请在「研究检索」中选择检查\n或点击顶部「影像」查看已打开的检查', true);
         }
         if (winCanvas) {
             ctx.save();
@@ -401,11 +521,16 @@
             gutter: (this.scrollEl && !this.scrollEl.hidden) ? 22 : 0
         });
     };
-    PvViewer.prototype.placeholder = function (t) {
+    PvViewer.prototype.placeholder = function (t, big) {
         var ctx = this.ctx;
         ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-        ctx.fillStyle = '#64748b'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(t, this.cssW / 2, this.cssH / 2);
+        ctx.fillStyle = big ? '#475569' : '#64748b';
+        ctx.font = (big ? '15px' : '14px') + ' sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        var lines = String(t).split('\n');
+        var lh = big ? 26 : 20;
+        var y0 = this.cssH / 2 - (lines.length - 1) * lh / 2;
+        for (var i = 0; i < lines.length; i++) ctx.fillText(lines[i], this.cssW / 2, y0 + i * lh);
     };
 
     PvViewer.prototype._trig = function () { var r = this.st.rot * Math.PI / 180; return { c: Math.cos(r), s: Math.sin(r) }; };
@@ -786,9 +911,11 @@
         this.logEvent('dicom');
     };
 
-    /** 复制本检查的阅片直链（地址栏固定时的对外分享 / 外部系统调用入口） */
-    PvViewer.prototype.copyDirectLink = function () {        var link = this.direct || (window.PvNav ? window.PvNav.route('viewer', { uid: this.uid }) : '');
-        if (!link) return;
+    /** 复制当前检查的阅片直链（地址栏固定时的对外分享 / 外部系统调用入口） */
+    PvViewer.prototype.copyDirectLink = function () {
+        var uid = this.route.uid || (this.activeStudy() ? this.activeStudy().uid : '');
+        var link = this.direct || (window.PvNav ? window.PvNav.route('viewer', { uid: uid }) : '');
+        if (!link || !uid) { this.setStatus('没有可复制的检查'); return; }
         var done = function () { this.setStatus('已复制阅片直链：' + link); }.bind(this);
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(link).then(done, done);
@@ -801,28 +928,27 @@
         if (i < 0 || i >= this.st.series.length) return;
         this.st.si = i; this.st.fi = 0;
         this._wheelAcc = 0;
-        this.sidebar.setActive(i);
+        var s = this.activeStudy(); if (s) { s.si = i; s.fi = 0; }
+        this.renderSidebar();
         this.applyDefaults(); this.fit();
         this.setStatus('序列 ' + (i + 1) + '：' + (this.curSeries().description || ''));
-        this.toolbar.sync(this.st); this.render(); this.updateHud(); this.updateScrollbar();
+        this.toolbar.sync(this.st); this.render(); this.updateScrollbar();
+        this.persist();
     };
     PvViewer.prototype.setFrame = function (i) {
         var n = this.frameCount();
         i = clamp(i, 0, n - 1);
-        this.st.fi = i; this.render();
+        this.st.fi = i;
+        var s = this.activeStudy(); if (s) s.fi = i;
+        this.render();
         this.setStatus('切片 ' + (i + 1) + ' / ' + n);
         this.updateScrollbar();
+        this.persist();
     };
     PvViewer.prototype.fit = function () {
         this.st.zoom = clamp(Math.min(this.cssW / BASE, this.cssH / BASE) * 0.92, 0.05, 16);
         this.st.panX = 0; this.st.panY = 0;
         this.render();
-    };
-    PvViewer.prototype.updateHud = function () {
-        var data = this.st.data || {}, p = data.patient || {}, s = data.study || {};
-        if (this.pcName) this.pcName.textContent = p.name || '—';
-        if (this.pcSub) this.pcSub.textContent = (p.gender || '') + (p.age ? '　' + p.age : '');
-        if (this.pcMeta) this.pcMeta.textContent = s.modality || '';
     };
 
     /* ---------- 启动（页面生命周期由 spa.js / 页脚统一调度） ---------- */
@@ -832,9 +958,14 @@
         init: function (data) {
             data = data || {};
             var root = document.querySelector('[data-pv="app"]');
-            if (!root || !data.uid) return;
+            if (!root) return;
             if (instance) { try { instance.destroy(); } catch (e) {} instance = null; }
-            instance = new PvViewer(root, data.uid, data.direct);
+            instance = new PvViewer(root, {
+                uid: data.uid || '',
+                mode: data.mode || 'append',
+                direct: data.direct || '',
+                limit: data.studyLimit || 5
+            });
         },
         destroy: function () {
             if (instance) { try { instance.destroy(); } catch (e) {} instance = null; }

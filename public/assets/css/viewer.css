@@ -59,21 +59,33 @@
 .pv-serieslist::-webkit-scrollbar { width: 8px; }
 .pv-serieslist::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
 
-/* 患者 / 序列标题（点击展开、收起下方序列图像） */
-.pv-series-head {
-    position: relative; flex: 0 0 auto; cursor: pointer; user-select: none;
-    background: #0b0f17; border: 1px solid var(--pv-line); border-radius: 9px; padding: 8px 22px 8px 10px;
+/* 检查分组（每个检查一个可折叠标题 + 序列缩略图） */
+.pv-sg { margin-bottom: 10px; border: 1px solid var(--pv-line); border-radius: 9px; overflow: hidden; }
+.pv-sg.active { border-color: rgba(16,185,129,.5); }
+.pv-sg-head {
+    position: relative; display: flex; align-items: center; gap: 6px;
+    padding: 7px 8px; cursor: pointer; background: #0b0f17;
 }
-.pv-series-head:hover { border-color: var(--pv-line2); background: #0e1626; }
-.pv-series-head::after {
-    content: '▾'; position: absolute; right: 9px; top: 10px; color: var(--pv-txt2); font-size: 11px;
+.pv-sg-head:hover { background: #0e1626; }
+.pv-sg-head::after { content: '▾'; position: absolute; right: 20px; color: var(--pv-txt2); font-size: 11px; }
+.pv-sg.collapsed .pv-sg-head::after { content: '▸'; }
+.pv-sg-title { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.pv-sg-name { font-size: 13px; font-weight: 700; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-sg-sub { font-size: 10px; color: var(--pv-txt2); }
+.pv-sg-mod { font-size: 10px; padding: 1px 6px; border-radius: 6px; background: rgba(14,165,233,.16); color: #7dd3fc; }
+.pv-sg-close {
+    border: 0; background: transparent; color: var(--pv-txt2); cursor: pointer;
+    font-size: 15px; line-height: 1; padding: 0 2px;
 }
-.pv-series-head.collapsed::after { content: '▸'; }
-.pv-sh-row { display: flex; align-items: baseline; gap: 6px; }
-.pv-pc-name { font-size: 14px; font-weight: 700; color: #f1f5f9; }
-.pv-pc-sub { font-size: 11px; color: var(--pv-txt2); }
-.pv-sh-meta { margin-top: 3px; font-size: 11px; color: #64748b; line-height: 1.5; word-break: break-all; }
-.pv-serieslist.is-collapsed { display: none; }
+.pv-sg-close:hover { color: #fca5a5; }
+.pv-sg-series { padding: 6px; }
+.pv-sg.collapsed .pv-sg-series { display: none; }
+
+.pv-closeall {
+    flex: 0 0 auto; margin-top: 6px; padding: 7px; border: 1px solid var(--pv-line2);
+    border-radius: 8px; background: #0f172a; color: var(--pv-txt2); cursor: pointer; font-size: 12px;
+}
+.pv-closeall:hover { background: rgba(239,68,68,.14); color: #fecaca; border-color: rgba(239,68,68,.4); }
 .pv-thumb {
     position: relative; margin: 0 0 10px; padding: 4px; border: 2px solid transparent;
     border-radius: 9px; background: #0b0f17; cursor: pointer; overflow: hidden;
