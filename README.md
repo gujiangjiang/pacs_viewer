@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.8.1-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.9.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -35,6 +35,10 @@
   单独关闭 / 展开多个），会话内记忆已打开的检查与序列位置；支持追加或清空打开、
   已打开检查自动定位，超过管理员设置的序列上限自动移除最早检查；底部「关闭全部」
   一键清空并显示空态占位。
+- **分栏视图**：工具栏「布局」支持 单视图 / 左右双视图 / 上下双视图 / 四视图；
+  每个窗格是独立视窗（含 OSD、帧滚动条、右键菜单、测量），点击窗格激活（绿色
+  描边），工具栏操作作用于激活窗格；点击左侧序列即载入激活窗格，便于对比阅片。
+- **可调节序列栏**：拖动序列栏与视图之间的分隔条调整宽度（双击复位，单次登录内记忆）。
 - **影像阅片器**：
   - 商用 PACS 风格**大图标工具栏** + 下拉菜单（预设窗 / 测量 / 变换 / 工具）；
   - **自定义右键快捷菜单**（预设窗 / 缩放 / 平移 / 使用窗口 / 原图 / 测量 / 变换，含二级菜单）；
