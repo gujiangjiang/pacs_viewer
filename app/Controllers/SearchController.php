@@ -10,10 +10,11 @@ class PvSearchController {
         pvw_page('search', array(
             'user'    => $u,
             'flash'   => $flash,
-            'site'    => PvSettings::get('site_title', '模拟 PACS 影像浏览器'),
+            'site'    => PvSettings::get('site_title', 'PACS 影像浏览器'),
             'hospital'=> PvSettings::get('hospital_name', ''),
             'mode'    => PvPacsClient::mode(),
             'isAdmin' => PvAuth::isAdmin(),
+            'clearOnOpen' => !empty($u['clear_on_open']) ? 1 : 0,
         ));
     }
 }

@@ -30,7 +30,7 @@ class PvAuth {
     public static function user() {
         if (empty($_SESSION['pv_uid'])) return null;
         // 实时校验账号有效性（停用即失效）
-        $u = PvDatabase::one("SELECT id,username,display_name,role,status FROM users WHERE id=?", array((int)$_SESSION['pv_uid']));
+        $u = PvDatabase::one("SELECT id,username,display_name,role,status,clear_on_open FROM users WHERE id=?", array((int)$_SESSION['pv_uid']));
         if (!$u || (int)$u['status'] !== 1) { self::logout(); return null; }
         return $u;
     }

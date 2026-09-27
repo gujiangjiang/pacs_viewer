@@ -50,6 +50,7 @@ class PvDatabase {
             role TEXT NOT NULL DEFAULT 'user',
             status INTEGER NOT NULL DEFAULT 1,
             is_owner INTEGER NOT NULL DEFAULT 0,
+            clear_on_open INTEGER NOT NULL DEFAULT 0,
             created_at TEXT DEFAULT ''
         )");
         // 兼容旧库：补充 is_owner 列（首次运行安装时创建的管理员受保护，不可删除 / 停用）
@@ -57,6 +58,10 @@ class PvDatabase {
         $hasOwner = false;
         foreach ($cols as $c) { if (isset($c['name']) && $c['name'] === 'is_owner') { $hasOwner = true; break; } }
         if (!$hasOwner) { $pdo->exec("ALTER TABLE users ADD COLUMN is_owner INTEGER NOT NULL DEFAULT 0"); }
+        // 兼容旧库：用户偏好——打开影像时是否清空已加载序列（默认 0，不勾选）
+        $hasClear = false;
+        foreach ($cols as $c) { if (isset($c['name']) && $c['name'] === 'clear_on_open') { $hasClear = true; break; } }
+        if (!$hasClear) { $pdo->exec("ALTER TABLE users ADD COLUMN clear_on_open INTEGER NOT NULL DEFAULT 0"); }
 
         $pdo->exec("CREATE TABLE IF NOT EXISTS settings (
             skey TEXT PRIMARY KEY,

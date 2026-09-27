@@ -40,6 +40,7 @@ $routes = array(
     'api/study'             => array('PvApiController', 'study'),
     'api/ping'              => array('PvApiController', 'ping'),
     'api/log'               => array('PvApiController', 'log'),
+    'api/pref'              => array('PvApiController', 'pref'),
     'manifest'              => array('PvPwaController', 'manifest'),
     'sw'                    => array('PvPwaController', 'sw'),
     'icon'                  => array('PvPwaController', 'icon'),

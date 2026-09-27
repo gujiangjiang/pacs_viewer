@@ -87,9 +87,9 @@
             if (data.flash) PvUI.toast(data.flash, 'ok');
             clearChk = document.getElementById('pvClearOnOpen');
             if (clearChk) {
-                try { clearChk.checked = localStorage.getItem('pacs_clear_on_open') === '1'; } catch (e) {}
+                clearChk.checked = !!data.clearOnOpen;
                 clearChk.addEventListener('change', function () {
-                    try { localStorage.setItem('pacs_clear_on_open', clearChk.checked ? '1' : '0'); } catch (e) {}
+                    PvUI.post(global.PvNav.route('api/pref'), { clear_on_open: clearChk.checked ? '1' : '0' });
                 });
             }
             btn.addEventListener('click', doSearch);

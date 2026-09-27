@@ -6,7 +6,7 @@ $active = 'search';
 $bodyClass = 'pv-page-search';
 $extraCss = array('search.css');
 $extraJs = array('search.js');
-$pageData = array('mode' => $mode, 'flash' => isset($flash) ? $flash : '');
+$pageData = array('mode' => $mode, 'flash' => isset($flash) ? $flash : '', 'clearOnOpen' => !empty($clearOnOpen) ? 1 : 0);
 ?>
 <div class="pv-searchbox pv-card">
     <form id="pvSearchForm" onsubmit="return false;">
@@ -17,7 +17,7 @@ $pageData = array('mode' => $mode, 'flash' => isset($flash) ? $flash : '');
     <div class="pv-search-meta">
         <span>数据来源：<b id="pvMode" class="<?php echo $mode === 'Remote' ? 'is-remote' : 'is-demo'; ?>"><?php echo $mode === 'Remote' ? '远程 PACS 接口' : '未配置 PACS 接口'; ?></b></span>
         <label class="pv-check" title="勾选后打开影像会先清空影像视图；不勾选则追加到已打开的检查之后">
-            <input type="checkbox" id="pvClearOnOpen"> 打开影像时清空已加载序列
+            <input type="checkbox" id="pvClearOnOpen" <?php echo !empty($clearOnOpen) ? 'checked' : ''; ?>> 打开影像时清空已加载序列
         </label>
     </div>
 </div>

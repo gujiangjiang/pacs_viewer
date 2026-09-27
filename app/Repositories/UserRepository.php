@@ -71,6 +71,11 @@ class PvUserRepository {
         return (int)PvDatabase::val("SELECT COUNT(*) FROM users WHERE role='admin' AND status=1");
     }
 
+    /** 保存用户偏好：打开影像时是否清空已加载序列 */
+    public static function setClearOnOpen($id, $value) {
+        return PvDatabase::exec("UPDATE users SET clear_on_open=? WHERE id=?", array($value ? 1 : 0, (int)$id));
+    }
+
     public static function countAll() {
         return (int)PvDatabase::val("SELECT COUNT(*) FROM users");
     }

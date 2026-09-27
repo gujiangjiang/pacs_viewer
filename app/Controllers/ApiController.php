@@ -50,6 +50,16 @@ class PvApiController {
         }
     }
 
+    /** 保存用户偏好 */
+    public static function pref() {
+        self::guard();
+        pvw_csrf_check();
+        $u = PvAuth::user();
+        $v = (string)pvw_input('clear_on_open') === '1' ? 1 : 0;
+        PvUserRepository::setClearOnOpen($u['id'], $v);
+        pvw_json(200, 'success', array('clear_on_open' => $v));
+    }
+
     /** 记录前端操作日志（读片 / 下载 / 阅读 DICOM 等） */
     public static function log() {
         self::guard();
