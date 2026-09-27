@@ -45,6 +45,16 @@ $pageData = array(
             <span class="pv-bi">⏮</span><span class="pv-bl">上一帧</span></button>
         <button type="button" class="pv-bigbtn" data-pv-act="next" title="下一帧 / 滚轮连续翻帧">
             <span class="pv-bi">⏭</span><span class="pv-bl">下一帧</span></button>
+        <div class="pv-menu-wrap">
+            <button type="button" class="pv-bigbtn" data-pv-menu="layout" title="视图分栏布局">
+                <span class="pv-bi">▦</span><span class="pv-bl">布局 ▾</span></button>
+            <div class="pv-menu" data-pv-menu-panel="layout">
+                <button type="button" data-pv-layout="1"><span class="ic">▢</span> 单视图</button>
+                <button type="button" data-pv-layout="2h"><span class="ic">◫</span> 左右双视图</button>
+                <button type="button" data-pv-layout="2v"><span class="ic">⬓</span> 上下双视图</button>
+                <button type="button" data-pv-layout="4"><span class="ic">⊞</span> 四视图</button>
+            </div>
+        </div>
         <button type="button" class="pv-bigbtn" data-pv-act="fit" title="图像适应窗口">
             <span class="pv-bi">⛶</span><span class="pv-bl">适应窗口</span></button>
         <button type="button" class="pv-bigbtn" data-pv-act="oneone" title="1:1 原始比例">
@@ -81,16 +91,6 @@ $pageData = array(
                 <button type="button" data-pv-act="copy-link">🔗 复制阅片直链</button>
                 <button type="button" data-pv-act="save-image">💾 保存当前图像</button>
                 <button type="button" data-pv-act="save-series">🗂 保存序列（ZIP）</button>
-            </div>
-        </div>
-        <div class="pv-menu-wrap">
-            <button type="button" class="pv-bigbtn" data-pv-menu="layout" title="视图分栏布局">
-                <span class="pv-bi">▦</span><span class="pv-bl">布局 ▾</span></button>
-            <div class="pv-menu" data-pv-menu-panel="layout">
-                <button type="button" data-pv-layout="1"><span class="ic">▢</span> 单视图</button>
-                <button type="button" data-pv-layout="2h"><span class="ic">◫</span> 左右双视图</button>
-                <button type="button" data-pv-layout="2v"><span class="ic">⬓</span> 上下双视图</button>
-                <button type="button" data-pv-layout="4"><span class="ic">⊞</span> 四视图</button>
             </div>
         </div>
         <button type="button" class="pv-bigbtn" data-pv-act="about" title="关于本软件">
