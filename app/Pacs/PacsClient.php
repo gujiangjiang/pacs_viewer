@@ -115,7 +115,7 @@ class PvPacsClient {
                 CURLOPT_HTTPHEADER => array('Accept: application/json'),
             ));
             $raw = curl_exec($ch);
-            curl_close($ch);
+            if (PHP_VERSION_ID < 80500) curl_close($ch);   // 8.5 起 curl_close 已弃用
             return $raw;
         }
         $ctx = stream_context_create(array('http' => array(
