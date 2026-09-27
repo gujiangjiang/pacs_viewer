@@ -70,8 +70,24 @@
         if (window.ResizeObserver) { this._ro = new ResizeObserver(function () { self.resize(); self.render(); }); this._ro.observe(this.stage); }
         else window.addEventListener('resize', this._onWinResize = function () { self.resize(); self.render(); });
         this.render();
+        this.refreshControlState();
         this.boot();
     }
+
+    /** 根据是否有影像 / 是否多帧，刷新工具栏与菜单按钮可用状态 */
+    PvViewer.prototype.refreshControlState = function () {
+        var bar = this.q('toolbar'); if (!bar) return;
+        var hasImage = !!(this.st.series && this.st.series.length);
+        var multi = hasImage && this.frameCount() > 1;
+        var keepActs = { 'toggle-sidebar': 1, 'about': 1, 'back': 1 };
+        Array.prototype.forEach.call(bar.querySelectorAll('[data-pv-tool],[data-pv-menu]'), function (b) { b.disabled = !hasImage; });
+        Array.prototype.forEach.call(bar.querySelectorAll('[data-pv-act]'), function (b) {
+            var a = b.getAttribute('data-pv-act');
+            if (keepActs[a]) { b.disabled = false; return; }
+            if (a === 'prev' || a === 'next') { b.disabled = !multi; return; }
+            b.disabled = !hasImage;
+        });
+    };
 
     PvViewer.prototype.setStatus = function (m) { if (this.statusEl) this.statusEl.textContent = m || ''; };
 
@@ -173,6 +189,7 @@
         this.renderSidebar();
         this.updateTitle();
         this.updateScrollbar();
+        this.refreshControlState();
         this.render();
         this.setStatus('');
     };
@@ -256,6 +273,7 @@
         this.fit();
         this.toolbar.sync(this.st);
         this.updateScrollbar();
+        this.refreshControlState();
         this.persist();
     };
 
@@ -286,6 +304,7 @@
         this.renderSidebar();
         this.updateTitle();
         this.updateScrollbar();
+        this.refreshControlState();
         this.render();
     };
 
@@ -967,6 +986,7 @@
         this.applyDefaults(); this.fit();
         this.setStatus('序列 ' + (i + 1) + '：' + (this.curSeries().description || ''));
         this.toolbar.sync(this.st); this.render(); this.updateScrollbar();
+        this.refreshControlState();
         this.persist();
     };
     PvViewer.prototype.setFrame = function (i) {

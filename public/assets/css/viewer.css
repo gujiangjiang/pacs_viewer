@@ -190,3 +190,9 @@
 .pv-about-ver { font-size: 13px; color: var(--pv-txt2); font-family: "SFMono-Regular", Consolas, monospace; }
 .pv-about-lic { margin-top: 12px; font-size: 13px; color: var(--pv-txt); }
 .pv-about-lic b { color: var(--pv-acc); }
+
+/* 无影像：隐藏标题圈；工具栏影像按钮禁用态 */
+.pv-vw-title:empty { display: none; }
+.pv-bigbtn:disabled { opacity: .35; cursor: not-allowed; }
+.pv-bigbtn:disabled:hover { background: transparent; color: inherit; }
+.pv-menu button:disabled { opacity: .4; cursor: not-allowed; }
