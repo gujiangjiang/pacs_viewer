@@ -1,0 +1,43 @@
+/* ============================================================
+ * assets/css/ui.css — 通用模态框与轻提示（PvModal / PvUI）
+ * ============================================================ */
+.pv-modal-mask {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(2, 6, 12, .68);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px; animation: pvFadeIn .12s ease;
+}
+.pv-modal {
+    width: 480px; max-width: 100%; max-height: calc(100vh - 48px);
+    background: #0f172a; border: 1px solid var(--pv-line2);
+    border-radius: 14px; box-shadow: 0 30px 80px rgba(0,0,0,.6);
+    display: flex; flex-direction: column; overflow: hidden;
+    animation: pvPopIn .14s ease;
+}
+.pv-modal-lg { width: 680px; }
+.pv-modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-bottom: 1px solid var(--pv-line); flex: 0 0 auto;
+}
+.pv-modal-head h3 { margin: 0; font-size: 15px; color: #f1f5f9; }
+.pv-modal-x { border: 0; background: transparent; color: var(--pv-txt2); font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.pv-modal-x:hover { color: #fff; }
+.pv-modal-body { padding: 18px; overflow: auto; flex: 1 1 auto; }
+.pv-modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--pv-line); flex: 0 0 auto; }
+.pv-modal .pv-field input, .pv-modal .pv-field select { max-width: none; }
+.pv-modal-msg { margin: 0; color: var(--pv-txt); line-height: 1.7; }
+
+/* 轻提示 */
+#pvToastBox { position: fixed; top: 64px; right: 20px; z-index: 1100; display: flex; flex-direction: column; gap: 8px; }
+.pv-toast {
+    min-width: 200px; max-width: 360px; padding: 10px 14px; border-radius: 9px;
+    font-size: 13px; background: #1e293b; color: var(--pv-txt);
+    border: 1px solid var(--pv-line2); box-shadow: 0 12px 30px rgba(0,0,0,.45);
+    animation: pvSlideIn .16s ease;
+}
+.pv-toast.ok { border-color: rgba(16,185,129,.5); color: #6ee7b7; }
+.pv-toast.err { border-color: rgba(239,68,68,.5); color: #fca5a5; }
+
+@keyframes pvFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pvPopIn { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes pvSlideIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }

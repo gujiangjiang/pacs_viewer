@@ -75,6 +75,8 @@ body.pv-nav-busy #pvMain { opacity: .55; transition: opacity .12s; }
 .pv-btn-outline:hover { background: rgba(14,165,233,.14); color: #bae6fd; }
 .pv-btn-ghost { background: transparent; border-color: transparent; color: var(--pv-txt2); }
 .pv-btn-ghost:hover { background: #1e293b; color: #fff; }
+.pv-btn-danger { background: var(--pv-danger); border-color: var(--pv-danger); color: #fff; font-weight: 600; }
+.pv-btn-danger:hover { background: #f87171; color: #fff; }
 .pv-btn-sm { padding: 4px 10px; font-size: 12px; }
 .pv-btn-block { width: 100%; }
 
@@ -108,6 +110,9 @@ body.pv-nav-busy #pvMain { opacity: .55; transition: opacity .12s; }
 .pv-badge { padding: 2px 8px; border-radius: 10px; font-size: 12px; }
 .pv-badge.ok { background: rgba(16,185,129,.16); color: #34d399; }
 .pv-badge.off { background: rgba(148,163,184,.16); color: #cbd5e1; }
+.pv-badge.demo { background: rgba(245,158,11,.16); color: #fbbf24; }
+.pv-btn-danger-text { color: #fca5a5; }
+.pv-btn-danger-text:hover { background: rgba(239,68,68,.14); color: #fecaca; }
 
 /* ---------- 表单 ---------- */
 .pv-form-title { margin: 0 0 14px; font-size: 15px; color: #e2e8f0; }

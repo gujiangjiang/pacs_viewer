@@ -5,30 +5,26 @@ $pageTitle = '管理设置';
 $active = 'admin';
 $bodyClass = 'pv-page-admin';
 $extraCss = array('admin.css');
+$extraJs = array('admin.js');
 $s = $settings;
 $v = function ($k, $d = '') use ($s) { return isset($s[$k]) ? $s[$k] : $d; };
+$curTab = isset($tab) ? $tab : 'basic';
+$tabCls = function ($t) use ($curTab) { return $curTab === $t ? ' active' : ''; };
 ?>
 <?php if (!empty($flash)) { ?><div class="pv-alert pv-alert-ok"><?php echo pvw_e($flash); ?></div><?php } ?>
 
 <div class="pv-tabs">
-    <button type="button" class="pv-tab active" data-tab="basic">基础设置</button>
-    <button type="button" class="pv-tab" data-tab="pacs">DICOM / PACS 接口</button>
-    <button type="button" class="pv-tab" data-tab="users">账号管理</button>
-    <button type="button" class="pv-tab" data-tab="logs">检索日志</button>
+    <button type="button" class="pv-tab<?php echo $tabCls('basic'); ?>" data-tab="basic">基础设置</button>
+    <button type="button" class="pv-tab<?php echo $tabCls('pacs'); ?>" data-tab="pacs">DICOM / PACS 接口</button>
+    <button type="button" class="pv-tab<?php echo $tabCls('users'); ?>" data-tab="users">账号管理</button>
+    <button type="button" class="pv-tab<?php echo $tabCls('logs'); ?>" data-tab="logs">检索日志</button>
 </div>
 
 <!-- 基础设置 -->
-<section class="pv-tabpane active" data-pane="basic">
-    <form class="pv-card pv-form" method="post" action="<?php echo pvw_e(pvw_url('admin/save')); ?>">
+<section class="pv-tabpane<?php echo $tabCls('basic'); ?>" data-pane="basic">
+    <form class="pv-card pv-form" method="post" data-ajax-form action="<?php echo pvw_e(pvw_url('admin/save')); ?>">
         <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
-        <input type="hidden" name="pacs_query_mode" value="<?php echo pvw_e($v('pacs_query_mode', 'Demo')); ?>">
-        <input type="hidden" name="pacs_endpoint" value="<?php echo pvw_e($v('pacs_endpoint')); ?>">
-        <input type="hidden" name="pacs_api_key" value="<?php echo pvw_e($v('pacs_api_key')); ?>">
-        <input type="hidden" name="pacs_ae_title" value="<?php echo pvw_e($v('pacs_ae_title')); ?>">
-        <input type="hidden" name="pacs_remote_ae" value="<?php echo pvw_e($v('pacs_remote_ae')); ?>">
-        <input type="hidden" name="pacs_server_host" value="<?php echo pvw_e($v('pacs_server_host')); ?>">
-        <input type="hidden" name="pacs_server_port" value="<?php echo pvw_e($v('pacs_server_port')); ?>">
-        <input type="hidden" name="pacs_timeout" value="<?php echo pvw_e($v('pacs_timeout', '5')); ?>">
+        <input type="hidden" name="tab" value="basic">
         <h3 class="pv-form-title">基础设置</h3>
         <label class="pv-field"><span>站点名称</span>
             <input type="text" name="site_title" value="<?php echo pvw_e($v('site_title')); ?>"></label>
@@ -46,21 +42,12 @@ $v = function ($k, $d = '') use ($s) { return isset($s[$k]) ? $s[$k] : $d; };
 </section>
 
 <!-- PACS 接口 -->
-<section class="pv-tabpane" data-pane="pacs">
-    <form class="pv-card pv-form" method="post" action="<?php echo pvw_e(pvw_url('admin/save')); ?>">
+<section class="pv-tabpane<?php echo $tabCls('pacs'); ?>" data-pane="pacs">
+    <form class="pv-card pv-form" method="post" data-ajax-form action="<?php echo pvw_e(pvw_url('admin/save')); ?>">
         <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
-        <input type="hidden" name="site_title" value="<?php echo pvw_e($v('site_title')); ?>">
-        <input type="hidden" name="hospital_name" value="<?php echo pvw_e($v('hospital_name')); ?>">
-        <input type="hidden" name="viewer_default_ww" value="<?php echo pvw_e($v('viewer_default_ww', '400')); ?>">
-        <input type="hidden" name="viewer_default_wl" value="<?php echo pvw_e($v('viewer_default_wl', '40')); ?>">
+        <input type="hidden" name="tab" value="pacs">
         <h3 class="pv-form-title">DICOM / PACS 接口</h3>
-        <label class="pv-field"><span>查询模式</span>
-            <select name="pacs_query_mode">
-                <option value="Demo" <?php echo $v('pacs_query_mode', 'Demo') === 'Demo' ? 'selected' : ''; ?>>内置模拟数据（本地演示）</option>
-                <option value="Remote" <?php echo $v('pacs_query_mode') === 'Remote' ? 'selected' : ''; ?>>远程 PACS / DICOMWeb 接口</option>
-            </select>
-            <em class="pv-hint">选择「远程接口」后，检索与调阅数据全部来自下方接口地址；未配置或不可达时检索会提示错误。</em></label>
-
+        <p class="pv-hint">检索与调阅数据全部来自下方接口地址。本地联调可将地址指向【模拟服务器】提供的对外 API（在模拟服务器页一键填入）。</p>
         <label class="pv-field"><span>PACS 接口地址（PACS_SERVER_URL）</span>
             <input type="text" name="pacs_endpoint" value="<?php echo pvw_e($v('pacs_endpoint')); ?>" placeholder="如 http://192.168.1.100:8042/dicom-web/gateway"></label>
         <div class="pv-grid2">
@@ -90,46 +77,41 @@ $v = function ($k, $d = '') use ($s) { return isset($s[$k]) ? $s[$k] : $d; };
 </section>
 
 <!-- 账号管理 -->
-<section class="pv-tabpane" data-pane="users">
+<section class="pv-tabpane<?php echo $tabCls('users'); ?>" data-pane="users">
     <div class="pv-card">
-        <h3 class="pv-form-title">新增账号</h3>
-        <form class="pv-form pv-form-inline" method="post" action="<?php echo pvw_e(pvw_url('admin/user-create')); ?>">
-            <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
-            <input type="text" name="username" class="pv-input" placeholder="用户名" required>
-            <input type="text" name="display_name" class="pv-input" placeholder="显示名">
-            <input type="password" name="password" class="pv-input" placeholder="初始密码" required>
-            <select name="role" class="pv-input">
-                <option value="user">普通用户</option>
-                <option value="admin">管理员</option>
-            </select>
-            <button type="submit" class="pv-btn pv-btn-primary">创建</button>
-        </form>
-    </div>
-    <div class="pv-card">
-        <table class="pv-table">
+        <div class="pv-card-head">
+            <h3 class="pv-form-title">账号管理</h3>
+            <button type="button" id="pvAddUser" class="pv-btn pv-btn-primary pv-btn-sm">＋ 新增账号</button>
+        </div>
+        <table class="pv-table" id="pvUserTable">
             <thead><tr><th>ID</th><th>用户名</th><th>显示名</th><th>角色</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
             <tbody>
-            <?php foreach ($users as $u) { ?>
-                <tr>
+            <?php foreach ($users as $u) {
+                $isOwner = (int)$u['is_owner'] === 1;
+                $enabled = (int)$u['status'] === 1;
+            ?>
+                <tr data-user
+                    data-id="<?php echo (int)$u['id']; ?>"
+                    data-username="<?php echo pvw_e($u['username']); ?>"
+                    data-display="<?php echo pvw_e($u['display_name']); ?>"
+                    data-role="<?php echo pvw_e($u['role']); ?>"
+                    data-status="<?php echo (int)$u['status']; ?>"
+                    data-owner="<?php echo $isOwner ? '1' : '0'; ?>">
                     <td><?php echo (int)$u['id']; ?></td>
-                    <td><?php echo pvw_e($u['username']); ?></td>
+                    <td><?php echo pvw_e($u['username']); ?><?php if ($isOwner) { ?> <span class="pv-badge demo" title="安装管理员：不可删除 / 停用">🔒 安装管理员</span><?php } ?></td>
                     <td><?php echo pvw_e($u['display_name']); ?></td>
                     <td><?php echo $u['role'] === 'admin' ? '管理员' : '普通'; ?></td>
-                    <td><?php echo (int)$u['status'] === 1 ? '<span class="pv-badge ok">启用</span>' : '<span class="pv-badge off">停用</span>'; ?></td>
+                    <td><?php echo $enabled ? '<span class="pv-badge ok">启用</span>' : '<span class="pv-badge off">停用</span>'; ?></td>
                     <td class="pv-dim"><?php echo pvw_e($u['created_at']); ?></td>
                     <td class="pv-actions">
-                        <form method="post" action="<?php echo pvw_e(pvw_url('admin/user-status')); ?>">
-                            <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
-                            <input type="hidden" name="id" value="<?php echo (int)$u['id']; ?>">
-                            <input type="hidden" name="status" value="<?php echo (int)$u['status'] === 1 ? '0' : '1'; ?>">
-                            <button class="pv-btn pv-btn-ghost pv-btn-sm"><?php echo (int)$u['status'] === 1 ? '停用' : '启用'; ?></button>
-                        </form>
-                        <form method="post" action="<?php echo pvw_e(pvw_url('admin/user-password')); ?>" onsubmit="return confirm('确认重置该账号密码？');">
-                            <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
-                            <input type="hidden" name="id" value="<?php echo (int)$u['id']; ?>">
-                            <input type="password" name="password" class="pv-input pv-input-sm" placeholder="新密码" required>
-                            <button class="pv-btn pv-btn-ghost pv-btn-sm">重置密码</button>
-                        </form>
+                        <button class="pv-btn pv-btn-ghost pv-btn-sm" data-act="edit">编辑</button>
+                        <?php if (!$isOwner) { ?>
+                        <button class="pv-btn pv-btn-ghost pv-btn-sm" data-act="status"><?php echo $enabled ? '停用' : '启用'; ?></button>
+                        <?php } ?>
+                        <button class="pv-btn pv-btn-ghost pv-btn-sm" data-act="password">重置密码</button>
+                        <?php if (!$isOwner) { ?>
+                        <button class="pv-btn pv-btn-ghost pv-btn-sm pv-btn-danger-text" data-act="delete">删除</button>
+                        <?php } ?>
                     </td>
                 </tr>
             <?php } ?>
@@ -139,14 +121,11 @@ $v = function ($k, $d = '') use ($s) { return isset($s[$k]) ? $s[$k] : $d; };
 </section>
 
 <!-- 检索日志 -->
-<section class="pv-tabpane" data-pane="logs">
+<section class="pv-tabpane<?php echo $tabCls('logs'); ?>" data-pane="logs">
     <div class="pv-card">
         <div class="pv-card-head">
             <h3 class="pv-form-title">检索日志（共 <?php echo (int)$logCount; ?> 条）</h3>
-            <form method="post" action="<?php echo pvw_e(pvw_url('admin/log-clear')); ?>" onsubmit="return confirm('确认清空全部检索日志？');">
-                <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
-                <button class="pv-btn pv-btn-outline pv-btn-sm">清空</button>
-            </form>
+            <button type="button" id="pvLogClear" class="pv-btn pv-btn-outline pv-btn-sm">清空</button>
         </div>
         <table class="pv-table">
             <thead><tr><th>时间</th><th>账号</th><th>关键词</th><th>结果数</th><th>IP</th></tr></thead>
@@ -162,5 +141,3 @@ $v = function ($k, $d = '') use ($s) { return isset($s[$k]) ? $s[$k] : $d; };
         </table>
     </div>
 </section>
-<?php
-$extraJs = array('admin.js');

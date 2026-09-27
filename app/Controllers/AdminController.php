@@ -5,18 +5,30 @@ class PvAdminController {
     /** 允许保存的设置键（白名单） */
     private static $settingKeys = array(
         'site_title', 'hospital_name',
-        'pacs_query_mode', 'pacs_endpoint', 'pacs_api_key',
+        'pacs_endpoint', 'pacs_api_key',
         'pacs_ae_title', 'pacs_remote_ae', 'pacs_server_host', 'pacs_server_port', 'pacs_timeout',
         'viewer_default_ww', 'viewer_default_wl',
     );
+
+    /** 统一响应：AJAX 返回 JSON，普通请求写 flash 并回到管理页 */
+    private static function reply($msg, $ok = true, $data = null, $tab = 'basic') {
+        if (pvw_is_ajax()) {
+            pvw_json($ok ? 200 : 400, $msg, $data);
+        }
+        $_SESSION['pv_flash'] = $msg;
+        pvw_redirect(pvw_url('admin', array('tab' => $tab)));
+    }
 
     public static function index() {
         PvAuth::requireAdmin();
         $flash = isset($_SESSION['pv_flash']) ? $_SESSION['pv_flash'] : '';
         unset($_SESSION['pv_flash']);
+        $tab = (string)pvw_input('tab', 'basic');
+        if (!in_array($tab, array('basic', 'pacs', 'users', 'logs'), true)) $tab = 'basic';
         pvw_page('admin', array(
             'user'     => PvAuth::user(),
             'flash'    => $flash,
+            'tab'      => $tab,
             'site'     => PvSettings::get('site_title', '模拟 PACS 影像浏览器'),
             'settings' => PvSettings::all(),
             'users'    => PvUserRepository::all(),
@@ -32,10 +44,9 @@ class PvAdminController {
         foreach (self::$settingKeys as $k) {
             if (isset($_POST[$k])) $pairs[$k] = (string)$_POST[$k];
         }
-        if (isset($pairs['pacs_query_mode']) && $pairs['pacs_query_mode'] !== 'Remote') $pairs['pacs_query_mode'] = 'Demo';
         PvSettings::saveMany($pairs);
-        $_SESSION['pv_flash'] = '设置已保存';
-        pvw_redirect(pvw_url('admin'));
+        $tab = (string)pvw_input('tab', 'basic');
+        self::reply('设置已保存', true, null, $tab === 'pacs' ? 'pacs' : 'basic');
     }
 
     public static function userCreate() {
@@ -48,11 +59,10 @@ class PvAdminController {
                 trim((string)pvw_input('display_name')),
                 (string)pvw_input('role')
             );
-            $_SESSION['pv_flash'] = '账号已创建';
+            self::reply('账号已创建', true, PvUserRepository::all(), 'users');
         } catch (Exception $e) {
-            $_SESSION['pv_flash'] = '创建失败：' . $e->getMessage();
+            self::reply('创建失败：' . $e->getMessage(), false, null, 'users');
         }
-        pvw_redirect(pvw_url('admin'));
     }
 
     public static function userUpdate() {
@@ -60,11 +70,10 @@ class PvAdminController {
         pvw_csrf_check();
         try {
             PvUserRepository::updateProfile((int)pvw_input('id'), trim((string)pvw_input('display_name')), (string)pvw_input('role'));
-            $_SESSION['pv_flash'] = '账号资料已更新';
+            self::reply('账号资料已更新', true, PvUserRepository::all(), 'users');
         } catch (Exception $e) {
-            $_SESSION['pv_flash'] = '更新失败：' . $e->getMessage();
+            self::reply('更新失败：' . $e->getMessage(), false, null, 'users');
         }
-        pvw_redirect(pvw_url('admin'));
     }
 
     public static function userStatus() {
@@ -73,33 +82,14 @@ class PvAdminController {
         $id = (int)pvw_input('id');
         $status = (int)pvw_input('status');
         if ($id === (int)PvAuth::user()['id'] && $status === 0) {
-            $_SESSION['pv_flash'] = '不能停用当前登录的账号';
-        } else {
-            try {
-                PvUserRepository::setStatus($id, $status);
-                $_SESSION['pv_flash'] = '账号状态已更新';
-            } catch (Exception $e) {
-                $_SESSION['pv_flash'] = '操作失败：' . $e->getMessage();
-            }
-        }
-        pvw_redirect(pvw_url('admin'));
-    }
-
-    public static function userDelete() {
-        PvAuth::requireAdmin();
-        pvw_csrf_check();
-        $id = (int)pvw_input('id');
-        if ($id === (int)PvAuth::user()['id']) {
-            $_SESSION['pv_flash'] = '不能删除当前登录的账号';
-            pvw_redirect(pvw_url('admin'));
+            self::reply('不能停用当前登录的账号', false, null, 'users');
         }
         try {
-            PvUserRepository::delete($id);
-            $_SESSION['pv_flash'] = '账号已删除';
+            PvUserRepository::setStatus($id, $status);
+            self::reply('账号状态已更新', true, PvUserRepository::all(), 'users');
         } catch (Exception $e) {
-            $_SESSION['pv_flash'] = '删除失败：' . $e->getMessage();
+            self::reply('操作失败：' . $e->getMessage(), false, null, 'users');
         }
-        pvw_redirect(pvw_url('admin'));
     }
 
     public static function userPassword() {
@@ -107,18 +97,31 @@ class PvAdminController {
         pvw_csrf_check();
         try {
             PvUserRepository::setPassword((int)pvw_input('id'), (string)pvw_input('password'));
-            $_SESSION['pv_flash'] = '密码已重置';
+            self::reply('密码已重置', true, null, 'users');
         } catch (Exception $e) {
-            $_SESSION['pv_flash'] = '重置失败：' . $e->getMessage();
+            self::reply('重置失败：' . $e->getMessage(), false, null, 'users');
         }
-        pvw_redirect(pvw_url('admin'));
+    }
+
+    public static function userDelete() {
+        PvAuth::requireAdmin();
+        pvw_csrf_check();
+        $id = (int)pvw_input('id');
+        if ($id === (int)PvAuth::user()['id']) {
+            self::reply('不能删除当前登录的账号', false, null, 'users');
+        }
+        try {
+            PvUserRepository::delete($id);
+            self::reply('账号已删除', true, PvUserRepository::all(), 'users');
+        } catch (Exception $e) {
+            self::reply('删除失败：' . $e->getMessage(), false, null, 'users');
+        }
     }
 
     public static function logClear() {
         PvAuth::requireAdmin();
         pvw_csrf_check();
         PvQueryLogRepository::clear();
-        $_SESSION['pv_flash'] = '检索日志已清空';
-        pvw_redirect(pvw_url('admin'));
+        self::reply('检索日志已清空', true, null, 'logs');
     }
 }

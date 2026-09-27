@@ -7,6 +7,7 @@
     <span class="pv-footer-dim">仅供 DICOM / PACS 接口联调测试</span>
 </footer>
 <script src="<?php echo pvw_asset('js/api.js'); ?>"></script>
+<script src="<?php echo pvw_asset('js/ui.js'); ?>"></script>
 <script src="<?php echo pvw_asset('js/spa.js'); ?>"></script>
 <?php if (!empty($extraJs)) { foreach ((array)$extraJs as $j) { ?>
 <script src="<?php echo pvw_asset('js/' . $j); ?>"></script>

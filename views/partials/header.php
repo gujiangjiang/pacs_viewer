@@ -18,6 +18,7 @@ $pvPageData = isset($pageData) ? $pageData : array();
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?php echo pvw_e($pvTitle); ?></title>
 <link rel="stylesheet" href="<?php echo pvw_asset('css/base.css'); ?>">
+<link rel="stylesheet" href="<?php echo pvw_asset('css/ui.css'); ?>">
 <?php if (!empty($extraCss)) { foreach ((array)$extraCss as $c) { ?>
 <link rel="stylesheet" href="<?php echo pvw_asset('css/' . $c); ?>">
 <?php } } ?>
