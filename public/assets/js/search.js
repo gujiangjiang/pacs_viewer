@@ -53,7 +53,9 @@
             if (!j || j.code !== 200) {
                 box.innerHTML = '';
                 empty.style.display = '';
-                empty.querySelector('.pv-empty-title').textContent = (j && j.msg) || '检索失败';
+                var em = (j && j.msg) || '检索失败';
+                empty.querySelector('.pv-empty-title').textContent = em;
+                PvUI.toast(em, 'err');
                 return;
             }
             var d = j.data || {};
@@ -67,18 +69,21 @@
             btn.disabled = false; btn.textContent = '检索';
             empty.style.display = '';
             empty.querySelector('.pv-empty-title').textContent = '网络请求失败';
+            PvUI.toast('网络请求失败', 'err');
         });
     }
 
     global.PvPages = global.PvPages || {};
     global.PvPages.search = {
-        init: function () {
+        init: function (data) {
+            data = data || {};
             input = document.getElementById('pvKeyword');
             btn = document.getElementById('pvSearchBtn');
             box = document.getElementById('pvResults');
             empty = document.getElementById('pvEmpty');
             meta = document.getElementById('pvResultMeta');
             if (!input || !btn || !box) return;
+            if (data.flash) PvUI.toast(data.flash, 'ok');
             btn.addEventListener('click', doSearch);
             onDocKey = function (e) {
                 if (e.key === 'Enter' && document.activeElement === input) { e.preventDefault(); doSearch(); }

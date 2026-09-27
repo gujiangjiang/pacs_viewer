@@ -8,6 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>登录 · <?php echo pvw_e($site); ?></title>
 <link rel="stylesheet" href="<?php echo pvw_asset('css/base.css'); ?>">
+<link rel="stylesheet" href="<?php echo pvw_asset('css/ui.css'); ?>">
 <link rel="stylesheet" href="<?php echo pvw_asset('css/auth.css'); ?>">
 </head>
 <body class="pv-auth-body">
@@ -17,7 +18,6 @@
         <h1><?php echo pvw_e($site); ?></h1>
         <p class="pv-auth-sub">DICOM / PACS 接口联调测试工具</p>
     </div>
-    <?php if (!empty($error)) { ?><div class="pv-alert pv-alert-error"><?php echo pvw_e($error); ?></div><?php } ?>
     <form method="post" action="<?php echo pvw_e(pvw_url('login')); ?>" autocomplete="off">
         <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
         <label class="pv-field">
@@ -34,5 +34,9 @@
         使用安装时创建的管理员账号登录
     </div>
 </div>
+<script src="<?php echo pvw_asset('js/ui.js'); ?>"></script>
+<?php if (!empty($error)) { ?>
+<script>if (window.PvUI) PvUI.toast(<?php echo json_encode($error, JSON_UNESCAPED_UNICODE); ?>, 'err');</script>
+<?php } ?>
 </body>
 </html>

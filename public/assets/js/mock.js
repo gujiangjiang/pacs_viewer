@@ -60,6 +60,7 @@
             data = data || {};
             PvUI.bindAjaxForms(document);
             bindCopy();
+            if (data.flash) PvUI.toast(data.flash, 'ok');
 
             var source = document.getElementById('pvMockSource');
             var fhirBox = document.getElementById('pvFhirBox');

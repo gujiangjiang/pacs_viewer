@@ -6,7 +6,7 @@ $active = 'search';
 $bodyClass = 'pv-page-search';
 $extraCss = array('search.css');
 $extraJs = array('search.js');
-$pageData = array('mode' => $mode);
+$pageData = array('mode' => $mode, 'flash' => isset($flash) ? $flash : '');
 ?>
 <div class="pv-searchbox pv-card">
     <form id="pvSearchForm" onsubmit="return false;">
@@ -19,8 +19,6 @@ $pageData = array('mode' => $mode);
         <span class="pv-dim">仅显示已开单、已缴费、已登记并完成检查的患者</span>
     </div>
 </div>
-
-<?php if (!empty($flash)) { ?><div class="pv-alert pv-alert-ok"><?php echo pvw_e($flash); ?></div><?php } ?>
 
 <div id="pvResultMeta" class="pv-result-meta" style="display:none"></div>
 <div id="pvResults" class="pv-results"></div>

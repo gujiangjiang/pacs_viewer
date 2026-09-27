@@ -125,6 +125,8 @@
     global.PvPages = global.PvPages || {};
     global.PvPages.admin = {
         init: function (data) {
+            data = data || {};
+            if (data.flash) PvUI.toast(data.flash, 'ok');
             var tabs = document.querySelectorAll('.pv-tab');
             var panes = document.querySelectorAll('.pv-tabpane');
             Array.prototype.forEach.call(tabs, function (t) {

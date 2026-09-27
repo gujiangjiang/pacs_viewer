@@ -8,6 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>首次运行安装 · <?php echo pvw_e($site); ?></title>
 <link rel="stylesheet" href="<?php echo pvw_asset('css/base.css'); ?>">
+<link rel="stylesheet" href="<?php echo pvw_asset('css/ui.css'); ?>">
 <link rel="stylesheet" href="<?php echo pvw_asset('css/auth.css'); ?>">
 </head>
 <body class="pv-auth-body">
@@ -17,7 +18,6 @@
         <h1>首次运行安装</h1>
         <p class="pv-auth-sub">创建管理员账号并完成初始化，之后即可登录使用</p>
     </div>
-    <?php if (!empty($error)) { ?><div class="pv-alert pv-alert-error"><?php echo pvw_e($error); ?></div><?php } ?>
     <form method="post" action="<?php echo pvw_e(pvw_url('install/submit')); ?>" autocomplete="off">
         <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
         <h3 class="pv-form-title">站点信息</h3>
@@ -52,5 +52,9 @@
         <button type="submit" class="pv-btn pv-btn-primary pv-btn-block" style="margin-top:8px">完成安装并进入</button>
     </form>
 </div>
+<script src="<?php echo pvw_asset('js/ui.js'); ?>"></script>
+<?php if (!empty($error)) { ?>
+<script>if (window.PvUI) PvUI.toast(<?php echo json_encode($error, JSON_UNESCAPED_UNICODE); ?>, 'err');</script>
+<?php } ?>
 </body>
 </html>

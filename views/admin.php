@@ -10,9 +10,8 @@ $s = $settings;
 $v = function ($k, $d = '') use ($s) { return isset($s[$k]) ? $s[$k] : $d; };
 $curTab = isset($tab) ? $tab : 'basic';
 $tabCls = function ($t) use ($curTab) { return $curTab === $t ? ' active' : ''; };
+$pageData = array('flash' => isset($flash) ? $flash : '');
 ?>
-<?php if (!empty($flash)) { ?><div class="pv-alert pv-alert-ok"><?php echo pvw_e($flash); ?></div><?php } ?>
-
 <div class="pv-tabs">
     <button type="button" class="pv-tab<?php echo $tabCls('basic'); ?>" data-tab="basic">基础设置</button>
     <button type="button" class="pv-tab<?php echo $tabCls('pacs'); ?>" data-tab="pacs">DICOM / PACS 接口</button>

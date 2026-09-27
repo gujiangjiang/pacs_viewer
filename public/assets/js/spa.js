@@ -105,8 +105,8 @@
             return r.json();
         }).then(function (res) {
             busy = false; document.body.classList.remove('pv-nav-busy');
-            if (!res || res.code !== 200) { global.location.href = url; return; }
-            apply(res);
+            if (!res || res.code !== 200 || !res.data) { global.location.href = url; return; }
+            apply(res.data);
         }).catch(function () {
             busy = false; document.body.classList.remove('pv-nav-busy');
             global.location.href = url;   // 回退为整页导航，保证可用
@@ -130,6 +130,11 @@
         e.preventDefault();
         go(page);
     });
+
+    // 干净地址栏：常规页（非阅片直链）加载后清除 ?r=...，仅保留站点根路径
+    if (boot.page && boot.page !== 'viewer') {
+        try { global.history.replaceState(null, '', home); } catch (e) {}
+    }
 
     global.PvNav = { go: go, refresh: refresh, route: route, current: function () { return currentPage; } };
 })(window);

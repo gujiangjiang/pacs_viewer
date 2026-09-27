@@ -13,6 +13,7 @@ $pageData = array(
     'mockUrl'      => $mockUrl,
     'mockKey'      => $mockKey,
     'pacsEndpoint' => $pacsEndpoint,
+    'flash'        => isset($flash) ? $flash : '',
 );
 ?>
 <div class="pv-alert pv-alert-info">
