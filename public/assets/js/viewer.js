@@ -887,7 +887,7 @@
         var go = function () { self.closeAll(); try { sessionStorage.removeItem('pacs_search_v1'); } catch (e) {} if (window.PvNav) window.PvNav.go('search'); };
         if (!this.ws.studies.length) { go(); return; }
         if (window.PvModal) {
-            PvModal.confirm({ title: '退出阅片', message: '退出将关闭全部已打开的检查，并清空检索记录，确认退出？', okText: '退出', danger: true })
+            PvModal.confirm({ title: '关闭影像查看', message: '关闭将清空全部已打开的检查与检索记录，并返回研究检索，确认关闭？', okText: '关闭', danger: true })
                 .then(function (ok) { if (ok) go(); });
         } else go();
     };

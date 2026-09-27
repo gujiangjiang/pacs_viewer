@@ -96,8 +96,8 @@ $pageData = array(
         <button type="button" class="pv-bigbtn" data-pv-act="about" title="关于本软件">
             <span class="pv-bi">ⓘ</span><span class="pv-bl">关于</span></button>
         <span class="pv-spacer"></span>
-        <button type="button" class="pv-bigbtn pv-bigbtn-exit" data-pv-act="back" title="退出阅片，返回检索">
-            <span class="pv-bi">⏻</span><span class="pv-bl">退出</span></button>
+        <button type="button" class="pv-bigbtn pv-bigbtn-exit" data-pv-act="back" title="关闭阅片，返回研究检索">
+            <span class="pv-bi">✕</span><span class="pv-bl">关闭</span></button>
     </div>
     <div class="pv-vw-body">
         <aside class="pv-filmstrip" data-pv="filmstrip">
