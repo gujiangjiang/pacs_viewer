@@ -7,15 +7,17 @@
 }
 .pv-app * { user-select: none; -webkit-user-select: none; }
 
-/* 工具条（大图标 + 下拉菜单） */
+/* 工具条（大图标 + 下拉菜单；固定高度，避免展开/收起侧栏时抖动） */
 .pv-vw-toolbar {
-    display: flex; align-items: stretch; gap: 2px; flex-wrap: nowrap; overflow-x: auto;
-    padding: 5px 10px; background: #0b0f17; border-bottom: 1px solid var(--pv-line);
+    display: flex; align-items: center; gap: 2px; flex-wrap: nowrap;
+    height: 60px; flex: 0 0 60px; box-sizing: border-box;
+    padding: 0 10px; background: #0b0f17; border-bottom: 1px solid var(--pv-line);
+    overflow-x: auto; overflow-y: hidden;
 }
 .pv-vw-toolbar::-webkit-scrollbar { height: 6px; }
 .pv-vw-toolbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
 .pv-spacer { flex: 1 1 auto; }
-.pv-tsep { width: 1px; align-self: stretch; background: var(--pv-line); margin: 4px 6px; }
+.pv-tsep { width: 1px; height: 60%; align-self: center; background: var(--pv-line); margin: 0 6px; }
 .pv-bigbtn {
     display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
     min-width: 58px; padding: 4px 8px; border: 1px solid transparent; border-radius: 8px;
