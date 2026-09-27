@@ -713,7 +713,7 @@
         this.filmstripEl.classList.toggle('is-hidden');
         var visible = !this.filmstripEl.classList.contains('is-hidden');
         var p = this.activePane(); if (p) p.setStatus(visible ? '序列栏已显示' : '序列栏已隐藏');
-        this.panes.forEach(function (p) { p.resize(); });
+        this.panes.forEach(function (p) { p.resize(); p.render(); });
     };
     PvViewer.prototype.refreshControlState = function () {
         var bar = this.toolbarEl; if (!bar) return;
@@ -972,7 +972,7 @@
         this.filmstripEl.style.flexBasis = w + 'px';
         this.filmstripEl.style.width = w + 'px';
         this.sidebarWidth = w;
-        this.panes.forEach(function (p) { p.resize(); });
+        this.panes.forEach(function (p) { p.resize(); p.render(); });
     };
     PvViewer.prototype.restoreSidebarWidth = function () {
         try { var w = parseInt(sessionStorage.getItem('pacs_sidebar_w'), 10); if (w >= 120 && w <= 480) this.applySidebarWidth(w); } catch (e) {}
