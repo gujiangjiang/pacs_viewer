@@ -700,17 +700,8 @@
     PvViewer.prototype.updateHud = function () {
         var data = this.st.data || {}, p = data.patient || {}, s = data.study || {};
         if (this.pcName) this.pcName.textContent = p.name || '—';
-        if (this.pcSub) this.pcSub.textContent = (p.gender || '') + (p.age ? '　/　' + p.age : '');
-        if (this.pcMeta) {
-            var meta = [];
-            if (p.patient_id) meta.push('PID ' + p.patient_id);
-            if (s.accession_no) meta.push('检查号 ' + s.accession_no);
-            if (p.outpatient_no) meta.push('门诊号 ' + p.outpatient_no);
-            if (s.description) meta.push(s.description);
-            var n = (data.series || []).length;
-            if (n) meta.push(n + ' 个序列');
-            this.pcMeta.textContent = meta.join('　');
-        }
+        if (this.pcSub) this.pcSub.textContent = (p.gender || '') + (p.age ? '　' + p.age : '');
+        if (this.pcMeta) this.pcMeta.textContent = s.modality || '';
     };
 
     /* ---------- 启动（页面生命周期由 spa.js / 页脚统一调度） ---------- */
