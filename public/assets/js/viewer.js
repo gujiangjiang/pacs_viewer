@@ -70,6 +70,7 @@
         PvApi.study(this.uid).then(function (j) {
             if (!j || j.code !== 200 || !j.data) { self.setStatus((j && j.msg) || '数据加载失败'); return; }
             self.setData(j.data);
+            self.setStatus('');   // 加载完成后清除加载提示
         }).catch(function () { self.setStatus('网络请求失败'); });
     };
 
