@@ -5,6 +5,7 @@
 /data/*.db-shm
 /data/session/
 /data/uploads/
+/data/mock_cache/
 
 # 系统 / 编辑器
 .DS_Store

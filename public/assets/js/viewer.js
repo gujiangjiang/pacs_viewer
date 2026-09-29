@@ -131,8 +131,7 @@
                 var dec = window.PvDicom ? PvDicom.decode(buf) : null;
                 if (!dec) { delete self._frames[key]; self.setStatus('DICOM 解码失败'); self.render(); return; }
                 self._frames[key] = { status: 'ok', dec: dec, raw: PvRender.resample(dec, BASE) };
-                var keys = Object.keys(self._frames);
-                if (keys.length > 120) { for (var i = 0; i < keys.length - 80; i++) delete self._frames[keys[i]]; }
+                self._trimFrames();
                 self.render();
             })
             .catch(function () { delete self._frames[key]; self.setStatus('影像加载失败'); self.render(); });
@@ -142,6 +141,46 @@
         var s = this.curSeries(); if (!s || s.format !== 'dicom') return null;
         var f = this.getFrame(s, this.st.fi);
         return (f && f.status === 'ok') ? f : null;
+    };
+
+    /** 帧缓存上限控制（优先保留正在显示的帧） */
+    PvPane.prototype._trimFrames = function () {
+        var keys = Object.keys(this._frames);
+        if (keys.length <= 240) return;
+        var removed = 0;
+        for (var i = 0; i < keys.length && removed < keys.length - 200; i++) {
+            var f = this._frames[keys[i]];
+            if (f && f.status === 'ok') { delete this._frames[keys[i]]; removed++; }
+        }
+    };
+
+    /** 后台预取并解码整条序列（并发上限 4），使滚动翻帧基本即时 */
+    PvPane.prototype.prefetch = function (series) {
+        if (!series || series.format !== 'dicom' || !series.images || !series.images.length) return;
+        var self = this, n = series.images.length, MAX = 6, cursor = 0;
+        var order = [], seen = {}, cur = this.st.fi;
+        var push = function (k) { if (k >= 0 && k < n && !seen[k]) { seen[k] = 1; order.push(k); } };
+        push(cur);
+        for (var d = 1; d < n; d++) { push(cur + d); push(cur - d); }
+        function next() {
+            if (cursor >= order.length) return;
+            var idx = order[cursor++];
+            var key = self._frameKey(series, idx);
+            if (self._frames[key]) { next(); return; }
+            self._frames[key] = { status: 'loading' };
+            fetch(series.images[idx], { credentials: 'same-origin' })
+                .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+                .then(function (buf) {
+                    var dec = window.PvDicom ? PvDicom.decode(buf) : null;
+                    if (dec) self._frames[key] = { status: 'ok', dec: dec, raw: PvRender.resample(dec, BASE) };
+                    else delete self._frames[key];
+                    self._trimFrames();
+                    if (self.curSeries() === series && self.st.fi === idx) self.render();
+                })
+                .catch(function () { delete self._frames[key]; })
+                .then(function () { next(); });
+        }
+        for (var k = 0; k < MAX; k++) next();
     };
 
     PvPane.prototype.getRealImage = function (src, cb) {
@@ -441,6 +480,7 @@
         this.applyDefaults(); this.fit();
         this.updateTitle(); this.updateScrollbar();
         this.viewer.afterPaneLoad(this);
+        this.prefetch(d.series[si]);
     };
     PvPane.prototype.setFrame = function (i) {
         var n = this.frameCount();
@@ -867,7 +907,7 @@
             if (typeof saved.active === 'number' && saved.active >= 0 && saved.active < self.panes.length) self.active = saved.active;
             self.panes.forEach(function (p, i) {
                 p.el.classList.toggle('active', i === self.active);
-                if (p.st.uid && self.study(p.st.uid)) { p.applyDefaults(); p.fit(); p.updateTitle(); p.updateScrollbar(); p.render(); }
+                if (p.st.uid && self.study(p.st.uid)) { p.applyDefaults(); p.fit(); p.updateTitle(); p.updateScrollbar(); p.render(); var rs = p.curSeries(); if (rs) p.prefetch(rs); }
                 else { p.updateTitle(); p.updateScrollbar(); p.render(); }
             });
             if (cb) cb();

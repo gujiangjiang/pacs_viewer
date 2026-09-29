@@ -151,7 +151,7 @@ class PvMockController {
             header('Content-Type: ' . $r['content_type']);
             header('Content-Length: ' . strlen($r['binary']));
             header('Content-Disposition: inline; filename="' . str_replace('"', '', $r['filename']) . '"');
-            header('Cache-Control: no-store');
+            header('Cache-Control: private, max-age=86400');
         }
         echo $r['binary'];
         exit;

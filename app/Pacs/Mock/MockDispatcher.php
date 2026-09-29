@@ -147,8 +147,9 @@ class PvMockDispatcher {
         $seriesNo = (int)$id;
 
         $images = array();
+        $ver = substr(md5(PV_VERSION . '|' . $modality . '|' . $body . '|' . $weight . '|' . $count), 0, 8);
         for ($i = 1; $i <= $count; $i++) {
-            $images[] = pvw_url('dicom', array('uid' => $studyUid, 'series' => $seriesNo, 'instance' => $i));
+            $images[] = pvw_url('dicom', array('uid' => $studyUid, 'series' => $seriesNo, 'instance' => $i, 'v' => $ver));
         }
 
         return array(

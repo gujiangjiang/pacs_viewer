@@ -190,11 +190,64 @@ class PvMockServer {
         if ($instance < 1) $instance = 1;
         if ($instance > $total) $instance = $total;
 
-        $pixels = $gen->generateFrame($instance - 1);
-        $binary = self::buildDicom($row, $series, $seriesIndex, $instance, $gen, $pixels);
         $base = ($row['patient_id'] ? $row['patient_id'] : 'patient') . '_' . ($row['accession_no'] ? $row['accession_no'] : 'study')
             . '_s' . ($seriesIndex + 1) . '_i' . $instance . '.dcm';
+
+        /* 磁盘缓存：同一实例仅逐像素生成一次，后续直接回读文件 */
+        $key = md5(implode('|', array(
+            PV_VERSION, $row['study_uid'], $modality, $desc, $seriesIndex, $instance,
+            $gen->getFrameCount(), $gen->getBodyPartExamined(),
+        )));
+        $file = PV_DATA . '/mock_cache/' . substr($key, 0, 2) . '/' . $key . '.dcm';
+        if (is_file($file)) {
+            $cached = @file_get_contents($file);
+            if ($cached !== false && $cached !== '') {
+                return array('binary' => $cached, 'filename' => $base, 'content_type' => 'application/dicom');
+            }
+        }
+
+        $pixels = $gen->generateFrame($instance - 1);
+        $binary = self::buildDicom($row, $series, $seriesIndex, $instance, $gen, $pixels);
+        self::cacheWrite($file, $binary);
         return array('binary' => $binary, 'filename' => $base, 'content_type' => 'application/dicom');
+    }
+
+    /** 写入磁盘缓存（惰性建目录，偶发容量清理） */
+    private static function cacheWrite($file, $data) {
+        $dir = dirname($file);
+        if (!is_dir($dir)) @mkdir($dir, 0775, true);
+        @file_put_contents($file, $data, LOCK_EX);
+        if (mt_rand(1, 50) === 1) self::cacheCleanup(PV_DATA . '/mock_cache');
+    }
+
+    /** 缓存容量清理：超过 256MB 时按修改时间删除最旧文件 */
+    private static function cacheCleanup($root) {
+        $max = 268435456;                    // 256MB
+        $files = array(); $total = 0;
+        $subs = @scandir($root);
+        if (!is_array($subs)) return;
+        foreach ($subs as $d) {
+            if ($d === '.' || $d === '..') continue;
+            $sub = $root . '/' . $d;
+            if (!is_dir($sub)) continue;
+            $fs = @scandir($sub);
+            if (!is_array($fs)) continue;
+            foreach ($fs as $f) {
+                if ($f === '.' || $f === '..') continue;
+                $path = $sub . '/' . $f;
+                $sz = @filesize($path);
+                if ($sz === false) continue;
+                $total += $sz; $files[$path] = @filemtime($path);
+            }
+        }
+        if ($total <= $max) return;
+        asort($files);
+        foreach ($files as $path => $mtime) {
+            if ($total <= $max) break;
+            $sz = @filesize($path);
+            @unlink($path);
+            if ($sz !== false) $total -= $sz;
+        }
     }
 
     /** 组装单实例标准 DICOM 数据集 */
