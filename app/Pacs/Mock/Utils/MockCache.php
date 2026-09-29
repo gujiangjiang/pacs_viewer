@@ -38,7 +38,7 @@ class PvMockCache {
         if (self::enabled()) {
             $idx = self::index();
             apcu_store(self::PREFIX . $key, $value, self::TTL);
-            if (!isset($idx[$key])) $idx[$key] = $len; else $idx[$key] = $len;
+            $idx[$key] = $len;
 
             $max = self::maxBytes();
             $total = array_sum($idx);
