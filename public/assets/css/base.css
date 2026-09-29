@@ -38,7 +38,7 @@ code { background: #1e293b; padding: 1px 5px; border-radius: 4px; font-size: 12p
 }
 .pv-brand { display: flex; align-items: center; gap: 9px; color: #e2e8f0; font-weight: 700; }
 .pv-brand:hover { text-decoration: none; }
-.pv-logo { font-size: 20px; }
+.pv-logo { width: 40px; height: 40px; border-radius: 10px; display: block; }
 .pv-brand-hosp { font-size: 12px; color: var(--pv-txt2); font-weight: 400; padding-left: 8px; border-left: 1px solid var(--pv-line2); }
 .pv-nav { display: flex; gap: 4px; }
 .pv-nav a { padding: 6px 14px; border-radius: 7px; color: var(--pv-txt2); font-size: 13px; }

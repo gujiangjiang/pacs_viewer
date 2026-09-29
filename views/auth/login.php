@@ -17,7 +17,7 @@
 <body class="pv-auth-body">
 <div class="pv-auth-card">
     <div class="pv-auth-head">
-        <div class="pv-auth-logo">🩻</div>
+        <img class="pv-auth-logo" src="<?php echo pvw_e(PvPwaController::iconUrl(96)); ?>" width="56" height="56" alt="">
         <h1><?php echo pvw_e($site); ?></h1>
         <p class="pv-auth-sub">DICOM / PACS 接口联调测试工具</p>
     </div>

@@ -14,7 +14,7 @@
 .pv-auth-wide .pv-form-title { text-align: left; }
 .pv-auth-body { overflow: auto; }
 .pv-auth-head { text-align: center; margin-bottom: 22px; }
-.pv-auth-logo { font-size: 42px; }
+.pv-auth-logo { width: 56px; height: 56px; border-radius: 14px; display: block; margin: 0 auto; }
 .pv-auth-head h1 { font-size: 19px; margin: 8px 0 4px; color: #f1f5f9; }
 .pv-auth-sub { font-size: 12px; color: var(--pv-txt2); margin: 0; }
 .pv-auth-card form { margin-top: 6px; }

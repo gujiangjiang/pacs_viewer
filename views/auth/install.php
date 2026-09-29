@@ -17,7 +17,7 @@
 <body class="pv-auth-body">
 <div class="pv-auth-card pv-auth-wide">
     <div class="pv-auth-head">
-        <div class="pv-auth-logo">🩻</div>
+        <img class="pv-auth-logo" src="<?php echo pvw_e(PvPwaController::iconUrl(96)); ?>" width="56" height="56" alt="">
         <h1>首次运行安装</h1>
         <p class="pv-auth-sub">创建管理员账号并完成初始化，之后即可登录使用</p>
     </div>

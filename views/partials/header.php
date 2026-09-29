@@ -51,7 +51,7 @@ $pvPageData = isset($pageData) ? $pageData : array();
 <body class="<?php echo pvw_e(isset($bodyClass) ? $bodyClass : ''); ?>">
 <header class="pv-topbar">
     <a class="pv-brand" href="<?php echo pvw_e(pvw_url('search')); ?>" data-nav="search">
-        <span class="pv-logo">🩻</span>
+        <img class="pv-logo" src="<?php echo pvw_e(PvPwaController::iconUrl(96)); ?>" width="40" height="40" alt="">
         <span class="pv-brand-name"><?php echo pvw_e($site); ?></span>
     </a>
     <nav class="pv-nav" id="pvNav">
