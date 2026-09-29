@@ -45,9 +45,9 @@ class PvMockServer {
 
     /* ---------------- 数据来源 ---------------- */
 
-    /** 患者检查行（统一结构） */
+    /** 患者检查行（统一结构，复用内置仿真数据源的关键词检索） */
     public static function rows($keyword = '') {
-        return self::filterBuiltin(PvDemoPacs::studies(), $keyword);
+        return PvDemoPacs::search($keyword);
     }
 
     /** 供管理界面预览：按患者聚合（患者 + 其检查） */
@@ -90,38 +90,9 @@ class PvMockServer {
         return $rows;
     }
 
+    /** 调阅单次检查（复用内置仿真数据源的完整组装，含按检查号回退匹配） */
     public static function study($uid) {
-        $row = null;
-        foreach (self::rows('') as $r) {
-            if ($r['study_uid'] === $uid || (isset($r['accession_no']) && $r['accession_no'] === $uid)) { $row = $r; break; }
-        }
-        if (!$row) return null;
-        // 若按检查号匹配，回填 study_uid 以便前端展示
-        $patient = array(
-            'patient_id'    => $row['patient_id'],
-            'name'          => $row['name'],
-            'gender'        => $row['gender'],
-            'age'           => $row['age'],
-            'birth_date'    => isset($row['birth_date']) ? $row['birth_date'] : '',
-            'outpatient_no' => isset($row['outpatient_no']) ? $row['outpatient_no'] : '',
-        );
-        $st = array(
-            'accession_no'    => isset($row['accession_no']) ? $row['accession_no'] : '',
-            'study_uid'       => $row['study_uid'],
-            'modality'        => $row['modality'],
-            'description'     => $row['description'],
-            'study_date'      => isset($row['study_date']) ? $row['study_date'] : '',
-            'institution'     => isset($row['institution']) ? $row['institution'] : '',
-            'station_name'    => isset($row['station_name']) ? $row['station_name'] : '',
-            'apply_dept'      => isset($row['apply_dept']) ? $row['apply_dept'] : '',
-            'apply_doctor'    => isset($row['apply_doctor']) ? $row['apply_doctor'] : '',
-            'slice_thickness' => in_array(strtoupper($row['modality']), array('CT', 'MR'), true) ? 5.0 : 0,
-        );
-        return array(
-            'patient' => $patient,
-            'study'   => $st,
-            'series'  => PvDemoPacs::seriesFor($row['modality'], $row['study_uid'], $row['description']),
-        );
+        return PvDemoPacs::study($uid);
     }
 
     /**
@@ -320,15 +291,4 @@ class PvMockServer {
     }
 
     /* ---------------- 内部工具 ---------------- */
-
-    private static function filterBuiltin($list, $keyword) {
-        $kw = trim((string)$keyword);
-        if ($kw === '') return $list;
-        $out = array();
-        foreach ($list as $s) {
-            $hay = $s['name'] . ' ' . $s['patient_id'] . ' ' . $s['accession_no'] . ' ' . $s['outpatient_no'] . ' ' . $s['description'];
-            if (mb_stripos($hay, $kw, 0, 'UTF-8') !== false) $out[] = $s;
-        }
-        return $out;
-    }
 }

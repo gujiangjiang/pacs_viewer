@@ -14,6 +14,15 @@
 
 ---
 
+## [0.16.0] - 2026-09-30
+
+### 变更
+- **内置数据源去重（大项 C 完成）**：`PvMockServer::rows()` 复用 `PvDemoPacs::search()`，
+  `PvMockServer::study()` 复用 `PvDemoPacs::study()`，删除重复的检查行过滤与
+  patient / study 组装（`filterBuiltin`）。
+
+---
+
 ## [0.15.2] - 2026-09-30
 
 ### 变更
