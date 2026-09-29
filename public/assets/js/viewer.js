@@ -162,6 +162,8 @@
         var push = function (k) { if (k >= 0 && k < n && !seen[k]) { seen[k] = 1; order.push(k); } };
         push(cur);
         for (var d = 1; d < n; d++) { push(cur + d); push(cur - d); }
+        /* 真实大型序列仅预取离当前帧最近的有限窗口，其余按需加载 */
+        if (order.length > 120) order = order.slice(0, 120);
         function next() {
             if (cursor >= order.length) return;
             var idx = order[cursor++];

@@ -39,7 +39,8 @@
                 + '</div>'
                 + '<div class="pv-sg-series">';
             (st.series || []).forEach(function (se, si) {
-                html += '<div class="pv-thumb' + (active && si === (self.activeRef.si || 0) ? ' active' : '') + '" data-g="' + gi + '" data-s="' + si + '">'
+                var tkey = self.thumbKey(se);
+                html += '<div class="pv-thumb' + (active && si === (self.activeRef.si || 0) ? ' active' : '') + '" data-g="' + gi + '" data-s="' + si + '" data-tkey="' + self.esc(tkey) + '">'
                     + '<canvas class="pv-thumb-cv" width="' + THUMB + '" height="' + THUMB + '"></canvas>'
                     + '<div class="pv-thumb-meta"><span class="pv-thumb-id">Ser ' + self.esc(se.series_id) + '</span>'
                     + '<span class="pv-thumb-n">' + (se.slice_count || (se.images ? se.images.length : 1)) + ' 帧</span></div>'
@@ -77,24 +78,46 @@
         });
     };
 
+    /** 缩略图缓存：避免侧栏重建时异步重解码导致的闪烁 */
+    var THUMB_CACHE = {};
+
+    PvSidebar.prototype.thumbKey = function (series) {
+        var url = (series.images && series.images[0]) || '';
+        return url + '|' + (series.window_width || '') + '|' + (series.window_center || '');
+    };
+    PvSidebar.prototype._repaintThumbs = function (key) {
+        var img = THUMB_CACHE[key];
+        if (!img) return;
+        Array.prototype.forEach.call(document.querySelectorAll('.pv-thumb[data-tkey]'), function (th) {
+            if (th.getAttribute('data-tkey') !== key) return;
+            var cv = th.querySelector('canvas');
+            if (!cv) return;
+            var ctx = cv.getContext('2d');
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
+            ctx.putImageData(img, 0, 0);
+        });
+    };
     PvSidebar.prototype.drawThumb = function (cv, series) {
         var ctx = cv.getContext('2d');
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
         if (series.format === 'dicom') {
             var dsrc = series.images && series.images[0];
             if (!dsrc) return;
+            var key = this.thumbKey(series);
+            if (THUMB_CACHE[key]) { ctx.putImageData(THUMB_CACHE[key], 0, 0); return; }
+            this._pending = this._pending || {};
+            if (this._pending[key]) return;
+            this._pending[key] = 1;
             var self = this;
             fetch(dsrc, { credentials: 'same-origin' }).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
                 var dec = window.PvDicom ? PvDicom.decode(buf) : null;
-                if (!dec) return;
-                var ww = parseFloat(series.window_width) || 256, wl = parseFloat(series.window_center) || 128;
-                var img = PvRender.decodeToImage(dec, cv.width, ww, wl, false);
-                var tmp = self._thumbCanvas || (self._thumbCanvas = document.createElement('canvas'));
-                tmp.width = cv.width; tmp.height = cv.height;
-                tmp.getContext('2d').putImageData(img, 0, 0);
-                ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
-                ctx.drawImage(tmp, 0, 0);
-            }).catch(function () {});
+                if (dec) {
+                    var ww = parseFloat(series.window_width) || 256, wl = parseFloat(series.window_center) || 128;
+                    THUMB_CACHE[key] = PvRender.decodeToImage(dec, cv.width, ww, wl, false);
+                    self._repaintThumbs(key);
+                }
+                delete self._pending[key];
+            }).catch(function () { delete self._pending[key]; });
             return;
         }
         var src = series.images && series.images[0];
