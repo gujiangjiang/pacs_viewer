@@ -54,12 +54,50 @@
         });
     }
 
+    function bindAnatomy() {
+        var rows = document.getElementById('pvAnatomyRows');
+        var tpl = document.getElementById('pvAnatomyTpl');
+        var add = document.getElementById('pvAnatomyAdd');
+        var reset = document.getElementById('pvAnatomyReset');
+        var seq = Date.now();
+
+        function bindRemove() {
+            Array.prototype.forEach.call(document.querySelectorAll('[data-anatomy-remove]'), function (b) {
+                b.onclick = function () {
+                    var tr = b.closest ? b.closest('tr') : null;
+                    if (tr && tr.parentNode) tr.parentNode.removeChild(tr);
+                };
+            });
+        }
+        if (add && rows && tpl) {
+            add.addEventListener('click', function () {
+                var frag = tpl.content.cloneNode(true);
+                var idx = 'n' + (seq++);
+                Array.prototype.forEach.call(frag.querySelectorAll('[data-f]'), function (inp) {
+                    inp.name = 'anatomy[' + idx + '][' + inp.getAttribute('data-f') + ']';
+                });
+                rows.appendChild(frag);
+                bindRemove();
+            });
+        }
+        bindRemove();
+        if (reset) {
+            reset.addEventListener('click', function () {
+                PvUI.post(PvNav.route('api/mock/anatomy-reset'), {}).then(function (j) {
+                    if (j && j.code === 200) { PvUI.toast(j.msg || '已恢复默认', 'ok'); setTimeout(function () { location.reload(); }, 600); }
+                    else PvUI.toast((j && j.msg) || '操作失败', 'err');
+                });
+            });
+        }
+    }
+
     global.PvPages = global.PvPages || {};
     global.PvPages.mock = {
         init: function (data) {
             data = data || {};
             PvUI.bindAjaxForms(document);
             bindCopy();
+            bindAnatomy();
             if (data.flash) PvUI.toast(data.flash, 'ok');
 
             var source = document.getElementById('pvMockSource');

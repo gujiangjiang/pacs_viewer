@@ -26,4 +26,15 @@
 .pv-logscroll { max-height: 62vh; overflow: auto; border: 1px solid var(--pv-line); border-radius: 10px; }
 .pv-logscroll .pv-table { min-width: 100%; }
 .pv-logscroll .pv-table thead th { position: sticky; top: 0; z-index: 2; background: #0b0f17; }
+
+/* 解剖部位配置表 */
+.pv-table-wrap { overflow-x: auto; border: 1px solid var(--pv-line); border-radius: 10px; }
+.pv-anatomy-table { min-width: 860px; }
+.pv-anatomy-table td { padding: 6px 8px; }
+.pv-anatomy-table .pv-input { height: 30px; padding: 4px 8px; }
+.pv-in-xs { width: 68px; }
+.pv-in-sm { width: 110px; }
+.pv-in-lg { width: 100%; min-width: 220px; }
+.pv-anatomy-table select.pv-input { width: 130px; }
+
 echo done

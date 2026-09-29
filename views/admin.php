@@ -175,6 +175,7 @@ $pageData = array('flash' => isset($flash) ? $flash : '');
 <section class="pv-tabpane<?php echo $tabCls('mock'); ?>" data-pane="mock">
     <?php
     $source = $v('mock_patient_source', 'builtin');
+    $anatomy = PvMockAnatomyConfig::entries();
     include PV_VIEWS . '/partials/mock_pane.php';
     ?>
 </section>

@@ -32,6 +32,35 @@ class PvMockController {
         self::reply('密钥已重新生成', array('key' => PvMockServer::apiKey()));
     }
 
+    /** 保存解剖部位与切片数量配置 */
+    public static function anatomySave() {
+        PvAuth::requireAdmin();
+        pvw_csrf_check();
+        $rows = (isset($_POST['anatomy']) && is_array($_POST['anatomy'])) ? $_POST['anatomy'] : array();
+        $entries = array();
+        foreach ($rows as $r) {
+            if (!is_array($r)) continue;
+            $entries[] = array(
+                'modality' => isset($r['modality']) ? (string)$r['modality'] : '',
+                'body_key' => isset($r['body_key']) ? (string)$r['body_key'] : '',
+                'label'    => isset($r['label']) ? (string)$r['label'] : '',
+                'keywords' => isset($r['keywords']) ? (string)$r['keywords'] : '',
+                'frames'   => isset($r['frames']) ? (int)$r['frames'] : 0,
+                'enabled'  => (isset($r['enabled']) && (string)$r['enabled'] === '1') ? 1 : 0,
+            );
+        }
+        PvMockAnatomyConfig::save($entries);
+        self::reply('解剖部位与切片数量已保存');
+    }
+
+    /** 恢复默认解剖部位配置 */
+    public static function anatomyReset() {
+        PvAuth::requireAdmin();
+        pvw_csrf_check();
+        PvMockAnatomyConfig::reset();
+        self::reply('已恢复默认解剖部位配置');
+    }
+
     /** 一键应用：把模拟服务器地址与密钥填入 DICOM/PACS 接口 */
     public static function apply() {
         PvAuth::requireAdmin();
