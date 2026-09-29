@@ -21,13 +21,34 @@
  * ============================================================ */
 class PvPacsClient {
 
+    /** 临时配置覆盖（仅用于「测试当前输入」场景，请求结束后清空） */
+    private static $override = null;
+
     /** 数据来源模式：Remote（已配置接口地址）/ Unset（未配置） */
     public static function mode() {
         return self::isRemote() ? 'Remote' : 'Unset';
     }
 
     public static function isRemote() {
-        return trim((string)PvSettings::get('pacs_endpoint', '')) !== '';
+        return self::endpoint() !== '';
+    }
+
+    /** 使用指定配置测试连通性（不读取已保存设置） */
+    public static function pingWith($endpoint, $key = null, $timeout = null) {
+        self::$override = array(
+            'endpoint' => $endpoint !== null ? trim((string)$endpoint) : null,
+            'key' => $key !== null ? (string)$key : null,
+            'timeout' => $timeout !== null && $timeout !== '' ? (int)$timeout : null,
+        );
+        try {
+            $res = self::request('ping', array());
+            $p = isset($res['data']) && is_array($res['data']) ? $res['data'] : array();
+            $p['endpoint'] = self::endpoint();
+            $p['mode'] = 'Remote';
+            return $p;
+        } finally {
+            self::$override = null;
+        }
     }
 
     /** 检索检查列表 */
@@ -59,10 +80,10 @@ class PvPacsClient {
 
     /* ---------- HTTP 请求 ---------- */
     private static function request($action, array $params) {
-        $endpoint = trim((string)PvSettings::get('pacs_endpoint', ''));
+        $endpoint = self::endpoint();
         if ($endpoint === '') throw new RuntimeException('未配置 PACS 接口地址');
         $params['action'] = $action;
-        $key = trim((string)PvSettings::get('pacs_api_key', ''));
+        $key = self::apiKey();
         if ($key !== '') $params['key'] = $key;
 
         // 指向内置模拟服务器时进程内直连，避免服务器向自身发起 HTTP 请求
@@ -71,7 +92,7 @@ class PvPacsClient {
         }
 
         $url = $endpoint . (strpos($endpoint, '?') === false ? '?' : '&') . http_build_query($params);
-        $timeout = max(1, (int)PvSettings::get('pacs_timeout', '5'));
+        $timeout = self::timeout();
 
         $raw = self::httpGet($url, $timeout);
         if ($raw === false || $raw === '') throw new RuntimeException('无法连接 PACS 接口：' . $url);
@@ -81,6 +102,20 @@ class PvPacsClient {
             throw new RuntimeException('PACS 接口返回错误：' . (isset($j['msg']) ? $j['msg'] : '未知错误'));
         }
         return $j;
+    }
+
+    /* ---------- 配置读取（支持临时覆盖） ---------- */
+    private static function endpoint() {
+        if (self::$override !== null && self::$override['endpoint'] !== null) return self::$override['endpoint'];
+        return trim((string)PvSettings::get('pacs_endpoint', ''));
+    }
+    private static function apiKey() {
+        if (self::$override !== null && self::$override['key'] !== null) return self::$override['key'];
+        return trim((string)PvSettings::get('pacs_api_key', ''));
+    }
+    private static function timeout() {
+        if (self::$override !== null && self::$override['timeout'] !== null) return max(1, (int)self::$override['timeout']);
+        return max(1, (int)PvSettings::get('pacs_timeout', '5'));
     }
 
     /** 进程内直连内置模拟服务器（等价于对外 API，返回同样的 JSON 结构） */

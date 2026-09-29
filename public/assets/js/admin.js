@@ -264,6 +264,10 @@
                 });
             }
 
+            function formVal(name) {
+                var el = document.querySelector('[name="' + name + '"]');
+                return el ? el.value : '';
+            }
             var btn = document.getElementById('pvTestPacs');
             var out = document.getElementById('pvTestResult');
             if (btn && out) {
@@ -271,12 +275,16 @@
                     btn.disabled = true;
                     out.className = 'pv-test-result';
                     out.textContent = '测试中…';
-                    PvApi.ping().then(function (j) {
+                    PvUI.post(storageRoute('api/pacs/test'), {
+                        pacs_endpoint: formVal('pacs_endpoint'),
+                        pacs_api_key: formVal('pacs_api_key'),
+                        pacs_timeout: formVal('pacs_timeout')
+                    }).then(function (j) {
                         btn.disabled = false;
                         if (j && j.code === 200) {
                             out.className = 'pv-test-result ok';
                             var d = j.data || {};
-                            out.textContent = '✓ 接口可用 · ' + (d.name || '') + ' v' + (d.version || '') + (d.mode ? ' · 模式 ' + d.mode : '') + (d.studies != null ? ' · 检查数 ' + d.studies : '');
+                            out.textContent = '✓ 接口可用 · ' + (d.name || '') + (d.version ? ' v' + d.version : '') + (d.mode ? ' · 模式 ' + d.mode : '') + (d.studies != null ? ' · 检查数 ' + d.studies : '');
                         } else {
                             out.className = 'pv-test-result err';
                             out.textContent = '✗ ' + ((j && j.msg) || '测试失败');
@@ -313,14 +321,15 @@
             if (fhirBtn && fhirOut) {
                 fhirBtn.addEventListener('click', function () {
                     fhirBtn.disabled = true; fhirOut.className = 'pv-test-result'; fhirOut.textContent = '测试中…';
-                    fetch(storageRoute('api/fhir/test'), { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
-                        .then(function (r) { return r.json(); })
-                        .then(function (j) {
-                            fhirBtn.disabled = false;
-                            if (j && j.code === 200) { fhirOut.className = 'pv-test-result ok'; fhirOut.textContent = '✓ 连接成功 · ' + ((j.data && j.data.name) || 'FHIR'); }
-                            else { fhirOut.className = 'pv-test-result err'; fhirOut.textContent = '✗ ' + ((j && j.msg) || '连接失败'); }
-                        })
-                        .catch(function () { fhirBtn.disabled = false; fhirOut.className = 'pv-test-result err'; fhirOut.textContent = '✗ 网络请求失败'; });
+                    PvUI.post(storageRoute('api/fhir/test'), {
+                        fhir_endpoint: formVal('fhir_endpoint'),
+                        fhir_api_key: formVal('fhir_api_key'),
+                        fhir_timeout: formVal('fhir_timeout')
+                    }).then(function (j) {
+                        fhirBtn.disabled = false;
+                        if (j && j.code === 200) { fhirOut.className = 'pv-test-result ok'; fhirOut.textContent = '✓ 连接成功 · ' + ((j.data && j.data.name) || 'FHIR'); }
+                        else { fhirOut.className = 'pv-test-result err'; fhirOut.textContent = '✗ ' + ((j && j.msg) || '连接失败'); }
+                    }).catch(function () { fhirBtn.disabled = false; fhirOut.className = 'pv-test-result err'; fhirOut.textContent = '✗ 网络请求失败'; });
                 });
             }
         },

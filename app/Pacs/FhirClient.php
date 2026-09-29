@@ -20,8 +20,11 @@
  * ============================================================ */
 class PvFhirClient {
 
+    /** 临时配置覆盖（仅用于「测试当前输入」场景，请求结束后清空） */
+    private static $override = null;
+
     public static function isConfigured() {
-        return trim((string)PvSettings::get('fhir_endpoint', '')) !== '';
+        return self::base() !== '';
     }
 
     /** 检索已缴费已登记的患者检查（规范化为 PACS 检索行结构） */
@@ -43,12 +46,27 @@ class PvFhirClient {
 
     /** 接口连通性测试（读取 CapabilityStatement / metadata） */
     public static function ping() {
-        $base = self::base();
-        $meta = self::getJson($base . '/metadata');
-        $name = 'FHIR R4 服务';
-        if (isset($meta['name'])) $name = (string)$meta['name'];
-        elseif (isset($meta['software']['name'])) $name = (string)$meta['software']['name'];
-        return array('name' => $name, 'endpoint' => $base, 'source' => 'fhir');
+        return self::pingWith(null);
+    }
+
+    /** 使用指定配置测试连通性（不读取已保存设置） */
+    public static function pingWith($endpoint, $key = null, $timeout = null) {
+        self::$override = array(
+            'endpoint' => $endpoint !== null ? trim((string)$endpoint) : null,
+            'key' => $key !== null ? (string)$key : null,
+            'timeout' => $timeout !== null && $timeout !== '' ? (int)$timeout : null,
+        );
+        try {
+            $base = self::base();
+            if ($base === '') throw new RuntimeException('未配置门诊系统 FHIR 接口地址');
+            $meta = self::getJson($base . '/metadata');
+            $name = 'FHIR R4 服务';
+            if (isset($meta['name'])) $name = (string)$meta['name'];
+            elseif (isset($meta['software']['name'])) $name = (string)$meta['software']['name'];
+            return array('name' => $name, 'endpoint' => $base, 'source' => 'fhir');
+        } finally {
+            self::$override = null;
+        }
     }
 
     /**
@@ -271,11 +289,24 @@ class PvFhirClient {
 
     /* ---------------- HTTP ---------------- */
 
-    private static function base() { return rtrim((string)PvSettings::get('fhir_endpoint', ''), '/'); }
+    private static function base() {
+        if (self::$override !== null && self::$override['endpoint'] !== null) return rtrim(self::$override['endpoint'], '/');
+        return rtrim((string)PvSettings::get('fhir_endpoint', ''), '/');
+    }
+
+    private static function fhirKey() {
+        if (self::$override !== null && self::$override['key'] !== null) return self::$override['key'];
+        return trim((string)PvSettings::get('fhir_api_key', ''));
+    }
+
+    private static function fhirTimeout() {
+        if (self::$override !== null && self::$override['timeout'] !== null) return max(1, (int)self::$override['timeout']);
+        return max(1, (int)PvSettings::get('fhir_timeout', '5'));
+    }
 
     private static function getJson($url) {
-        $timeout = max(1, (int)PvSettings::get('fhir_timeout', '5'));
-        $key = trim((string)PvSettings::get('fhir_api_key', ''));
+        $timeout = self::fhirTimeout();
+        $key = self::fhirKey();
         $headers = array('Accept: application/fhir+json');
         if ($key !== '') { $headers[] = 'Authorization: Bearer ' . $key; $headers[] = 'X-API-Key: ' . $key; }
         $raw = self::httpGet($url, $timeout, $headers);

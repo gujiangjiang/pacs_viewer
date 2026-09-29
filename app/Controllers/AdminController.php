@@ -58,13 +58,53 @@ class PvAdminController {
         if (isset($pairs['fhir_timeout'])) {
             $pairs['fhir_timeout'] = (string)max(1, min(60, (int)$pairs['fhir_timeout']));
         }
-        PvSettings::saveMany($pairs);
         $tab = (string)pvw_input('tab', 'basic');
+
+        /* 外部接口：保存前必须测试通过 */
+        if ($tab === 'pacs') {
+            $ep = isset($pairs['pacs_endpoint']) ? trim($pairs['pacs_endpoint']) : trim((string)PvSettings::get('pacs_endpoint', ''));
+            if ($ep === '') self::reply('请填写 DICOM / PACS 接口地址并测试通过后再保存', false, null, 'pacs');
+            $key = isset($pairs['pacs_api_key']) ? $pairs['pacs_api_key'] : PvSettings::get('pacs_api_key', '');
+            $to = isset($pairs['pacs_timeout']) ? $pairs['pacs_timeout'] : PvSettings::get('pacs_timeout', '5');
+            try {
+                PvPacsClient::pingWith($ep, $key, $to);
+            } catch (Exception $e) {
+                self::reply('DICOM / PACS 接口测试失败，未保存：' . $e->getMessage(), false, null, 'pacs');
+            }
+            $fhirOn = isset($pairs['fhir_enabled']) ? ($pairs['fhir_enabled'] === '1') : ((string)PvSettings::get('fhir_enabled', '0') === '1');
+            if ($fhirOn) {
+                $fep = isset($pairs['fhir_endpoint']) ? trim($pairs['fhir_endpoint']) : trim((string)PvSettings::get('fhir_endpoint', ''));
+                if ($fep === '') self::reply('已启用 FHIR 补充，请填写 FHIR 接口地址', false, null, 'pacs');
+                $fk = isset($pairs['fhir_api_key']) ? $pairs['fhir_api_key'] : PvSettings::get('fhir_api_key', '');
+                $ft = isset($pairs['fhir_timeout']) ? $pairs['fhir_timeout'] : PvSettings::get('fhir_timeout', '5');
+                try {
+                    PvFhirClient::pingWith($fep, $fk, $ft);
+                } catch (Exception $e) {
+                    self::reply('FHIR 接口测试失败，未保存：' . $e->getMessage(), false, null, 'pacs');
+                }
+            }
+        }
+
+        PvSettings::saveMany($pairs);
         self::reply('设置已保存', true, array(
             'site_title'    => PvSettings::get('site_title', ''),
             'hospital_name' => PvSettings::get('hospital_name', ''),
             'icon_version'  => PvIconRenderer::version(),
         ), $tab === 'pacs' ? 'pacs' : 'basic');
+    }
+
+    /** 使用当前输入（未保存）的 DICOM / PACS 配置测试连通性 */
+    public static function pacsTest() {
+        PvAuth::requireAdmin();
+        pvw_csrf_check();
+        $ep = trim((string)pvw_input('pacs_endpoint'));
+        if ($ep === '') pvw_json(400, '请填写 PACS 接口地址');
+        try {
+            $p = PvPacsClient::pingWith($ep, (string)pvw_input('pacs_api_key'), (int)pvw_input('pacs_timeout', 5));
+            pvw_json(200, 'success', $p);
+        } catch (Exception $e) {
+            pvw_json(400, $e->getMessage());
+        }
     }
 
     public static function userCreate() {
@@ -145,14 +185,23 @@ class PvAdminController {
 
     /* ---------------- 数据集成：FHIR 连通性 ---------------- */
 
-    /** FHIR R4 连通性测试（数据来源配置的一部分） */
+    /** FHIR R4 连通性测试（POST 时使用当前输入，GET 时使用已保存配置） */
     public static function fhirTest() {
         PvAuth::requireAdmin();
         @set_time_limit(15);
+        $isPost = isset($_SERVER['REQUEST_METHOD']) && strtoupper((string)$_SERVER['REQUEST_METHOD']) === 'POST';
         try {
-            pvw_json(200, 'success', PvFhirClient::ping());
+            if ($isPost) {
+                pvw_csrf_check();
+                $ep = trim((string)pvw_input('fhir_endpoint'));
+                if ($ep === '') pvw_json(400, '请填写 FHIR 接口地址');
+                $p = PvFhirClient::pingWith($ep, (string)pvw_input('fhir_api_key'), (int)pvw_input('fhir_timeout', 5));
+            } else {
+                $p = PvFhirClient::ping();
+            }
+            pvw_json(200, 'success', $p);
         } catch (Exception $e) {
-            pvw_json(500, $e->getMessage());
+            pvw_json(400, $e->getMessage());
         }
     }
 

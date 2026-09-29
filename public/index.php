@@ -31,6 +31,7 @@ $routes = array(
     'api/storage/clear-uploads' => array('PvAdminController', 'storageClearUploads'),
     'api/storage/clear-cache'   => array('PvAdminController', 'storageClearCache'),
     'api/fhir/test'         => array('PvAdminController', 'fhirTest'),
+    'api/pacs/test'         => array('PvAdminController', 'pacsTest'),
     'admin/icon-upload'     => array('PvAdminController', 'iconUpload'),
     'admin/icon-reset'      => array('PvAdminController', 'iconReset'),
     'mockserver'            => array('PvMockController', 'index'),
