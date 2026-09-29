@@ -37,4 +37,9 @@
 .pv-in-lg { width: 100%; min-width: 220px; }
 .pv-anatomy-table select.pv-input { width: 130px; }
 
+/* 存储情况 */
+.pv-storage { border: 1px solid var(--pv-line); border-radius: 10px; overflow: hidden; }
+.pv-storage-table { width: 100%; }
+.pv-storage-table .pv-storage-size { font-variant-numeric: tabular-nums; color: #e2e8f0; font-weight: 600; white-space: nowrap; }
+
 echo done

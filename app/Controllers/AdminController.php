@@ -24,7 +24,7 @@ class PvAdminController {
         $flash = isset($_SESSION['pv_flash']) ? $_SESSION['pv_flash'] : '';
         unset($_SESSION['pv_flash']);
         $tab = (string)pvw_input('tab', 'basic');
-        if (!in_array($tab, array('basic', 'pacs', 'users', 'logs', 'mock'), true)) $tab = 'basic';
+        if (!in_array($tab, array('basic', 'pacs', 'users', 'logs', 'mock', 'storage'), true)) $tab = 'basic';
         pvw_page('admin', array(
             'user'     => PvAuth::user(),
             'flash'    => $flash,
@@ -133,6 +133,30 @@ class PvAdminController {
         pvw_csrf_check();
         PvQueryLogRepository::clear();
         self::reply('检索日志已清空', true, null, 'logs');
+    }
+
+    /* ---------------- 存储情况 ---------------- */
+
+    /** 查询运行时存储占用（数据库 / 上传 / 缓存 / 会话） */
+    public static function storage() {
+        PvAuth::requireAdmin();
+        pvw_json(200, 'success', PvStorageService::stats());
+    }
+
+    /** 一键清空上传文件与记录 */
+    public static function storageClearUploads() {
+        PvAuth::requireAdmin();
+        pvw_csrf_check();
+        $r = PvStorageService::clearUploads();
+        pvw_json(200, '已清空上传文件（' . $r['files'] . ' 个文件 / ' . $r['records'] . ' 条记录）', $r);
+    }
+
+    /** 一键清空缓存区 */
+    public static function storageClearCache() {
+        PvAuth::requireAdmin();
+        pvw_csrf_check();
+        $r = PvStorageService::clearCache();
+        pvw_json(200, '已清空缓存区（' . $r['files'] . ' 个遗留文件）', $r);
     }
 
     /** 上传自定义站点 / PWA 图标（覆盖代码绘制的默认图标） */
