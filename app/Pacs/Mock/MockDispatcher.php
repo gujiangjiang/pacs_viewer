@@ -24,8 +24,9 @@ class PvMockDispatcher {
         if ($text === '') return '';
         $rules = array(
             'head'    => '/(头|颅|脑|head|brain|cranium|cerebr)/iu',
+            'cardiac' => '/(心脏|心超|心彩|心动图|cardiac|heart|echocardio)/iu',
             'chest'   => '/(胸|肺|thorax|thoracic|lung|chest|pulmo)/iu',
-            'lumbar'  => '/(腰|脊柱|脊椎|spine|spinal|lumbar|vertebra)/iu',
+            'lumbar'  => '/(腰|颈|脊柱|脊椎|spine|spinal|lumbar|cervical|thoracic spine|vertebra|neck)/iu',
             'abdomen' => '/(腹|肝|胆|脾|肾|abdomen|abdominal|liver|hepat|kidney|renal)/iu',
             'knee'    => '/(膝|关节|四肢|腕|踝|肩|肘|knee|joint|limb|extremity|femur|tibia)/iu',
         );
@@ -115,7 +116,7 @@ class PvMockDispatcher {
             foreach ($recon as $r) {
                 $ctx = array('modality' => $modality, 'body_key' => $body, 'seed' => 'p|' . $studyUid . '|s' . $r[0], 'weight' => 'T1', 'orientation' => $r[2]);
                 $gen = self::createGenerator($ctx);
-                $out[] = self::seriesMeta($r[0], $r[1], $gen, $body, $modality, null, $ctx['seed'], $r[2]);
+                $out[] = self::seriesMeta($r[0], $r[1], $gen, $body, $modality, null, $ctx['seed'], $r[2], false);
             }
             return $out;
         }
@@ -129,10 +130,10 @@ class PvMockDispatcher {
     }
 
     /** 组装单条序列元数据（兼容既有前端字段） */
-    private static function seriesMeta($id, $label, PvMockAbstractGenerator $gen, $body, $modality, $weight, $seed, $orientation = null) {
+    private static function seriesMeta($id, $label, PvMockAbstractGenerator $gen, $body, $modality, $weight, $seed, $orientation = null, $primary = true) {
         $ori = $orientation !== null ? $orientation : $gen->getOrientation();
         $count = $gen->getFrameCount();
-        if ($ori === 'CORONAL' || $ori === 'SAGITTAL') $count = max(6, (int)round($count * 0.6));
+        if (!$primary && ($ori === 'CORONAL' || $ori === 'SAGITTAL')) $count = max(6, (int)round($count * 0.6));
         $ps = $gen->getPixelSpacing();
         return array(
             'series_id' => (string)$id,
@@ -147,6 +148,7 @@ class PvMockDispatcher {
             'modality' => $modality,
             'weight' => $weight,
             'generator' => get_class($gen),
+            'primary' => (bool)$primary,
         );
     }
 
@@ -159,7 +161,7 @@ class PvMockDispatcher {
         $idx = (int)$seriesIndex;
         if (!isset($plan[$idx])) return null;
         $s = $plan[$idx];
-        if ($s['orientation'] === 'CORONAL' || $s['orientation'] === 'SAGITTAL') return null;
+        if (empty($s['primary'])) return null;
         return self::createGenerator(array(
             'modality' => $modality,
             'body_key' => $s['body_key'],
