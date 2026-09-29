@@ -32,11 +32,20 @@ class PvMockProceduralNoise {
         return function () use (&$a) {
             $a = ($a + 0x6D2B79F5) & 0xFFFFFFFF;
             $t = $a;
-            $t = (($t ^ ($t >> 15)) * (1 | $t)) & 0xFFFFFFFF;
-            $t = ($t + ((($t ^ ($t >> 7)) * (61 | $t)) & 0xFFFFFFFF)) & 0xFFFFFFFF;
-            $t = $t ^ ($t >> 14);
-            return ($t & 0xFFFFFFFF) / 4294967296.0;
+            $t = self::mul32($t ^ ($t >> 15), 1 | $t);
+            $t = ($t + self::mul32($t ^ ($t >> 7), 61 | $t)) & 0xFFFFFFFF;
+            $t = ($t ^ ($t >> 14)) & 0xFFFFFFFF;
+            return $t / 4294967296.0;
         };
+    }
+
+    /** 32 位无符号模乘，避免 PHP 64 位整数溢出为浮点 */
+    private static function mul32($a, $b) {
+        $a = $a & 0xFFFFFFFF;
+        $b = $b & 0xFFFFFFFF;
+        $aLo = $a & 0xFFFF;
+        $aHi = ($a >> 16) & 0xFFFF;
+        return (($aLo * $b) + ((($aHi * $b) & 0xFFFF) << 16)) & 0xFFFFFFFF;
     }
 
     /**

@@ -52,6 +52,17 @@ class PvMockGeometryHelper {
         return (pow($dx, $n) + pow($dy, $n)) <= 1.0;
     }
 
+    /**
+     * 帧间特征带：在 [a,b] 区间内平滑出现又消失，用于解剖结构随帧推进的
+     * 生灭（如脑室、肺门、椎间盘）。
+     * @return float 0..1
+     */
+    public static function band($p, $a, $b, $fade = 0.08) {
+        if ($b <= $a) return 0.0;
+        $fade = max(1e-4, min($fade, ($b - $a) / 2));
+        return self::smoothstep($a, $a + $fade, $p) * (1.0 - self::smoothstep($b - $fade, $b, $p));
+    }
+
     /** 多椭圆并集（器官复合轮廓） */
     public static function inUnion(array $shapes, $nx, $ny) {
         foreach ($shapes as $s) {
