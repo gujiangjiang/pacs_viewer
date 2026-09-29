@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '0.10.2');
+define('PV_VERSION', '0.10.3');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -125,8 +125,8 @@ function pvw_url($r = '', array $params = array()) {
     return $base . ($q ? '?' . http_build_query($q) : '');
 }
 
-/** 静态资源链接 */
-function pvw_asset($path) { return PV_URL_ASSET . '/' . ltrim($path, '/'); }
+/** 静态资源链接（附版本号，随 PV_VERSION 变更自动失效，避免旧脚本被缓存） */
+function pvw_asset($path) { return PV_URL_ASSET . '/' . ltrim($path, '/') . '?v=' . PV_VERSION; }
 
 /** 上传文件访问地址（经 ?r=file 鉴权下发） */
 function pvw_file_url($token, $download = false, array $params = array()) {

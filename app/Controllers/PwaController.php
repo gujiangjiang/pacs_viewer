@@ -65,11 +65,16 @@ class PvPwaController {
         $scope = self::scope();
         $home = PV_URL_SITE === '' ? '/' : PV_URL_SITE . '/';
         $cache = 'pacs-viewer-' . PV_VERSION;
+        $ver = '?v=' . PV_VERSION;
         $core = array(
-            $asset . '/css/base.css', $asset . '/css/ui.css', $asset . '/css/search.css',
-            $asset . '/css/viewer.css', $asset . '/css/admin.css', $asset . '/css/mock.css',
-            $asset . '/js/api.js', $asset . '/js/ui.js', $asset . '/js/spa.js', $asset . '/js/pwa.js',
-            $asset . '/js/search.js', $asset . '/js/admin.js', $asset . '/js/mock.js', $asset . '/js/viewer.js',
+            $asset . '/css/base.css' . $ver, $asset . '/css/ui.css' . $ver, $asset . '/css/search.css' . $ver,
+            $asset . '/css/viewer.css' . $ver, $asset . '/css/admin.css' . $ver, $asset . '/css/mock.css' . $ver,
+            $asset . '/js/api.js' . $ver, $asset . '/js/ui.js' . $ver, $asset . '/js/spa.js' . $ver, $asset . '/js/pwa.js' . $ver,
+            $asset . '/js/search.js' . $ver, $asset . '/js/admin.js' . $ver, $asset . '/js/mock.js' . $ver,
+            $asset . '/js/modules/dicom.js' . $ver, $asset . '/js/modules/render.js' . $ver,
+            $asset . '/js/modules/osd.js' . $ver, $asset . '/js/modules/sidebar.js' . $ver,
+            $asset . '/js/modules/toolbar.js' . $ver, $asset . '/js/modules/measurements.js' . $ver,
+            $asset . '/js/modules/zip.js' . $ver, $asset . '/js/viewer.js' . $ver,
         );
         ?>
 /* Service Worker — PACS 影像浏览器 */

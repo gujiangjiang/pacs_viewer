@@ -2,29 +2,85 @@
  * assets/js/modules/sidebar.js — 左侧序列栏模块（多检查工作区）
  * 按检查分组渲染：每个检查一个可折叠标题 + 其序列缩略图；
  * 支持同时展开多个检查、单独关闭某个检查。
+ *
+ * 缩略图策略：DICOM 首帧解码一次后缓存于内存并持久化到浏览器
+ * localStorage，重建列表时同步绘制，避免异步解码造成的闪烁。
  * ============================================================ */
 (function (global) {
     'use strict';
     var THUMB = 128;
+
+    var THUMB_CACHE = {};                 // key -> ImageData（内存）
+    var LS_PREFIX = 'pvthumb:';
+    var LS_INDEX = 'pvthumb:__idx';
+    var LS_MAX = 120;                     // 最多持久化 120 张缩略图
+
+    function hashStr(s) {
+        var h = 5381;
+        for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+        return (h >>> 0).toString(36);
+    }
+    function lsGet(hk) {
+        try { return localStorage.getItem(LS_PREFIX + hk) || ''; } catch (e) { return ''; }
+    }
+    function lsSet(hk, val) {
+        try {
+            localStorage.setItem(LS_PREFIX + hk, val);
+            var idx = [];
+            try { idx = JSON.parse(localStorage.getItem(LS_INDEX) || '[]'); } catch (e) { idx = []; }
+            if (idx.indexOf(hk) < 0) idx.push(hk);
+            while (idx.length > LS_MAX) {
+                var old = idx.shift();
+                try { localStorage.removeItem(LS_PREFIX + old); } catch (e) {}
+            }
+            localStorage.setItem(LS_INDEX, JSON.stringify(idx));
+        } catch (e) { /* 配额不足等：忽略，退化为内存缓存 */ }
+    }
+    /** ImageData → 灰度字节 base64（体积约为 RGBA 的 1/4） */
+    function encodeGray(img) {
+        var n = img.width * img.height, bytes = new Uint8Array(n);
+        for (var i = 0; i < n; i++) bytes[i] = img.data[i * 4];
+        var s = '', CH = 0x8000;
+        for (var j = 0; j < n; j += CH) s += String.fromCharCode.apply(null, bytes.subarray(j, Math.min(j + CH, n)));
+        return btoa(s);
+    }
+    function decodeGray(b64, w, h) {
+        var bin;
+        try { bin = atob(b64); } catch (e) { return null; }
+        if (bin.length < w * h) return null;
+        var img = new ImageData(w, h), d = img.data;
+        for (var i = 0; i < w * h; i++) { var g = bin.charCodeAt(i); var j = i * 4; d[j] = d[j + 1] = d[j + 2] = g; d[j + 3] = 255; }
+        return img;
+    }
 
     function PvSidebar(el) {
         this.el = el;
         this.studies = [];
         this.active = 0;
         this.h = {};
-        this._offscreen = document.createElement('canvas');
-        this._offscreen.width = PvRender.BASE; this._offscreen.height = PvRender.BASE;
+        this._sig = '';
     }
     PvSidebar.prototype.esc = function (s) {
         return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     };
+
+    /** 结构签名：检查列表 / 折叠状态 / 序列构成 未变时，仅更新激活高亮，不重建 DOM */
+    function structureSig(studies) {
+        return JSON.stringify((studies || []).map(function (st) {
+            return [st.uid, !!st.collapsed, (st.series || []).map(function (se) { return String(se.series_id); })];
+        }));
+    }
 
     /** 渲染多个检查分组；activeRef = { uid, si } 标识当前激活窗格加载的检查/序列 */
     PvSidebar.prototype.renderStudies = function (studies, activeRef, handlers) {
         this.studies = studies || []; this.activeRef = activeRef || {}; this.h = handlers || {};
         var self = this;
         if (!this.el) return;
-        if (!this.studies.length) { this.el.innerHTML = '<div class="pv-film-empty">暂无已打开的检查</div>'; return; }
+        if (!this.studies.length) { this.el.innerHTML = '<div class="pv-film-empty">暂无已打开的检查</div>'; this._sig = ''; return; }
+
+        var sig = structureSig(this.studies);
+        if (this._sig === sig && this.el.querySelector('.pv-sg')) { this._applyActive(); return; }
+        this._sig = sig;
 
         var html = '';
         this.studies.forEach(function (st, gi) {
@@ -78,12 +134,28 @@
         });
     };
 
-    /** 缩略图缓存：避免侧栏重建时异步重解码导致的闪烁 */
-    var THUMB_CACHE = {};
+    /** 仅更新激活高亮（不重建 DOM，缩略图保持显示） */
+    PvSidebar.prototype._applyActive = function () {
+        var ref = this.activeRef || {}, self = this;
+        Array.prototype.forEach.call(this.el.querySelectorAll('.pv-sg'), function (sg, gi) {
+            var st = self.studies[gi];
+            sg.classList.toggle('active', !!(st && ref.uid && st.uid === ref.uid));
+        });
+        Array.prototype.forEach.call(this.el.querySelectorAll('.pv-thumb'), function (th) {
+            var g = parseInt(th.getAttribute('data-g'), 10), s = parseInt(th.getAttribute('data-s'), 10);
+            var st = self.studies[g];
+            th.classList.toggle('active', !!(st && ref.uid && st.uid === ref.uid && s === (ref.si || 0)));
+        });
+    };
 
     PvSidebar.prototype.thumbKey = function (series) {
         var url = (series.images && series.images[0]) || '';
         return url + '|' + (series.window_width || '') + '|' + (series.window_center || '');
+    };
+    PvSidebar.prototype._paintThumb = function (cv, img) {
+        var ctx = cv.getContext('2d');
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
+        ctx.putImageData(img, 0, 0);
     };
     PvSidebar.prototype._repaintThumbs = function (key) {
         var img = THUMB_CACHE[key];
@@ -91,10 +163,7 @@
         Array.prototype.forEach.call(document.querySelectorAll('.pv-thumb[data-tkey]'), function (th) {
             if (th.getAttribute('data-tkey') !== key) return;
             var cv = th.querySelector('canvas');
-            if (!cv) return;
-            var ctx = cv.getContext('2d');
-            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
-            ctx.putImageData(img, 0, 0);
+            if (cv) { var ctx = cv.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height); ctx.putImageData(img, 0, 0); }
         });
     };
     PvSidebar.prototype.drawThumb = function (cv, series) {
@@ -103,8 +172,13 @@
         if (series.format === 'dicom') {
             var dsrc = series.images && series.images[0];
             if (!dsrc) return;
-            var key = this.thumbKey(series);
-            if (THUMB_CACHE[key]) { ctx.putImageData(THUMB_CACHE[key], 0, 0); return; }
+            var key = this.thumbKey(series), hk = hashStr(key);
+            if (THUMB_CACHE[key]) { this._paintThumb(cv, THUMB_CACHE[key]); return; }
+            var stored = lsGet(hk);
+            if (stored) {
+                var img0 = decodeGray(stored, THUMB, THUMB);
+                if (img0) { THUMB_CACHE[key] = img0; this._paintThumb(cv, img0); return; }
+            }
             this._pending = this._pending || {};
             if (this._pending[key]) return;
             this._pending[key] = 1;
@@ -113,7 +187,9 @@
                 var dec = window.PvDicom ? PvDicom.decode(buf) : null;
                 if (dec) {
                     var ww = parseFloat(series.window_width) || 256, wl = parseFloat(series.window_center) || 128;
-                    THUMB_CACHE[key] = PvRender.decodeToImage(dec, cv.width, ww, wl, false);
+                    var img = PvRender.decodeToImage(dec, THUMB, ww, wl, false);
+                    THUMB_CACHE[key] = img;
+                    lsSet(hk, encodeGray(img));
                     self._repaintThumbs(key);
                 }
                 delete self._pending[key];
