@@ -4,10 +4,7 @@
 (function (global) {
     'use strict';
 
-    function esc(s) {
-        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
+    var esc = PvUI.esc;   // 复用通用转义助手，避免重复实现
 
     var input, btn, box, empty, meta, onDocKey, clearChk;
 

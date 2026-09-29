@@ -17,11 +17,8 @@
     };
     var PANE_ACTS = { 'rotate-cw': 1, 'rotate-ccw': 1, 'flip-h': 1, 'flip-v': 1, 'invert': 1, 'clear': 1, 'fit': 1, 'oneone': 1, 'prev': 1, 'next': 1 };
 
-    function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
-    function esc(s) {
-        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
+    var clamp = PvRender.clamp;   // 复用通用钳位助手
+    var esc = PvUI.esc;           // 复用通用转义助手
     /** 图标渲染：命中统一 SVG 图标库则用 SVG，否则按文本/emoji（如预设窗）显示 */
     function iconHtml(name) {
         if (global.PvIcons && global.PvIcons[name]) {

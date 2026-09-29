@@ -60,9 +60,8 @@
         this.h = {};
         this._sig = '';
     }
-    PvSidebar.prototype.esc = function (s) {
-        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    };
+    /** HTML 转义（复用通用助手，避免重复实现） */
+    PvSidebar.prototype.esc = function (s) { return PvUI.esc(s); };
 
     /** 结构签名：检查列表 / 折叠状态 / 序列构成 未变时，仅更新激活高亮，不重建 DOM */
     function structureSig(studies) {

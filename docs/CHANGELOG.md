@@ -14,6 +14,15 @@
 
 ---
 
+## [0.14.4] - 2026-09-30
+
+### 变更
+- **前端去重**：`esc()` / `clamp()` 统一复用 `PvUI.esc` / `PvRender.clamp`，移除
+  `search.js` / `sidebar.js` / `viewer.js` / `measurements.js` 中的重复实现。
+- 移除 `PvMeasure.roiStats` 死代码（窗口内统计已由 `PvPane._roiStats` 承担）。
+
+---
+
 ## [0.14.3] - 2026-09-30
 
 ### 变更
