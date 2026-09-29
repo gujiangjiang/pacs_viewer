@@ -6,9 +6,14 @@
  */
 class PvStudyService {
 
-    /** 检索（附加医院展示名、状态标签） */
+    /** 患者 / 检查检索来源：pacs（PACS/DICOM 网关，默认）或 fhir（HIS 集成） */
+    private static function isFhir() {
+        return PvSettings::get('patient_source', 'pacs') === 'fhir';
+    }
+
+    /** 检索（按检索来源分发，附加医院展示名、状态标签） */
     public static function search($keyword) {
-        $list = PvPacsClient::search($keyword);
+        $list = self::isFhir() ? PvFhirClient::search($keyword) : PvPacsClient::search($keyword);
         $site = pvw_hospital();
         foreach ($list as &$row) {
             if (empty($row['institution'])) $row['institution'] = $site;
@@ -18,17 +23,17 @@ class PvStudyService {
         return $list;
     }
 
-    /** 调阅（补齐展示字段） */
+    /** 调阅（按检索来源分发，补齐展示字段） */
     public static function study($uid) {
-        $d = PvPacsClient::study($uid);
+        $d = self::isFhir() ? PvFhirClient::study($uid) : PvPacsClient::study($uid);
         $site = pvw_hospital();
         if (empty($d['study']['institution'])) $d['study']['institution'] = $site;
         if (empty($d['study']['station_name'])) $d['study']['station_name'] = ($d['study']['modality'] . '-ROOM');
         $d['study']['default_ww'] = (int)PvSettings::get('viewer_default_ww', '400');
         $d['study']['default_wl'] = (int)PvSettings::get('viewer_default_wl', '40');
         $d['meta'] = array(
-            'source' => PvPacsClient::isRemote() ? 'remote' : 'demo',
-            'mode'   => PvPacsClient::mode(),
+            'source' => self::isFhir() ? 'fhir' : (PvPacsClient::isRemote() ? 'remote' : 'demo'),
+            'mode'   => self::isFhir() ? 'FHIR' : PvPacsClient::mode(),
         );
         return $d;
     }

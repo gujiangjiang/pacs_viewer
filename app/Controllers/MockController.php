@@ -10,16 +10,15 @@ class PvMockController {
         pvw_redirect(pvw_url('admin', array('tab' => 'mock')));
     }
 
-    /** 保存模拟服务器 / FHIR 来源设置 */
+    /** 保存模拟服务器设置（FHIR 等数据来源已移至「数据来源 / PACS 接口」） */
     public static function save() {
         PvAuth::requireAdmin();
         pvw_csrf_check();
         $pairs = array();
-        foreach (array('mock_enabled', 'mock_patient_source', 'fhir_endpoint', 'fhir_api_key', 'fhir_timeout') as $k) {
+        foreach (array('mock_enabled') as $k) {
             if (isset($_POST[$k])) $pairs[$k] = (string)$_POST[$k];
         }
         if (isset($pairs['mock_enabled'])) $pairs['mock_enabled'] = $pairs['mock_enabled'] === '1' ? '1' : '0';
-        if (isset($pairs['mock_patient_source'])) $pairs['mock_patient_source'] = $pairs['mock_patient_source'] === 'fhir' ? 'fhir' : 'builtin';
         PvSettings::saveMany($pairs);
         self::reply('模拟服务器设置已保存');
     }
@@ -86,17 +85,6 @@ class PvMockController {
                 'list'     => $list,
                 'total'    => count($list),
             ));
-        } catch (Exception $e) {
-            pvw_json(500, $e->getMessage());
-        }
-    }
-
-    /** FHIR 连通性测试 */
-    public static function fhirTest() {
-        PvAuth::requireAdmin();
-        @set_time_limit(15);
-        try {
-            pvw_json(200, 'success', PvFhirClient::ping());
         } catch (Exception $e) {
             pvw_json(500, $e->getMessage());
         }

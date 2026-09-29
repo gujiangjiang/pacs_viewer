@@ -21,7 +21,9 @@ class PvMockServer {
 
     public static function enabled() { return (string)PvSettings::get('mock_enabled', '1') === '1'; }
     public static function apiKey()  { return trim((string)PvSettings::get('mock_api_key', '')); }
-    public static function source()  { return PvSettings::get('mock_patient_source', 'builtin') === 'fhir' ? 'fhir' : 'builtin'; }
+
+    /** 内置模拟服务器固定使用内置仿真患者数据（FHIR 已独立为「数据来源」配置项） */
+    public static function source()  { return 'builtin'; }
 
     /** 对外 API 的绝对地址（供配置到 DICOM/PACS 接口或门诊系统） */
     public static function externalEndpoint() { return pvw_abs_url('mock'); }
@@ -45,9 +47,6 @@ class PvMockServer {
 
     /** 患者检查行（统一结构） */
     public static function rows($keyword = '') {
-        if (self::source() === 'fhir') {
-            return PvFhirClient::search($keyword);
-        }
         return self::filterBuiltin(PvDemoPacs::studies(), $keyword);
     }
 

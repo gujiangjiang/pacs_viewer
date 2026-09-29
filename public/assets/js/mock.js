@@ -100,17 +100,6 @@
             bindAnatomy();
             if (data.flash) PvUI.toast(data.flash, 'ok');
 
-            var source = document.getElementById('pvMockSource');
-            var fhirBox = document.getElementById('pvFhirBox');
-            var fhirKeep = document.getElementById('pvFhirSaveBuiltin');
-            if (source && fhirBox) {
-                source.addEventListener('change', function () {
-                    var on = source.value === 'fhir';
-                    fhirBox.classList.toggle('pv-hidden', !on);
-                    if (fhirKeep) fhirKeep.classList.toggle('pv-hidden', on);
-                });
-            }
-
             var regen = document.getElementById('pvRegenKey');
             if (regen) {
                 regen.addEventListener('click', function () {
@@ -135,24 +124,6 @@
                             PvUI.toast('可回到「研究检索」开始使用模拟数据', 'ok');
                         } else PvUI.toast((j && j.msg) || '应用失败', 'err');
                     }).catch(function () { apply.disabled = false; PvUI.toast('网络请求失败', 'err'); });
-                });
-            }
-
-            var test = document.getElementById('pvFhirTest');
-            var out = document.getElementById('pvFhirResult');
-            if (test && out) {
-                test.addEventListener('click', function () {
-                    test.disabled = true; out.className = 'pv-test-result'; out.textContent = '测试中…';
-                    getJson('api/mock/fhir-test').then(function (j) {
-                        test.disabled = false;
-                        if (j && j.code === 200) {
-                            out.className = 'pv-test-result ok';
-                            out.textContent = '✓ 连接成功 · ' + ((j.data && j.data.name) || 'FHIR');
-                        } else {
-                            out.className = 'pv-test-result err';
-                            out.textContent = '✗ ' + ((j && j.msg) || '连接失败');
-                        }
-                    }).catch(function () { test.disabled = false; out.className = 'pv-test-result err'; out.textContent = '✗ 网络请求失败'; });
                 });
             }
 

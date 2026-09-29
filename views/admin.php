@@ -14,7 +14,7 @@ $pageData = array('flash' => isset($flash) ? $flash : '');
 ?>
 <div class="pv-tabs">
     <button type="button" class="pv-tab<?php echo $tabCls('basic'); ?>" data-tab="basic">基础设置</button>
-    <button type="button" class="pv-tab<?php echo $tabCls('pacs'); ?>" data-tab="pacs">DICOM / PACS 接口</button>
+    <button type="button" class="pv-tab<?php echo $tabCls('pacs'); ?>" data-tab="pacs">数据来源 / PACS 接口</button>
     <button type="button" class="pv-tab<?php echo $tabCls('users'); ?>" data-tab="users">账号管理</button>
     <button type="button" class="pv-tab<?php echo $tabCls('logs'); ?>" data-tab="logs">检索日志</button>
     <button type="button" class="pv-tab<?php echo $tabCls('mock'); ?>" data-tab="mock">模拟服务器</button>
@@ -63,36 +63,65 @@ $pageData = array('flash' => isset($flash) ? $flash : '');
     </div>
 </section>
 
-<!-- PACS 接口 -->
+<!-- 数据来源 / PACS 接口 -->
 <section class="pv-tabpane<?php echo $tabCls('pacs'); ?>" data-pane="pacs">
     <form class="pv-card pv-form" method="post" data-ajax-form action="<?php echo pvw_e(pvw_url('admin/save')); ?>">
         <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
         <input type="hidden" name="tab" value="pacs">
-        <h3 class="pv-form-title">DICOM / PACS 接口</h3>
-        <p class="pv-hint">检索与调阅数据全部来自下方接口地址。本地联调可将地址指向【模拟服务器】提供的对外 API（在模拟服务器页一键填入）。</p>
-        <label class="pv-field"><span>PACS 接口地址（PACS_SERVER_URL）</span>
-            <input type="text" name="pacs_endpoint" value="<?php echo pvw_e($v('pacs_endpoint')); ?>" placeholder="如 http://192.168.1.100:8042/dicom-web/gateway"></label>
-        <div class="pv-grid2">
-            <label class="pv-field"><span>接口密钥</span>
-                <input type="text" name="pacs_api_key" value="<?php echo pvw_e($v('pacs_api_key')); ?>" placeholder="可选"></label>
-            <label class="pv-field"><span>超时（秒）</span>
-                <input type="number" name="pacs_timeout" value="<?php echo pvw_e($v('pacs_timeout', '5')); ?>"></label>
+        <h3 class="pv-form-title">数据来源 / 接口</h3>
+        <p class="pv-hint">选择患者与检查的<b>检索来源</b>；影像统一按标准 DICOM 获取。DICOM / DICOMweb 网关的返回本身即携带患者信息（PatientName / PatientID / 出生日期 / 性别等），FHIR 为可选的 HIS 集成。</p>
+        <label class="pv-field"><span>检索来源</span>
+            <select name="patient_source" id="pvPatientSource">
+                <option value="pacs" <?php echo $v('patient_source', 'pacs') !== 'fhir' ? 'selected' : ''; ?>>PACS / DICOM 网关（默认，含患者信息）</option>
+                <option value="fhir" <?php echo $v('patient_source', 'pacs') === 'fhir' ? 'selected' : ''; ?>>FHIR R4（门诊系统已缴费 / 已登记）</option>
+            </select>
+        </label>
+
+        <div id="pvPacsBox">
+            <h3 class="pv-form-title">PACS / DICOM 网关</h3>
+            <p class="pv-hint">检索与调阅数据来自下方接口地址；本地联调可指向【模拟服务器】对外 API（在该页一键填入）。</p>
+            <label class="pv-field"><span>PACS 接口地址（PACS_SERVER_URL）</span>
+                <input type="text" name="pacs_endpoint" value="<?php echo pvw_e($v('pacs_endpoint')); ?>" placeholder="如 http://192.168.1.100:8042/dicom-web/gateway"></label>
+            <div class="pv-grid2">
+                <label class="pv-field"><span>接口密钥</span>
+                    <input type="text" name="pacs_api_key" value="<?php echo pvw_e($v('pacs_api_key')); ?>" placeholder="可选"></label>
+                <label class="pv-field"><span>超时（秒）</span>
+                    <input type="number" name="pacs_timeout" value="<?php echo pvw_e($v('pacs_timeout', '5')); ?>"></label>
+            </div>
+            <div class="pv-grid2">
+                <label class="pv-field"><span>本系统 AETitle（PACS_AE_TITLE）</span>
+                    <input type="text" name="pacs_ae_title" value="<?php echo pvw_e($v('pacs_ae_title')); ?>"></label>
+                <label class="pv-field"><span>目标 PACS AETitle</span>
+                    <input type="text" name="pacs_remote_ae" value="<?php echo pvw_e($v('pacs_remote_ae')); ?>"></label>
+            </div>
+            <div class="pv-grid2">
+                <label class="pv-field"><span>PACS 主机</span>
+                    <input type="text" name="pacs_server_host" value="<?php echo pvw_e($v('pacs_server_host')); ?>" placeholder="192.168.1.100"></label>
+                <label class="pv-field"><span>DICOM 端口</span>
+                    <input type="text" name="pacs_server_port" value="<?php echo pvw_e($v('pacs_server_port', '104')); ?>"></label>
+            </div>
         </div>
-        <div class="pv-grid2">
-            <label class="pv-field"><span>本系统 AETitle（PACS_AE_TITLE）</span>
-                <input type="text" name="pacs_ae_title" value="<?php echo pvw_e($v('pacs_ae_title')); ?>"></label>
-            <label class="pv-field"><span>目标 PACS AETitle</span>
-                <input type="text" name="pacs_remote_ae" value="<?php echo pvw_e($v('pacs_remote_ae')); ?>"></label>
+
+        <div id="pvFhirDataSourceBox" class="<?php echo $v('patient_source', 'pacs') === 'fhir' ? '' : 'pv-hidden'; ?>">
+            <h3 class="pv-form-title">FHIR R4（门诊系统）</h3>
+            <p class="pv-hint">从门诊系统获取「已缴费、已登记」的患者与检查（ImagingStudy）；影像仍由 PACS 按 ImagingStudy 中的真实 StudyInstanceUID 提供。</p>
+            <label class="pv-field"><span>FHIR 接口地址</span>
+                <input type="text" name="fhir_endpoint" value="<?php echo pvw_e($v('fhir_endpoint')); ?>" placeholder="如 http://192.168.1.100/fhir/R4"></label>
+            <div class="pv-grid2">
+                <label class="pv-field"><span>访问密钥（可选）</span>
+                    <input type="text" name="fhir_api_key" value="<?php echo pvw_e($v('fhir_api_key')); ?>" placeholder="Bearer / X-API-Key"></label>
+                <label class="pv-field"><span>超时（秒）</span>
+                    <input type="number" name="fhir_timeout" value="<?php echo pvw_e($v('fhir_timeout', '5')); ?>"></label>
+            </div>
+            <div class="pv-form-actions">
+                <button type="button" class="pv-btn pv-btn-outline" id="pvFhirTestMain">测试 FHIR 连接</button>
+                <span id="pvFhirResultMain" class="pv-test-result"></span>
+            </div>
         </div>
-        <div class="pv-grid2">
-            <label class="pv-field"><span>PACS 主机</span>
-                <input type="text" name="pacs_server_host" value="<?php echo pvw_e($v('pacs_server_host')); ?>" placeholder="192.168.1.100"></label>
-            <label class="pv-field"><span>DICOM 端口</span>
-                <input type="text" name="pacs_server_port" value="<?php echo pvw_e($v('pacs_server_port', '104')); ?>"></label>
-        </div>
+
         <div class="pv-form-actions">
-            <button type="submit" class="pv-btn pv-btn-primary">保存接口配置</button>
-            <button type="button" id="pvTestPacs" class="pv-btn pv-btn-outline">测试接口</button>
+            <button type="submit" class="pv-btn pv-btn-primary">保存数据来源配置</button>
+            <button type="button" id="pvTestPacs" class="pv-btn pv-btn-outline">测试 PACS 接口</button>
             <span id="pvTestResult" class="pv-test-result"></span>
         </div>
     </form>
@@ -175,7 +204,6 @@ $pageData = array('flash' => isset($flash) ? $flash : '');
 <!-- 模拟服务器 -->
 <section class="pv-tabpane<?php echo $tabCls('mock'); ?>" data-pane="mock">
     <?php
-    $source = $v('mock_patient_source', 'builtin');
     $anatomy = PvMockAnatomyConfig::entries();
     include PV_VIEWS . '/partials/mock_pane.php';
     ?>

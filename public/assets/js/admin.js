@@ -296,6 +296,26 @@
 
             // 存储情况页签
             try { initStorage(); } catch (e2) { if (global.console) console.error(e2); }
+
+            // 数据来源：检索来源切换 + FHIR 连接测试
+            var ps = document.getElementById('pvPatientSource');
+            var fhirBox = document.getElementById('pvFhirDataSourceBox');
+            if (ps && fhirBox) ps.addEventListener('change', function () { fhirBox.classList.toggle('pv-hidden', ps.value !== 'fhir'); });
+            var fhirBtn = document.getElementById('pvFhirTestMain');
+            var fhirOut = document.getElementById('pvFhirResultMain');
+            if (fhirBtn && fhirOut) {
+                fhirBtn.addEventListener('click', function () {
+                    fhirBtn.disabled = true; fhirOut.className = 'pv-test-result'; fhirOut.textContent = '测试中…';
+                    fetch(storageRoute('api/fhir/test'), { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+                        .then(function (r) { return r.json(); })
+                        .then(function (j) {
+                            fhirBtn.disabled = false;
+                            if (j && j.code === 200) { fhirOut.className = 'pv-test-result ok'; fhirOut.textContent = '✓ 连接成功 · ' + ((j.data && j.data.name) || 'FHIR'); }
+                            else { fhirOut.className = 'pv-test-result err'; fhirOut.textContent = '✗ ' + ((j && j.msg) || '连接失败'); }
+                        })
+                        .catch(function () { fhirBtn.disabled = false; fhirOut.className = 'pv-test-result err'; fhirOut.textContent = '✗ 网络请求失败'; });
+                });
+            }
         },
         destroy: function () {}
     };

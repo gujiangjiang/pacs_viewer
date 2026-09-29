@@ -51,6 +51,106 @@ class PvFhirClient {
         return array('name' => $name, 'endpoint' => $base, 'source' => 'fhir');
     }
 
+    /**
+     * 调阅：FHIR 提供患者 / 检查主数据，影像经 PACS（真实 StudyInstanceUID）获取。
+     * study_uid 约定为 `fhir-{ImagingStudy.id}`。
+     */
+    public static function study($uid) {
+        $iid = preg_replace('/^fhir-/', '', (string)$uid);
+        if ($iid === '') throw new RuntimeException('无法解析 FHIR 检查标识');
+        $im = self::getJson(self::base() . '/ImagingStudy/' . rawurlencode($iid));
+        $pid = self::patientRef($im);
+        $patient = $pid !== '' ? self::getJson(self::base() . '/Patient/' . rawurlencode($pid)) : array('id' => $pid);
+        $row = self::mapStudy($patient, $im);
+
+        $patientArr = array(
+            'patient_id'    => $row['patient_id'],
+            'name'          => $row['name'],
+            'gender'        => $row['gender'],
+            'age'           => $row['age'],
+            'birth_date'    => $row['birth_date'],
+            'outpatient_no' => $row['outpatient_no'],
+        );
+        $studyArr = array(
+            'accession_no'    => $row['accession_no'],
+            'study_uid'       => $row['study_uid'],
+            'modality'        => $row['modality'],
+            'description'     => $row['description'],
+            'study_date'      => $row['study_date'],
+            'institution'     => $row['institution'],
+            'station_name'    => $row['station_name'],
+            'apply_dept'      => $row['apply_dept'],
+            'apply_doctor'    => $row['apply_doctor'],
+            'slice_thickness' => in_array($row['modality'], array('CT', 'MR'), true) ? 5.0 : 0,
+        );
+
+        /* 有真实 DICOM StudyInstanceUID 且已配置 PACS → 由 PACS 提供序列与影像 */
+        $realUid = self::dicomStudyUid($im);
+        if ($realUid !== '' && PvPacsClient::isRemote()) {
+            try {
+                $d = PvPacsClient::study($realUid);
+                $d['patient'] = $patientArr;                      // FHIR 患者主数据优先
+                $d['study']['study_uid'] = $realUid;
+                $d['study']['accession_no'] = $studyArr['accession_no'];
+                if (empty($d['study']['description'])) $d['study']['description'] = $studyArr['description'];
+                if (empty($d['study']['modality'])) $d['study']['modality'] = $studyArr['modality'];
+                return $d;
+            } catch (Exception $e) {
+                /* 回退到仅元数据 */
+            }
+        }
+
+        return array('patient' => $patientArr, 'study' => $studyArr, 'series' => self::seriesFromImagingStudy($im));
+    }
+
+    /** 从 ImagingStudy.subject 提取患者 ID */
+    private static function patientRef($im) {
+        $ref = isset($im['subject']['reference']) ? (string)$im['subject']['reference'] : '';
+        if ($ref === '') return '';
+        return strpos($ref, '/') !== false ? substr(strrchr($ref, '/'), 1) : $ref;
+    }
+
+    /** 从 ImagingStudy.identifier 提取真实 DICOM StudyInstanceUID（urn:dicom:uid / urn:oid:） */
+    private static function dicomStudyUid($im) {
+        foreach ((array)(isset($im['identifier']) ? $im['identifier'] : array()) as $id) {
+            $sys = isset($id['system']) ? (string)$id['system'] : '';
+            $val = isset($id['value']) ? (string)$id['value'] : '';
+            if ($val === '') continue;
+            if (stripos($sys, 'dicom') !== false || stripos($val, 'urn:oid:') === 0) {
+                $oid = preg_replace('/^urn:oid:/i', '', $val);
+                $oid = preg_replace('/[^0-9.]/', '', $oid);
+                if ($oid !== '') return $oid;
+            }
+        }
+        return '';
+    }
+
+    /** 无 PACS 时：由 ImagingStudy.series 构建序列元数据（影像帧地址为空） */
+    private static function seriesFromImagingStudy($im) {
+        $out = array();
+        $i = 0;
+        foreach ((array)(isset($im['series']) ? $im['series'] : array()) as $s) {
+            $i++;
+            $modality = '';
+            if (isset($s['modality']['code'])) $modality = strtoupper((string)$s['modality']['code']);
+            $count = isset($s['numberOfInstances']) ? (int)$s['numberOfInstances'] : 0;
+            $out[] = array(
+                'series_id' => (string)(isset($s['uid']) ? $s['uid'] : $i),
+                'description' => isset($s['description']) ? (string)$s['description'] : ('Series ' . $i),
+                'orientation' => '',
+                'slice_count' => max(1, $count),
+                'is_mock' => false,
+                'format' => 'dicom',
+                'is_hu' => ($modality === 'CT'),
+                'slice_thickness' => isset($s['sliceThickness']) ? (float)$s['sliceThickness'] : 0,
+                'pixel_spacing' => 0.7,
+                'seed' => '',
+                'images' => array(),
+            );
+        }
+        return $out;
+    }
+
     /* ---------------- 查询 ---------------- */
 
     private static function queryPatients($keyword) {
@@ -106,7 +206,7 @@ class PvFhirClient {
         $seriesCount = isset($im['numberOfSeries']) ? (int)$im['numberOfSeries'] : 0;
         if ($seriesCount <= 0) $seriesCount = in_array($modality, array('CT', 'MR'), true) ? 3 : 1;
         return array(
-            'study_uid'     => 'fhir-' . $pid . '-' . $uid,
+            'study_uid'     => 'fhir-' . $uid,
             'patient_id'    => $pid,
             'name'          => $name,
             'gender'        => $gender,

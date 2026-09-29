@@ -5,8 +5,10 @@ class PvAdminController {
     /** 允许保存的设置键（白名单） */
     private static $settingKeys = array(
         'site_title', 'hospital_name',
+        'patient_source',
         'pacs_endpoint', 'pacs_api_key',
         'pacs_ae_title', 'pacs_remote_ae', 'pacs_server_host', 'pacs_server_port', 'pacs_timeout',
+        'fhir_endpoint', 'fhir_api_key', 'fhir_timeout',
         'viewer_default_ww', 'viewer_default_wl', 'viewer_study_limit',
     );
 
@@ -49,6 +51,12 @@ class PvAdminController {
         }
         if (isset($pairs['viewer_study_limit'])) {
             $pairs['viewer_study_limit'] = (string)max(3, min(10, (int)$pairs['viewer_study_limit']));
+        }
+        if (isset($pairs['patient_source'])) {
+            $pairs['patient_source'] = $pairs['patient_source'] === 'fhir' ? 'fhir' : 'pacs';
+        }
+        if (isset($pairs['fhir_timeout'])) {
+            $pairs['fhir_timeout'] = (string)max(1, min(60, (int)$pairs['fhir_timeout']));
         }
         PvSettings::saveMany($pairs);
         $tab = (string)pvw_input('tab', 'basic');
@@ -133,6 +141,19 @@ class PvAdminController {
         pvw_csrf_check();
         PvQueryLogRepository::clear();
         self::reply('检索日志已清空', true, null, 'logs');
+    }
+
+    /* ---------------- 数据集成：FHIR 连通性 ---------------- */
+
+    /** FHIR R4 连通性测试（数据来源配置的一部分） */
+    public static function fhirTest() {
+        PvAuth::requireAdmin();
+        @set_time_limit(15);
+        try {
+            pvw_json(200, 'success', PvFhirClient::ping());
+        } catch (Exception $e) {
+            pvw_json(500, $e->getMessage());
+        }
     }
 
     /* ---------------- 存储情况 ---------------- */

@@ -14,6 +14,26 @@
 
 ---
 
+## [0.12.0] - 2026-09-29
+
+### 变更
+- **统一「数据来源」配置**：把患者 / 检查的检索来源从「模拟服务器」中独立出来，
+  在【数据来源 / PACS 接口】中统一配置：
+  - `PACS / DICOM 网关`（默认）：接口返回本身即携带患者信息（DICOM 数据集、
+    C-FIND、DICOMweb QIDO-RS 均可传输患者信息），无需 FHIR 即可检索与展示；
+  - `FHIR R4`（可选）：从门诊系统获取「已缴费、已登记」的患者与检查
+    （`Patient` / `ImagingStudy`），影像仍由 PACS 按 ImagingStudy 中的真实
+    `StudyInstanceUID` 提供；新增 `PvFhirClient::study()`。
+- **模拟服务器**：不再承载 FHIR 来源，固定使用内置仿真患者数据；其
+  「患者数据来源」卡片移除，FHIR 配置与「测试 FHIR 连接」迁至【数据来源】页。
+- 检索 / 调阅按 `patient_source` 分发（`PvStudyService`）；新增 `patient_source`
+  设置与 `api/fhir/test` 接口；移除 `mock_patient_source` 与
+  `api/mock/fhir-test`。
+- 文档同步：README / HELP 说明「DICOM 自带患者信息，FHIR 为可选 HIS 集成」，
+  管理页签更名为「数据来源 / PACS 接口」，并补充「存储情况」页签说明。
+
+---
+
 ## [0.11.0] - 2026-09-29
 
 ### 新增

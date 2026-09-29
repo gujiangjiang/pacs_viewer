@@ -1,15 +1,15 @@
 <?php
 /**
  * views/partials/mock_pane.php — 模拟服务器面板（管理设置子 Tab / 独立页共用）
- * 需要变量：$v($k,$d) 设置读取、$source、$mockUrl、$mockKey、$pacsEndpoint
+ * 需要变量：$v($k,$d) 设置读取、$mockUrl、$mockKey、$pacsEndpoint
  */
 ?>
 <div class="pv-alert pv-alert-info">
     <b>关于「模拟服务器」</b>：本 PACS 浏览器自身不含数据，仅用于查看影像。
     这里内置了一个模拟 PACS 服务器：通过<b>对外 API</b> 提供标准 PACS 接口（search / study / ping），
-    可一键配置给本浏览器的 DICOM / PACS 接口，也可提供给门诊系统调用；患者数据可来自
-    <b>内置仿真</b>或<b>门诊系统 FHIR R4（已缴费、已登记）</b>，影像由内置模拟服务器按
-    <b>标准 DICOM</b>（含多模态、多帧连续断层）生成，供通用阅片器解码渲染。
+    可一键配置给本浏览器的 DICOM / PACS 接口，也可提供给门诊系统调用。它使用<b>内置仿真患者数据</b>，
+    影像按<b>标准 DICOM</b>（含多模态、多帧连续断层）生成，供通用阅片器解码渲染。
+    真实部署的检索来源（PACS 网关 / FHIR）请在【数据来源 / PACS 接口】配置。
 </div>
 
 <!-- 服务器状态与控制 -->
@@ -108,45 +108,11 @@
     </template>
 </div>
 
-<!-- 患者数据来源 -->
-<div class="pv-card">
-    <h3 class="pv-form-title">患者数据来源</h3>
-    <p class="pv-hint">模拟服务器需要患者数据来生成检查。可选择内置仿真，或通过 FHIR R4 从门诊系统获取「已缴费、已登记」的患者及其检查。</p>
-    <form class="pv-form" method="post" data-ajax-form action="<?php echo pvw_e(pvw_url('api/mock/save')); ?>">
-        <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
-        <input type="hidden" name="mock_enabled" value="<?php echo $v('mock_enabled', '1') === '1' ? '1' : '0'; ?>">
-        <label class="pv-field"><span>数据来源</span>
-            <select name="mock_patient_source" id="pvMockSource">
-                <option value="builtin" <?php echo $source === 'builtin' ? 'selected' : ''; ?>>内置仿真数据（开箱即用）</option>
-                <option value="fhir" <?php echo $source === 'fhir' ? 'selected' : ''; ?>>门诊系统 FHIR R4（已缴费 / 已登记）</option>
-            </select>
-        </label>
-        <div id="pvFhirBox" class="<?php echo $source === 'fhir' ? '' : 'pv-hidden'; ?>">
-            <label class="pv-field"><span>FHIR 接口地址</span>
-                <input type="text" name="fhir_endpoint" value="<?php echo pvw_e($v('fhir_endpoint')); ?>" placeholder="如 http://192.168.1.100/fhir/R4"></label>
-            <div class="pv-grid2">
-                <label class="pv-field"><span>访问密钥（可选）</span>
-                    <input type="text" name="fhir_api_key" value="<?php echo pvw_e($v('fhir_api_key')); ?>" placeholder="Bearer / X-API-Key"></label>
-                <label class="pv-field"><span>超时（秒）</span>
-                    <input type="number" name="fhir_timeout" value="<?php echo pvw_e($v('fhir_timeout', '5')); ?>"></label>
-            </div>
-            <div class="pv-form-actions">
-                <button type="submit" class="pv-btn pv-btn-primary">保存来源设置</button>
-                <button type="button" class="pv-btn pv-btn-outline" id="pvFhirTest">测试 FHIR 连接</button>
-                <span id="pvFhirResult" class="pv-test-result"></span>
-            </div>
-        </div>
-        <div id="pvFhirSaveBuiltin" class="<?php echo $source === 'fhir' ? 'pv-hidden' : ''; ?>">
-            <button type="submit" class="pv-btn pv-btn-primary">保存来源设置</button>
-        </div>
-    </form>
-</div>
-
 <!-- 患者预览 -->
 <div class="pv-card">
     <div class="pv-card-head">
         <h3 class="pv-form-title">已缴费已登记患者预览</h3>
-        <span class="pv-dim" id="pvMockSourceLabel">来源：<?php echo $source === 'fhir' ? '门诊系统 FHIR' : '内置仿真'; ?></span>
+        <span class="pv-dim" id="pvMockSourceLabel">来源：内置仿真数据</span>
     </div>
     <form class="pv-searchbox" onsubmit="return false;">
         <input type="text" id="pvMockKeyword" class="pv-input pv-search-input" placeholder="输入姓名 / 患者号 / 检查号 / 门诊号 / 检查项目">
