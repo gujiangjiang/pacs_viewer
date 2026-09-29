@@ -93,6 +93,9 @@ abstract class PvMockAbstractGenerator implements PvMockSliceGeneratorInterface,
     /** 覆盖方位（用于重建序列元数据，不改变像素生成逻辑） */
     public function setOrientation($orientation) { $this->orientation = strtoupper((string)$orientation); }
 
+    /** 覆盖切片数量（管理后台可配置） */
+    public function setFrameCount($n) { $n = (int)$n; if ($n > 0) $this->frameCount = $n; }
+
     public function getFrameCount() { return $this->frameCount; }
     public function getOrientation() { return $this->orientation; }
     public function getSeriesDescription() { return $this->seriesDescription; }

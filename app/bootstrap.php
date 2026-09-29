@@ -72,6 +72,7 @@ require_once PV_APP . '/Pacs/Mock/Utils/ProceduralNoise.php';
 require_once PV_APP . '/Pacs/Mock/Utils/GeometryHelper.php';
 require_once PV_APP . '/Pacs/Mock/Utils/DicomTagBuilder.php';
 require_once PV_APP . '/Pacs/Mock/Generators/AbstractGenerator.php';
+require_once PV_APP . '/Pacs/Mock/MockAnatomyConfig.php';
 require_once PV_APP . '/Pacs/Mock/Generators/CT/HeadCT.php';
 require_once PV_APP . '/Pacs/Mock/Generators/CT/ChestCT.php';
 require_once PV_APP . '/Pacs/Mock/Generators/CT/LumbarCT.php';
