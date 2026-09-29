@@ -8,6 +8,14 @@
             .then(function (r) { return r.json(); });
     }
 
+    /** 更新患者数据来源标签（builtin 内置仿真 / fhir 门诊 FHIR） */
+    function updateSource(src) {
+        var el = document.getElementById('pvMockSourceLabel');
+        if (!el) return;
+        var map = { builtin: '内置仿真数据', fhir: '门诊 FHIR' };
+        el.textContent = '来源：' + (map[src] || src || '内置仿真数据');
+    }
+
     function renderPatients(list) {
         var box = document.getElementById('pvMockPatients');
         var empty = document.getElementById('pvMockEmpty');
@@ -134,7 +142,7 @@
                     sbtn.disabled = true; sbtn.textContent = '检索中…';
                     getJson('api/mock/patients', { q: skw.value }).then(function (j) {
                         sbtn.disabled = false; sbtn.textContent = '检索患者';
-                        if (j && j.code === 200) renderPatients(j.data.list || []);
+                        if (j && j.code === 200) { renderPatients(j.data.list || []); updateSource(j.data.source); }
                         else { renderPatients([]); PvUI.toast((j && j.msg) || '检索失败', 'err'); }
                     }).catch(function () {
                         sbtn.disabled = false; sbtn.textContent = '检索患者';
