@@ -72,6 +72,24 @@ Web PACS 影像浏览器 · 独立 PHP 网站
 > 对外 API 使用标准 `{action,q,uid,key}` 约定，既可被本浏览器调用，也可提供给
 > 门诊系统等其他系统集成。
 
+### 标准 DICOM 输出（WADO-URI）
+
+模拟服务器同时提供**标准 DICOM Part 10 二进制流**，可被任何通用 DICOM /
+PACS / WADO 客户端直接解析，像素与元数据均为标准 Tag（无任何模拟标记）：
+
+| 方式 | 地址 | 参数 |
+| --- | --- | --- |
+| WADO-URI（外部） | `{对外地址}&action=wado&...` | `studyUID` / `seriesUID` / `objectUID` / `key` |
+| 直取（登录或密钥） | `?r=dicom&...` | 同上，或 `uid` / `series` / `instance` |
+
+- `series` / `instance` 为从 1 起的序列号与帧号；`objectUID` 末段亦映射到帧号。
+- 返回 `Content-Type: application/dicom`，每个实例单帧；多帧序列按实例号递增，
+  并携带 `ImagePositionPatient` / `ImageOrientationPatient` / `SliceLocation`，
+  支持客户端滚轮连续切换。
+- 重建序列（冠状 / 矢状 MPR）仅提供元数据，不输出像素实例。
+- SOP Class 按模态选择：CT / MR / CR(DR) / US Image Storage；传输语法为
+  Explicit VR Little Endian（`1.2.840.10008.1.2.1`）。
+
 ## 四、通用上传与鉴权下载（基础设施）
 
 供影像 / 资料 / 图标等上传功能复用，文件 **不在 Web 根下**，经路由鉴权下发：

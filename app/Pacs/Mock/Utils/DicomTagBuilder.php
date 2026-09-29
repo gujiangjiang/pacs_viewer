@@ -58,6 +58,7 @@ class PvMockDicomTagBuilder {
 
         /* ---------- 数据集（Explicit VR LE） ---------- */
         $ds = '';
+        $ds .= self::el(0x0008, 0x0005, 'CS', self::_s($m, 'charset', 'ISO_IR 192'));           // SpecificCharacterSet(UTF-8)
         $ds .= self::el(0x0008, 0x0016, 'UI', self::_s($m, 'sop_class_uid', self::SOP_SC));
         $ds .= self::el(0x0008, 0x0018, 'UI', self::_s($m, 'sop_instance_uid'));
         $ds .= self::el(0x0008, 0x0020, 'DA', self::_s($m, 'study_date'));

@@ -120,7 +120,7 @@ class PvMockServer {
         return array(
             'patient' => $patient,
             'study'   => $st,
-            'series'  => PvDemoPacs::seriesFor($row['modality'], $row['study_uid']),
+            'series'  => PvDemoPacs::seriesFor($row['modality'], $row['study_uid'], $row['description']),
         );
     }
 
@@ -134,6 +134,156 @@ class PvMockServer {
             'source'  => self::source(),
             'studies' => $count,
         );
+    }
+
+    /* ---------------- 标准 DICOM 输出（WADO-URI 二进制流） ---------------- */
+
+    /**
+     * 以标准 DICOM Part 10 二进制流返回指定实例。
+     * 兼容两种寻址：WADO-URI（studyUID/seriesUID/objectUID）与简洁参数（uid/series/instance）。
+     *
+     * @param array $p 请求参数
+     * @return array {binary:string, filename:string, content_type:string}
+     * @throws RuntimeException 参数非法 / 未找到 / 序列不支持标准像素
+     */
+    public static function wado(array $p) {
+        $studyUid = '';
+        foreach (array('studyUID', 'study_uid', 'uid') as $k) {
+            if (!empty($p[$k])) { $studyUid = (string)$p[$k]; break; }
+        }
+        if ($studyUid === '') throw new RuntimeException('缺少检查标识 studyUID');
+
+        $row = self::findStudyRow($studyUid);
+        if (!$row) throw new RuntimeException('未找到该检查');
+
+        $modality = strtoupper($row['modality']);
+        $desc = isset($row['description']) ? $row['description'] : '';
+        $plan = PvMockDispatcher::seriesPlan($modality, $desc, $row['study_uid']);
+
+        $seriesIndex = 0;
+        if (!empty($p['seriesUID']) || !empty($p['series_uid'])) {
+            $suid = !empty($p['seriesUID']) ? (string)$p['seriesUID'] : (string)$p['series_uid'];
+            $tail = self::lastUidSegment($suid);
+            foreach ($plan as $i => $s) {
+                if ((string)$s['series_id'] === $tail || strpos($suid, '.' . $s['series_id']) !== false || strpos($suid, $s['series_id']) !== false) {
+                    $seriesIndex = $i; break;
+                }
+            }
+        } elseif (isset($p['series']) && $p['series'] !== '') {
+            $seriesIndex = (int)$p['series'] - 1;
+        }
+        if ($seriesIndex < 0 || !isset($plan[$seriesIndex])) throw new RuntimeException('未找到该序列');
+
+        $series = $plan[$seriesIndex];
+        $gen = PvMockDispatcher::generatorForSeries($modality, $desc, $row['study_uid'], $seriesIndex);
+        if (!$gen) throw new RuntimeException('该序列为重建序列，暂不支持标准 DICOM 像素输出');
+
+        $instance = 1;
+        if (!empty($p['objectUID']) || !empty($p['object_uid'])) {
+            $ouid = !empty($p['objectUID']) ? (string)$p['objectUID'] : (string)$p['object_uid'];
+            $instance = (int)self::lastUidSegment($ouid);
+        } elseif (isset($p['instance']) && $p['instance'] !== '') {
+            $instance = (int)$p['instance'];
+        }
+        $total = $gen->getFrameCount();
+        if ($instance < 1) $instance = 1;
+        if ($instance > $total) $instance = $total;
+
+        $pixels = $gen->generateFrame($instance - 1);
+        $binary = self::buildDicom($row, $series, $seriesIndex, $instance, $gen, $pixels);
+        $base = ($row['patient_id'] ? $row['patient_id'] : 'patient') . '_' . ($row['accession_no'] ? $row['accession_no'] : 'study')
+            . '_s' . ($seriesIndex + 1) . '_i' . $instance . '.dcm';
+        return array('binary' => $binary, 'filename' => $base, 'content_type' => 'application/dicom');
+    }
+
+    /** 组装单实例标准 DICOM 数据集 */
+    private static function buildDicom($row, array $series, $seriesIndex, $instance, PvMockAbstractGenerator $gen, $pixels) {
+        $modality = strtoupper($row['modality']);
+        $studyUid = $row['study_uid'];
+        $seriesNo = $seriesIndex + 1;
+        $seriesUid = PvMockDicomTagBuilder::deriveUid($studyUid, array($seriesNo));
+        $sopUid = PvMockDicomTagBuilder::deriveUid($seriesUid, array($instance));
+
+        list($ipp, $iop, $sliceLoc) = self::spatial($series['orientation'], $instance, $gen->getSliceThickness());
+
+        $m = $gen->getModalitySpecificTags();
+        $m['sop_class_uid'] = PvMockDicomTagBuilder::sopClassFor($modality);
+        $m['sop_instance_uid'] = $sopUid;
+        $m['study_uid'] = $studyUid;
+        $m['series_uid'] = $seriesUid;
+        $m['series_number'] = $seriesNo;
+        $m['instance_number'] = $instance;
+        $m['transfer_syntax'] = PvMockDicomTagBuilder::TS_EXPLICIT_LE;
+        $m['number_of_frames'] = 1;                       // 每实例单帧，前端按实例滚动
+        $m['slice_location'] = $sliceLoc;
+        $m['image_position'] = $ipp;
+        $m['image_orientation'] = $iop;
+        $m['modality'] = $modality;
+        $m['patient_name'] = isset($row['name']) ? $row['name'] : '';
+        $m['patient_id'] = isset($row['patient_id']) ? $row['patient_id'] : '';
+        $m['patient_birth_date'] = self::toDa(isset($row['birth_date']) ? $row['birth_date'] : '');
+        $m['patient_sex'] = self::toSex(isset($row['gender']) ? $row['gender'] : '');
+        $m['study_date'] = self::toDa(isset($row['study_date']) ? $row['study_date'] : '');
+        $m['study_time'] = self::toTm(isset($row['study_date']) ? $row['study_date'] : '');
+        $m['study_description'] = isset($row['description']) ? $row['description'] : '';
+        $m['series_description'] = $series['description'];
+        $m['accession_number'] = isset($row['accession_no']) ? $row['accession_no'] : '';
+        $m['institution'] = isset($row['institution']) ? $row['institution'] : '';
+        $m['referring_physician'] = isset($row['apply_doctor']) ? $row['apply_doctor'] : '';
+        $m['performing_physician'] = isset($row['apply_doctor']) ? $row['apply_doctor'] : '';
+        return PvMockDicomTagBuilder::build($m, $pixels);
+    }
+
+    /** 空间定位：返回 [ImagePositionPatient, ImageOrientationPatient, SliceLocation] */
+    private static function spatial($orientation, $instance, $thickness) {
+        $orientation = strtoupper((string)$orientation);
+        $th = (float)$thickness;
+        $loc = ($instance - 1) * ($th > 0 ? $th : 1.0);
+        if ($orientation === 'SAGITTAL') {
+            return array(array($loc, 0, 0), array(0, 1, 0, 0, 0, -1), $loc);
+        }
+        if ($orientation === 'CORONAL') {
+            return array(array(0, $loc, 0), array(1, 0, 0, 0, 0, -1), $loc);
+        }
+        if ($orientation === 'AXIAL') {
+            return array(array(0, 0, $loc), array(1, 0, 0, 0, 1, 0), $loc);
+        }
+        // PA / DR / US 等投影：单幅，不做层间距递增
+        return array(array(0, 0, 0), array(1, 0, 0, 0, 1, 0), 0);
+    }
+
+    private static function findStudyRow($uid) {
+        foreach (self::rows('') as $r) {
+            if ($r['study_uid'] === $uid || (isset($r['accession_no']) && $r['accession_no'] === $uid)) return $r;
+        }
+        return null;
+    }
+
+    private static function lastUidSegment($uid) {
+        $parts = explode('.', trim((string)$uid));
+        $last = end($parts);
+        return preg_replace('/\D/', '', (string)$last);
+    }
+
+    private static function toDa($s) {
+        $s = trim((string)$s);
+        if ($s === '') return '';
+        $d = preg_replace('/[^0-9]/', '', substr($s, 0, 10));
+        return strlen($d) >= 8 ? substr($d, 0, 8) : $d;
+    }
+
+    private static function toTm($s) {
+        $s = trim((string)$s);
+        if (strlen($s) < 16) return '';
+        $t = preg_replace('/[^0-9]/', '', substr($s, 11, 8));
+        return strlen($t) >= 6 ? $t : '';
+    }
+
+    private static function toSex($s) {
+        $s = trim((string)$s);
+        if ($s === '男' || strtoupper($s) === 'M' || $s === '1') return 'M';
+        if ($s === '女' || strtoupper($s) === 'F' || $s === '2') return 'F';
+        return 'O';
     }
 
     /* ---------------- 内部工具 ---------------- */

@@ -149,6 +149,7 @@ class PvMockDispatcher {
             'weight' => $weight,
             'generator' => get_class($gen),
             'primary' => (bool)$primary,
+            'images' => array(),
         );
     }
 

@@ -103,37 +103,12 @@ class PvDemoPacs {
             'apply_doctor'    => $study['apply_doctor'],
             'slice_thickness' => ($study['modality'] === 'CT' || $study['modality'] === 'MR') ? 5.0 : 0,
         );
-        return array('patient' => $patient, 'study' => $st, 'series' => self::seriesFor($study['modality'], $study['study_uid']));
+        return array('patient' => $patient, 'study' => $st, 'series' => self::seriesFor($study['modality'], $study['study_uid'], $study['description']));
     }
 
-    /** 序列元数据（仿真） */
-    public static function seriesFor($modality, $seed) {
-        $modality = strtoupper((string)$modality);
-        if (in_array($modality, array('CT', 'MR'), true)) {
-            $defs = array(
-                array('id' => '1', 'desc' => 'Axial 5.0mm',             'ori' => 'AXIAL',    'min' => 16, 'max' => 32),
-                array('id' => '2', 'desc' => 'Coronal Reconstruction',  'ori' => 'CORONAL',  'min' => 12, 'max' => 24),
-                array('id' => '3', 'desc' => 'Sagittal Reconstruction', 'ori' => 'SAGITTAL', 'min' => 12, 'max' => 24),
-            );
-            $series = array();
-            foreach ($defs as $d) {
-                $rng = self::rng('series|' . $seed . '|' . $d['id']);
-                $series[] = array(
-                    'series_id' => $d['id'], 'description' => $d['desc'], 'orientation' => $d['ori'],
-                    'slice_count' => $rng($d['min'], $d['max']), 'is_mock' => true,
-                    'slice_thickness' => 5.0, 'pixel_spacing' => 0.70,
-                    'seed' => 'p|' . $seed . '|s' . $d['id'], 'images' => array(),
-                );
-            }
-            return $series;
-        }
-        $rng = self::rng('series|' . $seed . '|d');
-        return array(array(
-            'series_id' => '1', 'description' => ($modality === 'US' ? 'US Cine' : 'PA / LAT'),
-            'orientation' => ($modality === 'US' ? 'US' : 'PA'),
-            'slice_count' => ($modality === 'US' ? $rng(6, 12) : $rng(1, 2)), 'is_mock' => true,
-            'slice_thickness' => 0, 'pixel_spacing' => 0.35, 'seed' => 'p|' . $seed . '|s1', 'images' => array(),
-        ));
+    /** 序列元数据：委托模拟数据调度中心按检查部位 / 模态规划标准序列 */
+    public static function seriesFor($modality, $seed, $description = '', $bodyPart = '') {
+        return PvMockDispatcher::seriesPlan($modality, $description, $seed, $bodyPart);
     }
 
     /** 接口自检信息 */

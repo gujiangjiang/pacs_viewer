@@ -31,6 +31,7 @@ $routes = array(
     'admin/icon-reset'      => array('PvAdminController', 'iconReset'),
     'mockserver'            => array('PvMockController', 'index'),
     'mock'                  => array('PvMockController', 'api'),
+    'dicom'                 => array('PvMockController', 'dicom'),
     'api/mock/save'         => array('PvMockController', 'save'),
     'api/mock/key'          => array('PvMockController', 'regenKey'),
     'api/mock/apply'        => array('PvMockController', 'apply'),
@@ -53,7 +54,7 @@ $routes = array(
  * 已完成安装后，安装入口不再可用。 */
 $pvInstalled = PvSettings::isInstalled();
 $isInstallRoute = ($r === 'install' || $r === 'install/submit');
-$pvPublicAsset = ($r === 'mock' || $r === 'manifest' || $r === 'sw' || $r === 'icon');
+$pvPublicAsset = ($r === 'mock' || $r === 'dicom' || $r === 'manifest' || $r === 'sw' || $r === 'icon');
 if (!$pvInstalled && !$isInstallRoute && !$pvPublicAsset) {
     pvw_redirect(pvw_url('install'));
 }

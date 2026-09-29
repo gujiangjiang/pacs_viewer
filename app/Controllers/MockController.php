@@ -82,6 +82,7 @@ class PvMockController {
 
         $action = (string)pvw_input('action');
         try {
+            if ($action === 'wado') { self::emitWado(); }
             if ($action === 'ping') {
                 pvw_json(200, 'success', PvMockServer::ping());
             }
@@ -97,6 +98,58 @@ class PvMockController {
         } catch (Exception $e) {
             pvw_json(500, $e->getMessage());
         }
+    }
+
+    /* ==================== 标准 DICOM 二进制下发（WADO-URI） ==================== */
+
+    /** 通用阅片器 / 外部 PACS 客户端按标准 DICOM 协议取像（登录或密钥二选一） */
+    public static function dicom() {
+        if (!PvMockServer::enabled()) { self::textError(403, '内置模拟 PACS 服务器未启用'); }
+        if (!PvAuth::check() && !PvMockServer::checkKey((string)pvw_input('key'))) {
+            self::textError(403, '模拟服务器密钥校验失败');
+        }
+        self::emitWado();
+    }
+
+    /** 输出 DICOM 字节流（不进入 JSON 封装，对通用前端完全透明） */
+    private static function emitWado() {
+        try {
+            $r = PvMockServer::wado(self::wadoParams());
+        } catch (Exception $e) {
+            self::textError(404, $e->getMessage());
+        }
+        if (!headers_sent()) {
+            header('Content-Type: ' . $r['content_type']);
+            header('Content-Length: ' . strlen($r['binary']));
+            header('Content-Disposition: inline; filename="' . str_replace('"', '', $r['filename']) . '"');
+            header('Cache-Control: no-store');
+        }
+        echo $r['binary'];
+        exit;
+    }
+
+    /** 汇总 WADO-URI（studyUID/seriesUID/objectUID）与简洁参数（uid/series/instance） */
+    private static function wadoParams() {
+        return array(
+            'studyUID'   => (string)pvw_input('studyUID'),
+            'seriesUID'  => (string)pvw_input('seriesUID'),
+            'objectUID'  => (string)pvw_input('objectUID'),
+            'study_uid'  => (string)pvw_input('study_uid'),
+            'series_uid' => (string)pvw_input('series_uid'),
+            'object_uid' => (string)pvw_input('object_uid'),
+            'uid'        => (string)pvw_input('uid'),
+            'series'     => (string)pvw_input('series'),
+            'instance'   => (string)pvw_input('instance'),
+        );
+    }
+
+    private static function textError($code, $msg) {
+        if (!headers_sent()) {
+            http_response_code((int)$code);
+            header('Content-Type: text/plain; charset=utf-8');
+        }
+        echo $msg;
+        exit;
     }
 
     /* ==================== 工具 ==================== */
