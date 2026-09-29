@@ -176,6 +176,26 @@
         }).then(function (r) { return r.json(); });
     }
 
+    /** 复制文本到剪贴板（优先 Clipboard API，回退 execCommand）；返回 Promise<boolean> */
+    function copy(text) {
+        text = String(text == null ? '' : text);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return false; });
+        }
+        try {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            var ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            return Promise.resolve(!!ok);
+        } catch (e) { return Promise.resolve(false); }
+    }
+
     function bindAjaxForms(root) {
         var forms = (root || document).querySelectorAll('form[data-ajax-form]');
         Array.prototype.forEach.call(forms, function (form) {
@@ -203,5 +223,5 @@
     }
 
     global.PvModal = { open: open, close: close, confirm: confirmOpts, alert: alertOpts };
-    global.PvUI = { toast: toast, post: post, upload: upload, bindAjaxForms: bindAjaxForms, esc: esc };
+    global.PvUI = { toast: toast, post: post, upload: upload, copy: copy, bindAjaxForms: bindAjaxForms, esc: esc };
 })(window);

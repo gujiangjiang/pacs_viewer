@@ -1018,9 +1018,8 @@
         var uid = (p && p.st.uid) || this.route.uid;
         if (!uid) { if (p) p.setStatus('没有可复制的检查'); return; }
         var link = window.PvNav ? window.PvNav.route('viewer', { uid: uid }) : '';
-        var done = function () { if (p) p.setStatus('已复制阅片直链：' + link); };
-        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done, done);
-        else { var ta = document.createElement('textarea'); ta.value = link; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(ta); done(); }
+        var done = function (ok) { if (p) p.setStatus((ok === false ? '复制失败，请手动复制：' : '已复制阅片直链：') + link); };
+        PvUI.copy(link).then(done, function () { done(false); });
     };
 
     /* ---------- 右键菜单（作用于激活窗格） ---------- */

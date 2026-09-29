@@ -51,13 +51,9 @@
             btn.addEventListener('click', function () {
                 var input = document.querySelector(btn.getAttribute('data-copy'));
                 if (!input) return;
-                var v = input.value;
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(v).then(function () { PvUI.toast('已复制', 'ok'); });
-                } else {
-                    input.select(); try { document.execCommand('copy'); } catch (e) {}
-                    PvUI.toast('已复制', 'ok');
-                }
+                PvUI.copy(input.value).then(function (ok) {
+                    PvUI.toast(ok ? '已复制' : '复制失败，请手动选择复制', ok ? 'ok' : 'err');
+                });
             });
         });
     }
