@@ -124,6 +124,27 @@ class PvMockServer {
         );
     }
 
+    /**
+     * 统一处理对外动作（search / study / ping），返回标准 {code,msg,data}。
+     * 供对外 API 控制器与进程内直连共用，避免两处重复分发。
+     */
+    public static function dispatch($action, array $params) {
+        $action = (string)$action;
+        if ($action === 'ping') {
+            return array('code' => 200, 'msg' => 'success', 'data' => self::ping());
+        }
+        if ($action === 'search') {
+            $q = isset($params['q']) ? (string)$params['q'] : '';
+            return array('code' => 200, 'msg' => 'success', 'data' => array('list' => self::search($q)));
+        }
+        if ($action === 'study') {
+            $d = self::study(isset($params['uid']) ? (string)$params['uid'] : '');
+            if (!$d) return array('code' => 404, 'msg' => '未找到该检查', 'data' => null);
+            return array('code' => 200, 'msg' => 'success', 'data' => $d);
+        }
+        return array('code' => 400, 'msg' => '未知操作', 'data' => null);
+    }
+
     public static function ping() {
         $count = 0;
         try { $count = count(self::rows('')); } catch (Exception $e) { $count = 0; }

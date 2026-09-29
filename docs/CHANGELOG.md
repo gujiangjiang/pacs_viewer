@@ -14,6 +14,15 @@
 
 ---
 
+## [0.15.2] - 2026-09-30
+
+### 变更
+- **模拟服务器动作分发收敛**：新增 `PvMockServer::dispatch()`，对外 API 控制器
+  `MockController::api()` 与进程内直连 `PvPacsClient::mockRequest()` 共用同一分发，
+  删除重复的 action → 数据映射。
+
+---
+
 ## [0.15.1] - 2026-09-30
 
 ### 变更

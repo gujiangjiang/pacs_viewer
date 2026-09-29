@@ -123,20 +123,7 @@ class PvPacsClient {
         if (!PvMockServer::enabled()) throw new RuntimeException('内置模拟服务器未启用');
         $key = isset($params['key']) ? (string)$params['key'] : '';
         if (!PvMockServer::checkKey($key)) throw new RuntimeException('内置模拟服务器密钥校验失败');
-        if ($action === 'ping') {
-            return array('code' => 200, 'msg' => 'success', 'data' => PvMockServer::ping());
-        }
-        if ($action === 'search') {
-            $q = isset($params['q']) ? (string)$params['q'] : '';
-            return array('code' => 200, 'msg' => 'success', 'data' => array('list' => PvMockServer::search($q)));
-        }
-        if ($action === 'study') {
-            $uid = isset($params['uid']) ? (string)$params['uid'] : '';
-            $d = PvMockServer::study($uid);
-            if (!$d) return array('code' => 404, 'msg' => '未找到该检查', 'data' => null);
-            return array('code' => 200, 'msg' => 'success', 'data' => $d);
-        }
-        return array('code' => 400, 'msg' => '未知操作', 'data' => null);
+        return PvMockServer::dispatch($action, $params);
     }
 
     private static function httpGet($url, $timeout) {

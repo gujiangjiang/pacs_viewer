@@ -100,18 +100,11 @@ class PvMockController {
         $action = (string)pvw_input('action');
         try {
             if ($action === 'wado') { self::emitWado(); }
-            if ($action === 'ping') {
-                pvw_json(200, 'success', PvMockServer::ping());
-            }
-            if ($action === 'search') {
-                pvw_json(200, 'success', array('list' => PvMockServer::search((string)pvw_input('q'))));
-            }
-            if ($action === 'study') {
-                $d = PvMockServer::study((string)pvw_input('uid'));
-                if (!$d) pvw_json(404, '未找到该检查');
-                pvw_json(200, 'success', $d);
-            }
-            pvw_json(400, '未知操作');
+            $r = PvMockServer::dispatch($action, array(
+                'q'   => (string)pvw_input('q'),
+                'uid' => (string)pvw_input('uid'),
+            ));
+            pvw_json($r['code'], $r['msg'], $r['data']);
         } catch (Exception $e) {
             pvw_json(500, $e->getMessage());
         }
