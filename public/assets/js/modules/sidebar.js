@@ -80,26 +80,33 @@
     PvSidebar.prototype.drawThumb = function (cv, series) {
         var ctx = cv.getContext('2d');
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
-        if (series.is_mock) {
-            var img = PvRender.makeSlice(series.orientation || 'AXIAL', series.seed, 0, series.slice_count || 1);
-            var off = this._offscreen.getContext('2d');
-            var out = off.createImageData(PvRender.BASE, PvRender.BASE);
-            var sd = img.data, od = out.data;
-            for (var i = 0; i < sd.length; i += 4) { var g = sd[i]; od[i] = od[i + 1] = od[i + 2] = g; od[i + 3] = 255; }
-            off.putImageData(out, 0, 0);
-            ctx.drawImage(this._offscreen, 0, 0, cv.width, cv.height);
-        } else {
-            var src = series.images && series.images[0];
-            if (!src) return;
-            var im = new Image();
-            im.onload = function () {
+        if (series.format === 'dicom') {
+            var dsrc = series.images && series.images[0];
+            if (!dsrc) return;
+            var self = this;
+            fetch(dsrc, { credentials: 'same-origin' }).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
+                var dec = window.PvDicom ? PvDicom.decode(buf) : null;
+                if (!dec) return;
+                var ww = parseFloat(series.window_width) || 256, wl = parseFloat(series.window_center) || 128;
+                var img = PvRender.decodeToImage(dec, cv.width, ww, wl, false);
+                var tmp = self._thumbCanvas || (self._thumbCanvas = document.createElement('canvas'));
+                tmp.width = cv.width; tmp.height = cv.height;
+                tmp.getContext('2d').putImageData(img, 0, 0);
                 ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
-                var sc = Math.min(cv.width / im.width, cv.height / im.height);
-                var dw = im.width * sc, dh = im.height * sc;
-                ctx.drawImage(im, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh);
-            };
-            im.src = src;
+                ctx.drawImage(tmp, 0, 0);
+            }).catch(function () {});
+            return;
         }
+        var src = series.images && series.images[0];
+        if (!src) return;
+        var im = new Image();
+        im.onload = function () {
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
+            var sc = Math.min(cv.width / im.width, cv.height / im.height);
+            var dw = im.width * sc, dh = im.height * sc;
+            ctx.drawImage(im, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh);
+        };
+        im.src = src;
     };
 
     global.PvSidebar = PvSidebar;

@@ -59,6 +59,7 @@
         this.raw = document.createElement('canvas'); this.raw.width = BASE; this.raw.height = BASE;
 
         this.cache = {}; this.cacheKeys = []; this.imgCache = {};
+        this._frames = {};
         this.st = {
             uid: '', si: 0, fi: 0, ww: 400, wl: 40, isHU: true,
             zoom: 1, panX: 0, panY: 0, rot: 0, flipH: false, flipV: false, invert: false,
@@ -83,8 +84,16 @@
     PvPane.prototype.data = function () { return this.viewer.study(this.st.uid); };
     PvPane.prototype.seriesList = function () { var d = this.data(); return d ? d.series : []; };
     PvPane.prototype.curSeries = function () { var d = this.data(); return d && d.series[this.st.si] ? d.series[this.st.si] : null; };
-    PvPane.prototype.frameIsHU = function () { var s = this.curSeries(); return !s || s.is_mock; };
+    PvPane.prototype.frameIsHU = function () { var s = this.curSeries(); return !!(s && s.is_hu); };
     PvPane.prototype.frameCount = function () { var s = this.curSeries(); return s ? Math.max(1, s.slice_count || (s.images ? s.images.length : 1)) : 0; };
+
+    /** 显示像素物理间距（mm/显示像素）：按原图列数折算到 BASE 显示尺寸 */
+    PvPane.prototype.effectivePixelSpacing = function () {
+        var s = this.curSeries(); if (!s) return 0.7;
+        var ps = parseFloat(s.pixel_spacing) || 0.7;
+        var cols = parseInt(s.columns, 10) || BASE;
+        return ps * (cols / BASE);
+    };
 
     PvPane.prototype.setStatus = function (m) { if (this.statusEl) this.statusEl.textContent = m || ''; };
     PvPane.prototype.updateTitle = function () {
@@ -104,15 +113,37 @@
         this.updateScrollbar();
     };
 
-    PvPane.prototype.getMock = function (series, frame) {
-        var key = series.seed + '#' + frame;
-        if (this.cache[key]) return this.cache[key];
-        var idx = clamp(frame, 0, Math.max(0, (series.slice_count || 1) - 1));
-        var img = PvRender.makeSlice(series.orientation || 'AXIAL', series.seed, idx, series.slice_count || 1);
-        this.cache[key] = img; this.cacheKeys.push(key);
-        if (this.cacheKeys.length > 80) delete this.cache[this.cacheKeys.shift()];
-        return img;
+    /* ---------- 标准 DICOM 帧获取与缓存 ---------- */
+    PvPane.prototype._frameKey = function (series, fi) { return this.st.uid + '|' + series.series_id + '|' + fi; };
+
+    /** 取指定帧（异步拉取标准 DICOM 并解码）；返回 {status:'ok'|'loading'} 或 null */
+    PvPane.prototype.getFrame = function (series, fi) {
+        var key = this._frameKey(series, fi);
+        var c = this._frames[key];
+        if (c) return c;
+        var url = series.images && series.images[fi];
+        if (!url) return null;
+        this._frames[key] = { status: 'loading' };
+        var self = this;
+        fetch(url, { credentials: 'same-origin' })
+            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+            .then(function (buf) {
+                var dec = window.PvDicom ? PvDicom.decode(buf) : null;
+                if (!dec) { delete self._frames[key]; self.setStatus('DICOM 解码失败'); self.render(); return; }
+                self._frames[key] = { status: 'ok', dec: dec, raw: PvRender.resample(dec, BASE) };
+                var keys = Object.keys(self._frames);
+                if (keys.length > 120) { for (var i = 0; i < keys.length - 80; i++) delete self._frames[keys[i]]; }
+                self.render();
+            })
+            .catch(function () { delete self._frames[key]; self.setStatus('影像加载失败'); self.render(); });
+        return null;
     };
+    PvPane.prototype.currentFrame = function () {
+        var s = this.curSeries(); if (!s || s.format !== 'dicom') return null;
+        var f = this.getFrame(s, this.st.fi);
+        return (f && f.status === 'ok') ? f : null;
+    };
+
     PvPane.prototype.getRealImage = function (src, cb) {
         if (this.imgCache[src]) { if (this.imgCache[src].complete) cb(this.imgCache[src]); return; }
         var im = new Image(), self = this;
@@ -121,7 +152,11 @@
     };
     PvPane.prototype.currentSource = function () {
         var s = this.curSeries(); if (!s) return null;
-        if (s.is_mock) return { kind: 'data', img: this.getMock(s, this.st.fi) };
+        if (s.format === 'dicom') {
+            var f = this.getFrame(s, this.st.fi);
+            if (f && f.status === 'ok') return { kind: 'raw', raw: f.raw, dec: f.dec };
+            return { kind: 'loading' };
+        }
         var src = s.images && s.images[this.st.fi];
         if (!src) return null;
         var im = this.imgCache[src];
@@ -129,19 +164,11 @@
         if (!im.complete) return { kind: 'loading' };
         return { kind: 'image', img: im };
     };
-    PvPane.prototype.windowed = function (imgData, isHU, ww, wl, invert) {
-        ww = Math.max(1, ww);
-        var lo = wl - ww / 2, k = 255 / ww, lut = new Uint8Array(256);
-        for (var v = 0; v < 256; v++) {
-            var val = isHU ? (v / 255 * (HU_MAX - HU_MIN) + HU_MIN) : v;
-            var o = (val - lo) * k; o = o < 0 ? 0 : (o > 255 ? 255 : o);
-            if (invert) o = 255 - o; lut[v] = o;
-        }
-        var w = imgData.width, h = imgData.height;
-        if (!this._out || this._out.width !== w || this._out.height !== h) { this.work.width = w; this.work.height = h; this._out = this.wctx.createImageData(w, h); }
-        var sd = imgData.data, od = this._out.data;
-        for (var i = 0, n = w * h; i < n; i++) { var j = i * 4, g = lut[sd[j]]; od[j] = od[j + 1] = od[j + 2] = g; od[j + 3] = 255; }
-        this.wctx.putImageData(this._out, 0, 0);
+    /** 显示值场 → 窗宽窗位画布 */
+    PvPane.prototype.windowRaw = function (raw, ww, wl, invert) {
+        var img = PvRender.window(raw, BASE, ww, wl, invert);
+        if (this.work.width !== BASE || this.work.height !== BASE) { this.work.width = BASE; this.work.height = BASE; }
+        this.wctx.putImageData(img, 0, 0);
         return this.work;
     };
 
@@ -151,19 +178,20 @@
         ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, this.cssW, this.cssH);
         var src = this.currentSource(), winCanvas = null;
-        if (src && src.kind === 'data') {
-            winCanvas = this.windowed(src.img, st.isHU, st.ww, st.wl, st.invert);
+        if (src && src.kind === 'raw') {
+            winCanvas = this.windowRaw(src.raw, st.ww, st.wl, st.invert);
         } else if (src && src.kind === 'image') {
             var im = src.img, rc = this.raw.getContext('2d');
             rc.setTransform(1, 0, 0, 1, 0, 0); rc.fillStyle = '#000'; rc.fillRect(0, 0, BASE, BASE);
             var sc = Math.min(BASE / im.width, BASE / im.height), dw = im.width * sc, dh = im.height * sc;
             rc.drawImage(im, (BASE - dw) / 2, (BASE - dh) / 2, dw, dh);
             var data = rc.getImageData(0, 0, BASE, BASE);
-            for (var i = 0; i < data.data.length; i += 4) {
-                var l = (data.data[i] * .299 + data.data[i + 1] * .587 + data.data[i + 2] * .114) | 0;
-                data.data[i] = data.data[i + 1] = data.data[i + 2] = l;
+            var raw = new Float32Array(BASE * BASE);
+            for (var i = 0, n = BASE * BASE; i < n; i++) {
+                var j = i * 4;
+                raw[i] = data.data[j] * .299 + data.data[j + 1] * .587 + data.data[j + 2] * .114;
             }
-            winCanvas = this.windowed(data, false, st.ww, st.wl, st.invert);
+            winCanvas = this.windowRaw(raw, st.ww, st.wl, st.invert);
         } else if (src && src.kind === 'loading') {
             this.placeholder('正在解码图像…');
         } else {
@@ -246,7 +274,7 @@
         ctx.shadowBlur = 0; ctx.fillStyle = '#04140d'; ctx.fillText(txt, x + 4, y); ctx.restore();
     };
     PvPane.prototype._drawAnno = function (ctx, a) {
-        var color = a.color || '#10b981', ps = (this.curSeries() && this.curSeries().pixel_spacing) || 0.7;
+        var color = a.color || '#10b981', ps = this.effectivePixelSpacing();
         if (a.type === 'length' && a.pts.length >= 2) {
             this._line(ctx, a.pts[0], a.pts[1], color);
             var mm = PvMeasure.distMM(a.pts[0], a.pts[1], ps), px = Math.round(PvMeasure.distPx(a.pts[0], a.pts[1]));
@@ -367,22 +395,37 @@
         this.render();
     };
     PvPane.prototype._roiStats = function (pts, type) {
-        var src = this.currentSource(); if (!src) return null;
-        var data;
-        if (src.kind === 'data') data = src.img;
-        else if (src.kind === 'image') data = this.raw.getContext('2d').getImageData(0, 0, BASE, BASE);
-        else return null;
-        var ps = (this.curSeries() && this.curSeries().pixel_spacing) || 0.7;
-        return PvMeasure.roiStats(data, pts, type, this.frameIsHU(), ps);
+        var src = this.currentSource(); if (!src || src.kind !== 'raw') return null;
+        var raw = src.raw, size = BASE;
+        var x0 = clamp(Math.round(Math.min(pts[0].x, pts[1].x)), 0, size - 1);
+        var x1 = clamp(Math.round(Math.max(pts[0].x, pts[1].x)), 0, size - 1);
+        var y0 = clamp(Math.round(Math.min(pts[0].y, pts[1].y)), 0, size - 1);
+        var y1 = clamp(Math.round(Math.max(pts[0].y, pts[1].y)), 0, size - 1);
+        var cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, rx = Math.max(1, (x1 - x0) / 2), ry = Math.max(1, (y1 - y0) / 2);
+        var sum = 0, n = 0;
+        for (var y = y0; y <= y1; y++) {
+            for (var x = x0; x <= x1; x++) {
+                if (type === 'ellipse') { var dx = (x - cx) / rx, dy = (y - cy) / ry; if (dx * dx + dy * dy > 1) continue; }
+                sum += raw[y * size + x]; n++;
+            }
+        }
+        if (!n) return null;
+        var ps = this.effectivePixelSpacing();
+        return { area: n * ps * ps, mean: sum / n, hu: this.frameIsHU(), count: n };
     };
     PvPane.prototype.clearAnnos = function () { this.st.annos = []; this.st.draft = null; this.render(); };
 
     /* ---------- 帧 / 序列 ---------- */
     PvPane.prototype.applyDefaults = function () {
         var s = (this.data() && this.data().data && this.data().data.study) || {};
-        if (this.frameIsHU()) {
-            if (s.default_ww && s.default_wl) { this.st.ww = parseInt(s.default_ww, 10) || 400; this.st.wl = parseInt(s.default_wl, 10) || 40; }
-            else { var m = (s.modality || '').toUpperCase(); var pre = (m === 'DR' || m === 'MG') ? PRESETS.full : PRESETS.soft; this.st.ww = pre.ww; this.st.wl = pre.wl; }
+        var ser = this.curSeries();
+        if (ser && ser.window_width) {
+            this.st.ww = parseFloat(ser.window_width) || 400;
+            this.st.wl = parseFloat(ser.window_center) || 40;
+        } else if (ser && ser.is_hu) {
+            var m = (s.modality || '').toUpperCase();
+            var pre = (m === 'DR' || m === 'MG') ? PRESETS.full : PRESETS.soft;
+            this.st.ww = pre.ww; this.st.wl = pre.wl;
         } else { this.st.ww = 256; this.st.wl = 128; }
         this.st.isHU = this.frameIsHU();
     };
@@ -394,7 +437,7 @@
         var d = this.viewer.study(uid);
         if (!d || !d.series[si]) return;
         this.st.uid = uid; this.st.si = si; this.st.fi = 0;
-        this._wheelAcc = 0; this.st.annos = []; this.st.draft = null;
+        this._wheelAcc = 0; this.st.annos = []; this.st.draft = null; this._frames = {};
         this.applyDefaults(); this.fit();
         this.updateTitle(); this.updateScrollbar();
         this.viewer.afterPaneLoad(this);
@@ -473,11 +516,15 @@
         var pt = this._rel(e), p = this.screenToImg(pt.x, pt.y);
         var x = Math.floor(p.x), y = Math.floor(p.y);
         if (x < 0 || y < 0 || x >= BASE || y >= BASE) { this._setHU(''); return; }
-        if (ser.is_mock) {
-            var img = this.getMock(ser, this.st.fi);
-            var b = img.data[(y * BASE + x) * 4];
-            var hu = Math.round(b / 255 * (HU_MAX - HU_MIN) + HU_MIN);
-            this._setHU('HU ' + hu + '　(' + x + ', ' + y + ')');
+        if (ser.format === 'dicom') {
+            var f = this.currentFrame();
+            if (!f) { this._setHU(''); return; }
+            var dec = f.dec;
+            var sx = Math.floor(x * dec.columns / BASE), sy = Math.floor(y * dec.rows / BASE);
+            if (sx < 0 || sy < 0 || sx >= dec.columns || sy >= dec.rows) { this._setHU(''); return; }
+            var stored = dec.pixels[sy * dec.columns + sx];
+            var val = stored * dec.rescaleSlope + dec.rescaleIntercept;
+            this._setHU((ser.is_hu ? 'HU ' : '灰度 ') + Math.round(val) + '　(' + x + ', ' + y + ')');
         } else {
             try { var d = this.raw.getContext('2d').getImageData(x, y, 1, 1).data; this._setHU('灰度 ' + d[0] + '　(' + x + ', ' + y + ')'); }
             catch (err) { this._setHU('(' + x + ', ' + y + ')'); }
@@ -496,15 +543,25 @@
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         setTimeout(function () { URL.revokeObjectURL(url); }, 1800);
     };
+    PvPane.prototype._paintRaw = function (cx, raw) {
+        cx.putImageData(PvRender.window(raw, BASE, this.st.ww, this.st.wl, this.st.invert), 0, 0);
+    };
     PvPane.prototype.exportFrameCanvas = function (fi) {
         var self = this, ser = this.curSeries();
         var cv = document.createElement('canvas'); cv.width = BASE; cv.height = BASE;
         var cx = cv.getContext('2d'); cx.fillStyle = '#000'; cx.fillRect(0, 0, BASE, BASE);
         if (!ser) return Promise.resolve(cv);
-        if (ser.is_mock) {
-            var img = this.getMock(ser, fi);
-            cx.drawImage(this.windowed(img, this.st.isHU, this.st.ww, this.st.wl, this.st.invert), 0, 0);
-            return Promise.resolve(cv);
+        if (ser.format === 'dicom') {
+            var cached = this._frames[this._frameKey(ser, fi)];
+            if (cached && cached.status === 'ok') { this._paintRaw(cx, cached.raw); return Promise.resolve(cv); }
+            var durl = ser.images && ser.images[fi];
+            if (!durl) return Promise.resolve(cv);
+            return fetch(durl, { credentials: 'same-origin' }).then(function (r) { return r.arrayBuffer(); })
+                .then(function (buf) {
+                    var dec = window.PvDicom ? PvDicom.decode(buf) : null;
+                    if (dec) self._paintRaw(cx, PvRender.resample(dec, BASE));
+                    return cv;
+                }).catch(function () { return cv; });
         }
         var src = ser.images && ser.images[fi];
         if (!src) return Promise.resolve(cv);
@@ -516,8 +573,9 @@
                 var sc = Math.min(BASE / im.width, BASE / im.height), dw = im.width * sc, dh = im.height * sc;
                 rc.drawImage(im, (BASE - dw) / 2, (BASE - dh) / 2, dw, dh);
                 var data = rc.getImageData(0, 0, BASE, BASE);
-                for (var i = 0; i < data.data.length; i += 4) { var l = (data.data[i] * .299 + data.data[i + 1] * .587 + data.data[i + 2] * .114) | 0; data.data[i] = data.data[i + 1] = data.data[i + 2] = l; }
-                cx.drawImage(self.windowed(data, false, self.st.ww, self.st.wl, self.st.invert), 0, 0);
+                var raw = new Float32Array(BASE * BASE);
+                for (var i = 0, n = BASE * BASE; i < n; i++) { var j = i * 4; raw[i] = data.data[j] * .299 + data.data[j + 1] * .587 + data.data[j + 2] * .114; }
+                cx.drawImage(self.windowRaw(raw, self.st.ww, self.st.wl, self.st.invert), 0, 0);
                 resolve(cv);
             };
             im.onerror = function () { resolve(cv); };
@@ -581,8 +639,8 @@
             section('患者信息 (Patient)', [['PatientName（姓名）', p.name], ['PatientID（患者号）', p.patient_id], ['PatientBirthDate（出生日期）', p.birth_date], ['PatientSex（性别）', p.gender], ['Age（年龄）', p.age], ['OutpatientNo（门诊号）', p.outpatient_no]]) +
             section('检查信息 (Study)', [['StudyInstanceUID', s.study_uid], ['AccessionNumber（检查号）', s.accession_no], ['StudyDate（检查时间）', s.study_date], ['Modality（模态）', s.modality], ['StudyDescription（检查项目）', s.description], ['InstitutionName（机构）', s.institution], ['StationName（设备）', s.station_name], ['ReferringDept（申请科室）', s.apply_dept], ['ReferringPhysician（申请医生）', s.apply_doctor], ['NumberOfSeries（序列数）', (d.series || []).length]]) +
             section('序列信息 (Series)', [['SeriesNumber（序列号）', ser.series_id], ['SeriesInstanceUID', seriesUid], ['SeriesDescription（序列描述）', ser.description], ['ImageOrientation（方位）', ser.orientation], ['NumberOfFrames（帧数）', count], ['SliceThickness（层厚）', ser.slice_thickness != null ? ser.slice_thickness : s.slice_thickness], ['PixelSpacing（像素间距）', ser.pixel_spacing], ['SeriesList（本检查序列）', seriesList]]) +
-            section('当前图像 (Instance)', [['InstanceNumber（帧号）', (this.st.fi + 1) + ' / ' + count], ['Rows × Columns（矩阵）', '512 × 512'], ['BitsAllocated（位深）', 16], ['PhotometricInterpretation', 'MONOCHROME2'], ['RescaleIntercept / Slope', '0 / 1'], ['WindowWidth / WindowCenter', Math.round(this.st.ww) + ' / ' + Math.round(this.st.wl)], ['PixelRepresentation（是否 HU）', isHU ? '有符号（HU）' : '无符号'], ['Zoom / Rotation', Math.round(this.st.zoom * 100) + '% / ' + (((this.st.rot % 360) + 360) % 360) + '°'], ['Flip（镜像）', (this.st.flipH ? 'H' : '') + (this.st.flipV ? 'V' : '') || 'N'], ['Annotations（标注数）', this.st.annos.length]]) +
-            section('数据来源', [['Source（来源）', meta.source], ['Mode（接口模式）', meta.mode], ['IsMock（是否仿真影像）', ser.is_mock ? '是（前端算法生成）' : '否（真实图像）']]) + '</div>';
+            section('当前图像 (Instance)', [['InstanceNumber（帧号）', (this.st.fi + 1) + ' / ' + count], ['Rows × Columns（矩阵）', (ser.rows || 512) + ' × ' + (ser.columns || 512)], ['BitsAllocated（位深）', ser.bits_allocated || 16], ['PhotometricInterpretation', 'MONOCHROME2'], ['RescaleIntercept / Slope', (ser.rescale_intercept != null ? ser.rescale_intercept : '0') + ' / ' + (ser.rescale_slope != null ? ser.rescale_slope : '1')], ['WindowWidth / WindowCenter', Math.round(this.st.ww) + ' / ' + Math.round(this.st.wl)], ['PixelRepresentation（是否 HU）', isHU ? '有符号（HU）' : '无符号'], ['Zoom / Rotation', Math.round(this.st.zoom * 100) + '% / ' + (((this.st.rot % 360) + 360) % 360) + '°'], ['Flip（镜像）', (this.st.flipH ? 'H' : '') + (this.st.flipV ? 'V' : '') || 'N'], ['Annotations（标注数）', this.st.annos.length]]) +
+            section('数据来源', [['Source（来源）', meta.source], ['Mode（接口模式）', meta.mode], ['Format（影像格式）', ser.format === 'dicom' ? '标准 DICOM（WADO-URI）' : '图像文件']]) + '</div>';
         window.PvModal.open({ title: 'DICOM 详情 · ' + (s.accession_no || s.study_uid || ''), size: 'lg', body: html });
         this.viewer.logEvent('dicom');
     };
