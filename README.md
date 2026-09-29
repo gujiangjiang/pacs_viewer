@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.12.2-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.13.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -14,7 +14,7 @@
 为便于联调，项目内置了一个**模拟 PACS 服务器**（见「模拟服务器」页）：它通过
 对外 API 提供标准 PACS 接口，使用内置确定性仿真患者数据；影像由内置模拟服务器按
 标准 DICOM（WADO-URI）生成，用于验证完整阅片链路。对外地址与密钥可**一键填入**
-【外部接口】。真实部署的检索来源（PACS 网关 / FHIR R4）在该页配置。
+【外部接口】。真实部署的 DICOM/PACS 网关为必填，FHIR R4 可选作患者信息补充。
 
 部署形态为标准 PHP 网站：Web 根指向本仓库的 `public/`，入口为 `public/index.php`。
 

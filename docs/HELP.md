@@ -36,13 +36,17 @@ Web PACS 影像浏览器 · 独立 PHP 网站
 
 ### 外部接口
 
-本项目作为标准 PACS 前端，检索 / 调阅的患者与检查数据来自所选**检索来源**。
-页面为左右分栏：左侧选择 **DICOM / PACS** 或 **FHIR R4**，右侧显示对应配置。
+页面为左右分栏：左侧 **DICOM / PACS**（必填）与 **FHIR R4**（补充），右侧显示对应配置。
 
-| 检索来源 | 说明 |
-| --- | --- |
-| **PACS / DICOM 网关**（默认） | 接口返回本身即携带患者信息（PatientName / PatientID / 出生日期 / 性别等）。DICOM 数据集与 C-FIND / DICOMweb QIDO-RS 都能传输患者信息，因此**无需 FHIR** 即可检索与展示。 |
-| **FHIR R4**（可选） | 从门诊系统获取「已缴费、已登记」的患者与检查（`Patient` / `ImagingStudy`）；影像仍由 PACS 按 ImagingStudy 中的真实 `StudyInstanceUID` 提供。适用于 HIS/EMR 集成场景。 |
+- **DICOM / PACS 网关（必填）**：患者检索与影像获取的基础。接口返回本身即携带患者信息
+  （PatientName / PatientID / 出生日期 / 性别等）；DICOM 数据集、C-FIND、DICOMweb
+  QIDO-RS 都能传输患者信息，因此**无需 FHIR** 也可检索与查看。
+- **FHIR R4（可选补充）**：勾选「启用 FHIR 补充」后，作为患者信息的**补充**（非二选一）：
+  - 命中 FHIR 的检查 → 用 FHIR 患者主数据补充姓名 / 性别 / 出生日期 / 年龄 / 门诊号等
+    （检索结果卡片显示 `FHIR` 标记），影像仍来自 PACS；
+  - FHIR 有登记但 PACS 暂无影像 → 以「已登记 · 暂无影像」条目列出，点击提示无影像；
+  - PACS 有影像但 FHIR 无记录 → 正常显示 PACS 数据；
+  - FHIR 接口异常不影响 PACS 检索结果（仅顶部提示补充失败）。
 
 PACS / DICOM 网关字段：
 
@@ -55,8 +59,8 @@ PACS / DICOM 网关字段：
 | 目标 PACS AETitle | 远程 PACS 侧 AETitle |
 | PACS 主机 / DICOM 端口 | DICOM 元数据（如 `192.168.1.100` / `104`） |
 
-FHIR R4 字段（选择该来源时显示）：`FHIR 接口地址`、`访问密钥`（可选）、`超时`，
-可点【测试 FHIR 连接】。PACS 网关可点【测试 PACS 接口】。
+FHIR R4 字段：`启用 FHIR 补充`、`FHIR 接口地址`、`访问密钥`（可选）、`超时`，
+可点【测试 FHIR 连接】；PACS 网关可点【测试 DICOM / PACS 接口】。
 
 ### 账号管理
 以**模态框**新增 / 编辑账号、启停账号、重置密码、删除账号。安装时创建的管理员为

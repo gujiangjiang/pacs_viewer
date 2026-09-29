@@ -53,3 +53,6 @@
 @media (max-width: 760px) { .pv-split { flex-direction: column; } .pv-split-nav { flex-direction: row; flex-wrap: wrap; flex-basis: auto; } }
 
 echo done
+
+/* 外部分栏项上的「必填 / 补充」标签 */
+.pv-split-tag { font-size: 10px; font-weight: 600; color: var(--pv-acc); border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; margin-left: 4px; }

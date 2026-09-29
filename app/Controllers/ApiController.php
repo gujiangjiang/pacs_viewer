@@ -23,6 +23,8 @@ class PvApiController {
             'total' => count($list),
             'mode' => PvPacsClient::mode(),
             'remote' => PvPacsClient::isRemote(),
+            'source' => PvStudyService::sourceInfo(),
+            'fhir_error' => PvStudyService::lastFhirError(),
         ));
     }
 

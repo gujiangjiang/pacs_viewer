@@ -13,6 +13,7 @@ class PvSearchController {
             'site'    => PvSettings::get('site_title', 'PACS 影像浏览器'),
             'hospital'=> PvSettings::get('hospital_name', ''),
             'mode'    => PvPacsClient::mode(),
+            'source'  => PvStudyService::sourceInfo(),
             'isAdmin' => PvAuth::isAdmin(),
             'clearOnOpen' => !empty($u['clear_on_open']) ? 1 : 0,
         ));

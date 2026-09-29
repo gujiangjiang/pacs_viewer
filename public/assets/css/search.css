@@ -26,3 +26,8 @@
 
 #pvSearchBtn { min-width: 76px; }
 .pv-btn.is-loading { opacity: .65; cursor: progress; }
+
+/* FHIR 补充标记 / 仅登记无影像 */
+.pv-src-tag { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 5px; background: rgba(16,185,129,.16); color: #6ee7b7; }
+.pv-study.is-noimg { opacity: .82; }
+.pv-study.is-noimg .pv-study-open { color: var(--pv-txt2); }

@@ -5,7 +5,7 @@ class PvAdminController {
     /** 允许保存的设置键（白名单） */
     private static $settingKeys = array(
         'site_title', 'hospital_name',
-        'patient_source',
+        'fhir_enabled',
         'pacs_endpoint', 'pacs_api_key',
         'pacs_ae_title', 'pacs_remote_ae', 'pacs_server_host', 'pacs_server_port', 'pacs_timeout',
         'fhir_endpoint', 'fhir_api_key', 'fhir_timeout',
@@ -52,8 +52,8 @@ class PvAdminController {
         if (isset($pairs['viewer_study_limit'])) {
             $pairs['viewer_study_limit'] = (string)max(3, min(10, (int)$pairs['viewer_study_limit']));
         }
-        if (isset($pairs['patient_source'])) {
-            $pairs['patient_source'] = $pairs['patient_source'] === 'fhir' ? 'fhir' : 'pacs';
+        if (isset($pairs['fhir_enabled'])) {
+            $pairs['fhir_enabled'] = $pairs['fhir_enabled'] === '1' ? '1' : '0';
         }
         if (isset($pairs['fhir_timeout'])) {
             $pairs['fhir_timeout'] = (string)max(1, min(60, (int)$pairs['fhir_timeout']));
