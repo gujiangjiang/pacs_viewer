@@ -42,4 +42,14 @@
 .pv-storage-table { width: 100%; }
 .pv-storage-table .pv-storage-size { font-variant-numeric: tabular-nums; color: #e2e8f0; font-weight: 600; white-space: nowrap; }
 
+/* 外部接口：左右分栏 */
+.pv-split { display: flex; gap: 16px; align-items: flex-start; margin-top: 4px; }
+.pv-split-nav { flex: 0 0 170px; display: flex; flex-direction: column; gap: 6px; }
+.pv-split-item { text-align: left; padding: 10px 12px; border: 1px solid var(--pv-line); background: transparent; color: var(--pv-txt2); border-radius: 8px; cursor: pointer; font-size: 13px; }
+.pv-split-item:hover { background: #1e293b; color: #fff; }
+.pv-split-item.active { background: #1e293b; color: #fff; border-color: var(--pv-acc); }
+.pv-split-body { flex: 1 1 auto; min-width: 0; }
+.pv-ext-title { margin: 0 0 6px; font-size: 14px; color: #f1f5f9; }
+@media (max-width: 760px) { .pv-split { flex-direction: column; } .pv-split-nav { flex-direction: row; flex-wrap: wrap; flex-basis: auto; } }
+
 echo done

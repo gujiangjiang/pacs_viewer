@@ -297,10 +297,17 @@
             // 存储情况页签
             try { initStorage(); } catch (e2) { if (global.console) console.error(e2); }
 
-            // 数据来源：检索来源切换 + FHIR 连接测试
-            var ps = document.getElementById('pvPatientSource');
-            var fhirBox = document.getElementById('pvFhirDataSourceBox');
-            if (ps && fhirBox) ps.addEventListener('change', function () { fhirBox.classList.toggle('pv-hidden', ps.value !== 'fhir'); });
+            // 外部接口：左侧分栏切换（DICOM/PACS ↔ FHIR R4）+ 连接测试
+            var extItems = document.querySelectorAll('.pv-split-item[data-ext]');
+            Array.prototype.forEach.call(extItems, function (btn) {
+                btn.addEventListener('click', function () {
+                    var key = btn.getAttribute('data-ext');
+                    Array.prototype.forEach.call(extItems, function (b) { b.classList.toggle('active', b === btn); });
+                    Array.prototype.forEach.call(document.querySelectorAll('[data-ext-pane]'), function (p) {
+                        p.classList.toggle('pv-hidden', p.getAttribute('data-ext-pane') !== key);
+                    });
+                });
+            });
             var fhirBtn = document.getElementById('pvFhirTestMain');
             var fhirOut = document.getElementById('pvFhirResultMain');
             if (fhirBtn && fhirOut) {

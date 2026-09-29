@@ -9,7 +9,7 @@
     这里内置了一个模拟 PACS 服务器：通过<b>对外 API</b> 提供标准 PACS 接口（search / study / ping），
     可一键配置给本浏览器的 DICOM / PACS 接口，也可提供给门诊系统调用。它使用<b>内置仿真患者数据</b>，
     影像按<b>标准 DICOM</b>（含多模态、多帧连续断层）生成，供通用阅片器解码渲染。
-    真实部署的检索来源（PACS 网关 / FHIR）请在【数据来源 / PACS 接口】配置。
+    真实部署的检索来源（PACS 网关 / FHIR）请在【外部接口】配置。
 </div>
 
 <!-- 服务器状态与控制 -->
@@ -41,7 +41,7 @@
         <div class="pv-form-actions">
             <button type="submit" class="pv-btn pv-btn-primary">保存状态设置</button>
             <button type="button" class="pv-btn pv-btn-accent" id="pvApplyMock">⇩ 一键应用模拟服务器数据</button>
-            <span class="pv-hint">将上方地址与密钥自动填入【管理设置 → DICOM / PACS 接口】</span>
+            <span class="pv-hint">将上方地址与密钥自动填入【管理设置 → 外部接口】</span>
         </div>
     </form>
 </div>

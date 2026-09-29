@@ -10,7 +10,7 @@ class PvMockController {
         pvw_redirect(pvw_url('admin', array('tab' => 'mock')));
     }
 
-    /** 保存模拟服务器设置（FHIR 等数据来源已移至「数据来源 / PACS 接口」） */
+    /** 保存模拟服务器设置（FHIR 等外部接口已移至「外部接口」） */
     public static function save() {
         PvAuth::requireAdmin();
         pvw_csrf_check();
