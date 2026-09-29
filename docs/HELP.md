@@ -128,8 +128,10 @@ GET {endpoint}?action=ping&key=APIKEY
     → {"code":200,"data":{"name":"...","version":"..."}}
 ```
 
-- `series[].is_mock=true` 时由前端算法生成仿真切片；`images` 为空数组。
-- `series[].images` 若给出图片 URL，前端将加载真实图像。
+- `series[].format="dicom"` 时，`images` 为**标准 DICOM 帧地址（WADO-URI）**列表，
+  由前端按标准 DICOM 协议取像并解码渲染；`is_hu`、`window_center/width`、
+  `rows/columns`、`bits_*`、`rescale_*` 描述像素参数。
+- `series[].images` 若给出普通图片 URL（无 `format`），前端按图像加载。
 - 接口返回 `code!=200` 时前端展示其 `msg`。
 
 ## 六、键鼠快捷交互速查表

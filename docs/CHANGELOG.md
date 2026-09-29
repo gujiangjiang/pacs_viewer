@@ -14,6 +14,34 @@
 
 ---
 
+## [0.10.0] - 2026-09-29
+
+### 新增
+- **后端模拟数据生成子系统（`app/Pacs/Mock/`）**：按检查部位 / 描述智能路由解剖模型，
+  支持多模态、多帧连续切片：
+  - CT：HeadCT（40 帧，脑窗/骨窗）、ChestCT（40 帧，肺窗/纵隔窗）、
+    LumbarCT（28 帧）、AbdomenCT（32 帧），16 位 HU（RescaleIntercept=-1024/Slope=1）。
+  - MR：HeadMR（T1WI/T2WI）、LumbarMR、KneeMR，12 位信号，T1/T2 对比正确。
+  - DR：ChestDR、LimbDR，1024×1024 高分辨率投影衰减。
+  - US：AbdomenUS、CardiacUS，扇形声束 + 瑞利斑点噪声 + 声影 / 声衰减。
+  - 基础设施：生成器接口体系、Perlin/fBm/高斯/瑞利数学算子、几何 SDF、
+    标准 DICOM Part 10 封装（`DicomTagBuilder`）、总控调度 `MockDispatcher`。
+- **标准 DICOM 输出（WADO-URI）**：`?r=dicom` 与 `?r=mock&action=wado`，按模态选择
+  SOP Class，Instance/Series/Study UID 树状派生，携带 ImagePositionPatient /
+  ImageOrientationPatient / SliceLocation，支持通用客户端滚动连续切换。
+- **通用前端 DICOM 渲染**：新增 `modules/dicom.js`（标准 DICOM 解码），
+  阅片器按标准协议取像、解码、窗宽窗位渲染；移除客户端模拟影像生成逻辑，
+  不同解剖部位呈现真实差异化影像。
+- **解剖部位与切片数量配置**：【管理设置 → 模拟服务器】可注册 / 维护部位、
+  匹配关键词、适用模态与切片数量（支持添加/删除/恢复默认），即时生效。
+
+### 变更
+- `DemoPacs::seriesFor` 委托 `MockDispatcher` 规划序列；CT/MR 切片数提升至
+  16~64 帧，序列元数据补充标准像素参数与 DICOM 帧地址。
+- 管理界面「模拟服务器」说明与 README / HELP 同步为「服务端标准 DICOM 生成」。
+
+---
+
 ## [0.9.3] - 2026-09-27
 
 ### 变更

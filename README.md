@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.9.3-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.10.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -13,8 +13,8 @@
 
 为便于联调，项目内置了一个**模拟 PACS 服务器**（见「模拟服务器」页）：它通过
 对外 API 提供标准 PACS 接口，患者数据可来自内置确定性仿真，或通过 **FHIR R4**
-从门诊一体化系统获取「已缴费、已登记」的患者及其检查；影像由前端算法确定性生成，
-用于验证完整阅片链路。对外地址与密钥可**一键填入** DICOM / PACS 接口。
+从门诊一体化系统获取「已缴费、已登记」的患者及其检查；影像由内置模拟服务器按
+标准 DICOM（WADO-URI）生成，用于验证完整阅片链路。对外地址与密钥可**一键填入** DICOM / PACS 接口。
 
 部署形态为标准 PHP 网站：Web 根指向本仓库的 `public/`，入口为 `public/index.php`。
 
@@ -57,7 +57,7 @@
   账号管理（模态框）、检索日志、影像视图序列上限（3-10）、模拟服务器。
 - **操作日志**：记录账号、操作（搜索 / 读片 / 下载 / 阅读 DICOM）、详情
   （患者姓名 + 检查类型）与 IP，便于溯源。
-- 无真实图像时由算法确定性生成仿真切片（同一检查花纹恒定）。
+- 无真实 PACS 时由内置模拟服务器生成多模态仿真 DICOM（颅脑 / 胸部 / 腰椎 / 腹部 / 膝等，多帧连续切片）。
 
 ## 目录结构
 
@@ -80,7 +80,7 @@
 │           ├── admin.js      #   管理页交互（模态框账号管理）
 │           ├── mock.js       #   模拟服务器页交互
 │           ├── viewer.js     #   阅片器主控制器
-│           └── modules/      #   render(虚拟影像) / osd(水印) / sidebar(序列栏)
+│           └── modules/      #   dicom(DICOM 解码) / render(像素窗宽窗位) / osd(水印) / sidebar(序列栏)
 │                             #   / toolbar(工具栏) / measurements(测量) / zip(导出打包)
 ├── app/                      # 后端
 │   ├── bootstrap.php         #   引导（部署路径自适应 / 会话 / AJAX 助手 / 布局）
@@ -130,7 +130,7 @@
    - **门诊系统 FHIR R4**：填写 FHIR 地址（可选密钥），按 `Patient` + `ImagingStudy`
      获取「已缴费、已登记」患者及其检查，可先「测试 FHIR 连接」；
 3. 点击【一键应用模拟服务器数据】，自动把地址与密钥填入【管理设置 → DICOM / PACS 接口】；
-4. 回到【研究检索】即可检索并阅片（影像由前端算法确定性生成）。
+4. 回到【研究检索】即可检索并阅片（影像由内置模拟服务器按标准 DICOM 生成）。
 
 对外 API 也可提供给门诊系统等其他系统调用（需携带 `key`）。
 

@@ -9,7 +9,8 @@
  *   · 患者数据来源二选一：
  *       - builtin：确定性仿真数据（开箱即用，默认）；
  *       - fhir   ：通过 FHIR R4 从门诊系统获取「已缴费、已登记」患者及其检查；
- *   · 影像仍由前端算法确定性生成（series.is_mock = true），用于验证阅片链路。
+ *   · 影像由内置模拟服务器按标准 DICOM 生成（WADO-URI，多模态多帧），
+ *     通用阅片器按标准协议取像 / 解码 / 渲染，用于验证阅片链路。
  *
  * 对外接口（与 PvPacsClient 约定一致）：
  *   GET {mock}?action=ping&key=KEY
