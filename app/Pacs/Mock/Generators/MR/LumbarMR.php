@@ -29,20 +29,20 @@ class PvMockLumbarMR extends PvMockAbstractMR {
         $G = 'PvMockGeometryHelper';
         $noise = $this->noise;
         $s = $this->tissueSignals();
-        $grain = PvMockProceduralNoise::fbm($noise, $nx * 4, $ny * 4, 3);
+        $grain = PvMockProceduralNoise::fbm($noise, $nx * 4, $ny * 4 + $p * 1.5, 3);
         $lat = abs($p - 0.5) * 2.0;                 // 0 正中 → 1 旁矢状
 
-        /* 体部：矢状位为竖长椭圆 */
-        if ($G::ellipseValue($nx, $ny, 0.48, 0.50, 0.30, 0.46) > 1.0) {
+        /* 体部：矢状位为竖长椭圆，包含前方腹腔与后方椎旁肌 */
+        if ($G::ellipseValue($nx, $ny, 0.50, 0.50, 0.42, 0.50) > 1.0) {
             return 5.0 + 20.0 * PvMockProceduralNoise::fbm($noise, $nx, $ny, 2);
         }
 
         /* 软组织 / 肌肉背景 */
         $hu = $s['gm'] * (0.55 + 0.25 * $grain);
-        /* 后方椎旁肌 */
-        if ($nx > 0.80) $hu = $s['gm'] * (0.62 + 0.2 * $grain);
+        /* 后方椎旁肌（旁矢状位更厚） */
+        if ($nx > 0.78) $hu = $s['gm'] * (0.62 + 0.2 * $grain) * (1.0 + 0.05 * $lat);
         /* 前方腹腔脂肪（T1 高信号） */
-        if ($nx < 0.22) $hu = $s['fat'] * (0.75 + 0.25 * $grain);
+        if ($nx < 0.20) $hu = $s['fat'] * (0.75 + 0.25 * $grain);
 
         /* 椎列：沿 y 堆叠，居中 x=0.60 */
         $unit = 5.4;
@@ -60,8 +60,9 @@ class PvMockLumbarMR extends PvMockAbstractMR {
 
         if ($xIn) {
             if ($discBand) {
-                /* 椎间盘：T2 髓核高信号，T1 低信号 */
-                $nuc = $G::ellipseField($nx, $ny, 0.60, ($bIdx + ($frac > 0.5 ? 1.0 : 0.0)) / $unit, 0.055, 0.028);
+                /* 椎间盘：T2 髓核高信号，T1 低信号；旁矢状位髓核变小 */
+                $nScale = 1.0 - 0.55 * $lat;
+                $nuc = $G::ellipseField($nx, $ny, 0.60, ($bIdx + ($frac > 0.5 ? 1.0 : 0.0)) / $unit, 0.055 * $nScale, 0.028 * $nScale);
                 if ($this->isT2()) {
                     $hu = $nuc < 0 ? $s['csf'] * (0.9 + 0.15 * $grain) : 620 + 120 * $grain;
                 } else {
@@ -87,8 +88,10 @@ class PvMockLumbarMR extends PvMockAbstractMR {
             else $hu = $s['csf'] * (1.0 + 0.2 * $grain);
             /* 马尾神经根（细点 / 线，T2 低信号） */
             if (((int)($ny * 40)) % 3 === 0 && abs($nx - 0.715) < 0.035) $hu *= 0.55;
-            /* 圆锥 / 脊髓终丝（上段） */
-            if ($ny < 0.42 && abs($nx - 0.712) < 0.014) $hu = $s['gm'] * 0.9;
+            /* 脊髓圆锥 / 终丝（仅正中层面） */
+            if ($lat < 0.45 && $ny < 0.62 && abs($nx - 0.712) < 0.016) {
+                $hu = $s['gm'] * (0.9 + 0.1 * $grain);
+            }
         }
 
         /* 椎间孔内神经根（旁矢状位） */
