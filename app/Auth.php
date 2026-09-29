@@ -45,6 +45,10 @@ class PvAuth {
     public static function requireLogin() {
         if (!self::check()) pvw_redirect(pvw_url('login'));
     }
+    /** JSON 接口专用：未登录返回 401 JSON（避免 fetch 拿到登录页 HTML） */
+    public static function requireLoginJson() {
+        if (!self::check()) pvw_json(401, '登录会话已失效，请重新登录', array('need_login' => true));
+    }
     public static function requireAdmin() {
         self::requireLogin();
         if (!self::isAdmin()) pvw_json(403, '需要管理员权限');

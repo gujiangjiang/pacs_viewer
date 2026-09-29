@@ -14,11 +14,7 @@ class PvAdminController {
 
     /** 统一响应：AJAX 返回 JSON，普通请求写 flash 并回到管理页 */
     private static function reply($msg, $ok = true, $data = null, $tab = 'basic') {
-        if (pvw_is_ajax()) {
-            pvw_json($ok ? 200 : 400, $msg, $data);
-        }
-        $_SESSION['pv_flash'] = $msg;
-        pvw_redirect(pvw_url('admin', array('tab' => $tab)));
+        pvw_reply($msg, $ok, $data, pvw_url('admin', array('tab' => $tab)));
     }
 
     public static function index() {

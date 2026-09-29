@@ -8,13 +8,9 @@
  * ============================================================ */
 class PvUploadController {
 
-    private static function guard() {
-        if (!PvAuth::check()) pvw_json(401, '登录会话已失效，请重新登录', array('need_login' => true));
-    }
-
     /** 上传 */
     public static function upload() {
-        self::guard();
+        PvAuth::requireLoginJson();
         pvw_csrf_check();
         @set_time_limit(60);
         try {
@@ -36,7 +32,7 @@ class PvUploadController {
 
     /** 鉴权下载 / 内联预览 */
     public static function file() {
-        self::guard();
+        PvAuth::requireLoginJson();
         $row = PvUploadStore::find((string)pvw_input('t'));
         if (!$row) { http_response_code(404); echo '文件不存在'; exit; }
         $path = PvUploadStore::path($row);
@@ -62,7 +58,7 @@ class PvUploadController {
 
     /** 删除（管理员或上传者本人） */
     public static function delete() {
-        self::guard();
+        PvAuth::requireLoginJson();
         pvw_csrf_check();
         $token = (string)pvw_input('t');
         $row = PvUploadStore::find($token);

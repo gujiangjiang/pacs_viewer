@@ -14,6 +14,15 @@
 
 ---
 
+## [0.15.1] - 2026-09-30
+
+### 变更
+- **后端去重**：新增 `PvAuth::requireLoginJson()` 统一 JSON 接口未登录处理
+  （`ApiController` / `UploadController`）；新增 `pvw_reply()` 统一「AJAX 返回
+  JSON / 普通请求写 flash 跳转」响应（`AdminController` / `MockController`）。
+
+---
+
 ## [0.15.0] - 2026-09-30
 
 ### 变更

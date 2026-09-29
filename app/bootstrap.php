@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '0.15.0');
+define('PV_VERSION', '0.15.1');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -164,6 +164,21 @@ function pvw_json($code, $msg = '', $data = null) {
     }
     echo json_encode(array('code' => (int)$code, 'msg' => (string)$msg, 'data' => $data), JSON_UNESCAPED_UNICODE);
     exit;
+}
+
+/**
+ * 统一响应：AJAX 返回 JSON，普通请求写入 flash 后跳转。
+ * @param string      $msg      提示信息
+ * @param bool        $ok       成功 / 失败
+ * @param mixed       $data     附带数据（AJAX 时返回）
+ * @param string|null $redirect 普通请求的跳转地址（默认站点根）
+ */
+function pvw_reply($msg, $ok = true, $data = null, $redirect = null) {
+    if (pvw_is_ajax()) {
+        pvw_json($ok ? 200 : 400, $msg, $data);
+    }
+    $_SESSION['pv_flash'] = $msg;
+    pvw_redirect($redirect !== null ? $redirect : pvw_url(''));
 }
 
 /** 取请求参数（GET/POST） */

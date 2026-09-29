@@ -172,8 +172,6 @@ class PvMockController {
     /* ==================== 工具 ==================== */
 
     private static function reply($msg, $data = null) {
-        if (pvw_is_ajax()) pvw_json(200, $msg, $data);
-        $_SESSION['pv_flash'] = $msg;
-        pvw_redirect(pvw_url('mockserver'));
+        pvw_reply($msg, true, $data, pvw_url('mockserver'));
     }
 }
