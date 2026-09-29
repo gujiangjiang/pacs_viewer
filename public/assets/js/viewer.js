@@ -723,6 +723,7 @@
         this._disableChromeContext();
         this.restoreSidebarWidth();
         this._bindWindowResize();
+        this._bindPersistFlush();
         this.setLayout('1', true);
         this.boot();
     }
@@ -733,6 +734,12 @@
         var self = this;
         this._onWinResize = function () { self.panes.forEach(function (p) { p.resize(); p.render(); }); };
         window.addEventListener('resize', this._onWinResize);
+    };
+    /** 页面卸载前立即落盘，避免防抖窗口内丢失最后的会话状态 */
+    PvViewer.prototype._bindPersistFlush = function () {
+        var self = this;
+        this._onUnload = function () { if (self._persistTimer) { clearTimeout(self._persistTimer); self._persistTimer = null; self.persistNow(); } };
+        window.addEventListener('beforeunload', this._onUnload);
     };
 
     /* ---------- 布局 ---------- */
@@ -936,6 +943,7 @@
         this.panes.forEach(function (p) { if (p.st.uid === removed.uid) { p.st.uid = ''; p.st.si = 0; p.st.fi = 0; } });
         if (!this.ws.studies.length) { this.showEmpty(); return; }
         this.renderAll();
+        this.persist();
     };
     PvViewer.prototype.showEmpty = function () {
         this.ws.studies = [];
@@ -943,6 +951,7 @@
         this.renderSidebar();
         this.syncToolbar();
         this.refreshControlState();
+        this.clearState();
         var p = this.activePane(); if (p) p.setStatus('');
     };
     PvViewer.prototype.closeAll = function () {
@@ -956,7 +965,13 @@
     };
 
     /* ---------- 会话记忆 ---------- */
+    /** 合并高频写入（翻帧滚动等）到一次 sessionStorage 落盘 */
     PvViewer.prototype.persist = function () {
+        var self = this;
+        if (this._persistTimer) clearTimeout(this._persistTimer);
+        this._persistTimer = setTimeout(function () { self._persistTimer = null; self.persistNow(); }, 150);
+    };
+    PvViewer.prototype.persistNow = function () {
         try {
             var state = {
                 layout: this.layout, active: this.active,
@@ -967,7 +982,10 @@
         } catch (e) {}
     };
     PvViewer.prototype.loadState = function () { try { return JSON.parse(sessionStorage.getItem('pacs_workspace_v1')); } catch (e) { return null; } };
-    PvViewer.prototype.clearState = function () { try { sessionStorage.removeItem('pacs_workspace_v1'); } catch (e) {} };
+    PvViewer.prototype.clearState = function () {
+        if (this._persistTimer) { clearTimeout(this._persistTimer); this._persistTimer = null; }
+        try { sessionStorage.removeItem('pacs_workspace_v1'); } catch (e) {}
+    };
 
     /* ---------- 日志 ---------- */
     PvViewer.prototype.logEvent = function (action, extra) {
@@ -1111,6 +1129,8 @@
 
     PvViewer.prototype.destroy = function () {
         if (this._onWinResize) window.removeEventListener('resize', this._onWinResize);
+        if (this._onUnload) window.removeEventListener('beforeunload', this._onUnload);
+        if (this._persistTimer) { clearTimeout(this._persistTimer); this._persistTimer = null; }
         if (this.toolbar && this.toolbar.destroy) this.toolbar.destroy();
         if (this._ctxDoc) document.removeEventListener('pointerdown', this._ctxDoc, true);
         if (this._ctxViewport) { window.removeEventListener('resize', this._ctxViewport); window.removeEventListener('scroll', this._ctxViewport, true); }
