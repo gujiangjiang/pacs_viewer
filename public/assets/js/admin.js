@@ -180,8 +180,7 @@
         }
         function load(showLoading) {
             if (showLoading) box.innerHTML = '<div class="pv-dim">加载中…</div>';
-            fetch(storageRoute('api/storage'), { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
-                .then(function (r) { return r.json(); })
+            PvUI.get(storageRoute('api/storage'))
                 .then(function (j) { if (j && j.code === 200) render(j.data); else box.innerHTML = '<div class="pv-dim">加载失败</div>'; })
                 .catch(function () { box.innerHTML = '<div class="pv-dim">网络请求失败</div>'; });
         }

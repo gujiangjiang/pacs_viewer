@@ -19,15 +19,8 @@
         return u;
     }
     function get(sub, params) {
-        return fetch(buildUrl(sub, params), { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
-            .then(function (r) {
-                if (r.status === 401) {
-                    var home = boot.home || '/';
-                    location.href = home + (home.indexOf('?') < 0 ? '?' : '') + 'r=login';
-                    throw new Error('未登录');
-                }
-                return r.json();
-            });
+        // 复用通用请求助手（含 401 跳转登录）
+        return PvUI.get(buildUrl(sub, params));
     }
 
     global.PvApi = {
@@ -40,10 +33,7 @@
             fd.append('_csrf', boot.csrf || '');
             fd.append('action', action || '');
             fd.append('detail', detail || '');
-            return fetch(buildUrl('log', {}), {
-                method: 'POST', body: fd,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin'
-            }).then(function (r) { return r.json(); }).catch(function () { return null; });
+            return PvUI.post(buildUrl('log', {}), fd).catch(function () { return null; });
         },
         viewerUrl: function (uid) {
             var u = boot.viewer || '?r=viewer';

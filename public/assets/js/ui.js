@@ -147,6 +147,25 @@
     }
 
     /* ---------------- AJAX ---------------- */
+    /** 统一 JSON 请求：同源 + AJAX 头；401 跳转登录；返回解析后的 JSON */
+    function requestJson(url, opts) {
+        opts = opts || {};
+        return fetch(url, {
+            method: opts.method || 'GET',
+            body: opts.body || undefined,
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            credentials: 'same-origin'
+        }).then(function (r) {
+            if (r.status === 401) {
+                var home = boot.home || '/';
+                location.href = home + (home.indexOf('?') < 0 ? '?' : '&') + 'r=login';
+                throw new Error('未登录');
+            }
+            return r.json();
+        });
+    }
+    /** GET 并解析 JSON（url 需为完整地址，可用 PvNav.route 构造） */
+    function get(url) { return requestJson(url, {}); }
     function post(url, data) {
         var body = data instanceof FormData ? data : new FormData();
         if (!(data instanceof FormData)) {
@@ -154,11 +173,7 @@
             if (data._csrf === undefined) data._csrf = boot.csrf || '';
             for (var k in data) { if (data[k] !== undefined && data[k] !== null) body.append(k, data[k]); }
         }
-        return fetch(url, {
-            method: 'POST', body: body,
-            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
-            credentials: 'same-origin'
-        }).then(function (r) { return r.json(); });
+        return requestJson(url, { method: 'POST', body: body });
     }
 
     /** 通用文件上传：PvUI.upload(route, file, fields) → Promise<{code,msg,data}> */
@@ -169,11 +184,7 @@
         if (fields._csrf === undefined) fields._csrf = boot.csrf || '';
         for (var k in fields) { if (fields[k] !== undefined && fields[k] !== null) body.append(k, fields[k]); }
         var url = route.indexOf('r=') >= 0 ? route : ((global.PvNav ? global.PvNav.route(route) : route));
-        return fetch(url, {
-            method: 'POST', body: body,
-            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
-            credentials: 'same-origin'
-        }).then(function (r) { return r.json(); });
+        return requestJson(url, { method: 'POST', body: body });
     }
 
     /** 复制文本到剪贴板（优先 Clipboard API，回退 execCommand）；返回 Promise<boolean> */
@@ -223,5 +234,5 @@
     }
 
     global.PvModal = { open: open, close: close, confirm: confirmOpts, alert: alertOpts };
-    global.PvUI = { toast: toast, post: post, upload: upload, copy: copy, bindAjaxForms: bindAjaxForms, esc: esc };
+    global.PvUI = { toast: toast, get: get, post: post, upload: upload, copy: copy, bindAjaxForms: bindAjaxForms, esc: esc };
 })(window);

@@ -4,8 +4,7 @@
 
     function getJson(route, params) {
         var url = global.PvNav ? global.PvNav.route(route, params) : (global.PV_BOOT.home || '/') + '?r=' + route;
-        return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
-            .then(function (r) { return r.json(); });
+        return PvUI.get(url);
     }
 
     /** 更新患者数据来源标签（builtin 内置仿真 / fhir 门诊 FHIR） */
