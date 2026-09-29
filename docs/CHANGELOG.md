@@ -14,6 +14,17 @@
 
 ---
 
+## [0.18.0] - 2026-09-30
+
+### 变更
+- **阅片器模块拆分（大项 E 完成）**：将约 1156 行的 `viewer.js` 拆分为
+  `modules/pane.js`（`PvPane`：渲染 / 交互 / 帧缓存与预取 / 滚动条 / 测量标注 /
+  DICOM 详情）与精简后的 `viewer.js`（`PvViewer` 工作区控制器）；预设窗表
+  `PvPresets` 由 pane 模块统一暴露；同步更新 `viewer.php` 脚本装配与 Service
+  Worker 预缓存清单。对外全局 `PvPane` / `PvViewer` / `PvPages.viewer` 保持不变。
+
+---
+
 ## [0.17.0] - 2026-09-30
 
 ### 变更
