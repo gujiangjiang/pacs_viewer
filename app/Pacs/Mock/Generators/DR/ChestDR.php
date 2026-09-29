@@ -9,26 +9,18 @@
  * ============================================================ */
 class PvMockChestDR extends PvMockAbstractGenerator {
 
-    private $noise;
-
     public function __construct($seed = 'mock', $weight = 'T1') {
         $this->seed = (string)$seed;
-        $this->modality = 'DR';
-        $this->orientation = 'PA';
-        $this->bodyPartExamined = 'CHEST';
-        $this->seriesDescription = 'PA Chest';
-        $this->frameCount = 1;
-        $this->rows = 1024;
-        $this->cols = 1024;
-        $this->sliceThickness = 0.0;
-        $this->spacingBetweenSlices = 0.0;
-        $this->rowSpacing = 0.35;
-        $this->colSpacing = 0.35;
-        $this->bitsStored = 12;
-        $this->highBit = 11;
-        $this->windowCenter = 1500.0;
-        $this->windowWidth = 3000.0;
-        $this->noise = PvMockProceduralNoise::perlin2D($this->seed . '|chestdr', 64);
+        $this->configure(array(
+            'modality' => 'DR', 'orientation' => 'PA', 'bodyPartExamined' => 'CHEST',
+            'seriesDescription' => 'PA Chest', 'frameCount' => 1,
+            'rows' => 1024, 'cols' => 1024,
+            'sliceThickness' => 0.0, 'spacingBetweenSlices' => 0.0,
+            'rowSpacing' => 0.35, 'colSpacing' => 0.35,
+            'bitsStored' => 12, 'highBit' => 11,
+            'windowCenter' => 1500.0, 'windowWidth' => 3000.0,
+            'noise' => $this->seed . '|chestdr',
+        ));
     }
 
     protected function sample($nx, $ny, $p, $x, $y, $i) {

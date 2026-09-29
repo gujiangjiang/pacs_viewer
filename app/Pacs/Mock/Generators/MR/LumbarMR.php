@@ -9,20 +9,15 @@
  * ============================================================ */
 class PvMockLumbarMR extends PvMockAbstractMR {
 
-    private $noise;
-
     protected function initMR() {
-        $this->bodyPartExamined = 'SPINE';
-        $this->orientation = 'SAGITTAL';
-        $this->seriesDescription = $this->isT2() ? 'T2WI Sagittal' : 'T1WI Sagittal';
-        $this->frameCount = 20;
-        $this->sliceThickness = 4.0;
-        $this->spacingBetweenSlices = 4.4;
-        $this->rowSpacing = 0.55;
-        $this->colSpacing = 0.55;
-        $this->windowCenter = $this->isT2() ? 700 : 600;
-        $this->windowWidth = $this->isT2() ? 1400 : 1200;
-        $this->noise = PvMockProceduralNoise::perlin2D($this->seed . '|lumbarmr' . $this->weight, 64);
+        $this->configure(array(
+            'bodyPartExamined' => 'SPINE', 'orientation' => 'SAGITTAL',
+            'seriesDescription' => $this->isT2() ? 'T2WI Sagittal' : 'T1WI Sagittal',
+            'frameCount' => 20, 'sliceThickness' => 4.0, 'spacingBetweenSlices' => 4.4,
+            'rowSpacing' => 0.55, 'colSpacing' => 0.55,
+            'windowCenter' => $this->isT2() ? 700 : 600, 'windowWidth' => $this->isT2() ? 1400 : 1200,
+            'noise' => $this->seed . '|lumbarmr' . $this->weight,
+        ));
     }
 
     protected function sample($nx, $ny, $p, $x, $y, $i) {

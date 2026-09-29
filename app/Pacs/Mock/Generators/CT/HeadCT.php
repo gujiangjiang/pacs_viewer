@@ -11,22 +11,16 @@
  * ============================================================ */
 class PvMockHeadCT extends PvMockAbstractGenerator {
 
-    private $noise;
-
     public function __construct($seed = 'mock', $weight = 'T1') {
         $this->seed = (string)$seed;
-        $this->modality = 'CT';
-        $this->orientation = 'AXIAL';
-        $this->bodyPartExamined = 'HEAD';
-        $this->seriesDescription = 'Axial 5.0mm';
-        $this->frameCount = 40;
-        $this->sliceThickness = 5.0;
-        $this->spacingBetweenSlices = 5.0;
-        $this->rowSpacing = 0.48;
-        $this->colSpacing = 0.48;
-        $this->windowCenter = 40.0;   // 脑窗
-        $this->windowWidth = 80.0;
-        $this->noise = PvMockProceduralNoise::perlin2D($this->seed . '|headct', 64);
+        $this->configure(array(
+            'modality' => 'CT', 'orientation' => 'AXIAL', 'bodyPartExamined' => 'HEAD',
+            'seriesDescription' => 'Axial 5.0mm', 'frameCount' => 40,
+            'sliceThickness' => 5.0, 'spacingBetweenSlices' => 5.0,
+            'rowSpacing' => 0.48, 'colSpacing' => 0.48,
+            'windowCenter' => 40.0, 'windowWidth' => 80.0,   // 脑窗
+            'noise' => $this->seed . '|headct',
+        ));
     }
 
     /** 脑窗 + 骨窗双预设 */

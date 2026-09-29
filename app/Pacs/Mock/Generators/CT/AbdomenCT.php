@@ -11,22 +11,16 @@
  * ============================================================ */
 class PvMockAbdomenCT extends PvMockAbstractGenerator {
 
-    private $noise;
-
     public function __construct($seed = 'mock', $weight = 'T1') {
         $this->seed = (string)$seed;
-        $this->modality = 'CT';
-        $this->orientation = 'AXIAL';
-        $this->bodyPartExamined = 'ABDOMEN';
-        $this->seriesDescription = 'Axial 5.0mm';
-        $this->frameCount = 32;
-        $this->sliceThickness = 5.0;
-        $this->spacingBetweenSlices = 5.0;
-        $this->rowSpacing = 0.75;
-        $this->colSpacing = 0.75;
-        $this->windowCenter = 40.0;
-        $this->windowWidth = 350.0;
-        $this->noise = PvMockProceduralNoise::perlin2D($this->seed . '|abdomenct', 64);
+        $this->configure(array(
+            'modality' => 'CT', 'orientation' => 'AXIAL', 'bodyPartExamined' => 'ABDOMEN',
+            'seriesDescription' => 'Axial 5.0mm', 'frameCount' => 32,
+            'sliceThickness' => 5.0, 'spacingBetweenSlices' => 5.0,
+            'rowSpacing' => 0.75, 'colSpacing' => 0.75,
+            'windowCenter' => 40.0, 'windowWidth' => 350.0,
+            'noise' => $this->seed . '|abdomenct',
+        ));
     }
 
     public function getModalitySpecificTags() {

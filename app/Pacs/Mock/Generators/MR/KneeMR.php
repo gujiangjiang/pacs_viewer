@@ -8,20 +8,15 @@
  * ============================================================ */
 class PvMockKneeMR extends PvMockAbstractMR {
 
-    private $noise;
-
     protected function initMR() {
-        $this->bodyPartExamined = 'KNEE';
-        $this->orientation = 'SAGITTAL';
-        $this->seriesDescription = $this->isT2() ? 'T2WI Sagittal' : 'T1WI Sagittal';
-        $this->frameCount = 16;
-        $this->sliceThickness = 3.0;
-        $this->spacingBetweenSlices = 3.3;
-        $this->rowSpacing = 0.31;
-        $this->colSpacing = 0.31;
-        $this->windowCenter = $this->isT2() ? 700 : 600;
-        $this->windowWidth = $this->isT2() ? 1400 : 1200;
-        $this->noise = PvMockProceduralNoise::perlin2D($this->seed . '|kneemr' . $this->weight, 64);
+        $this->configure(array(
+            'bodyPartExamined' => 'KNEE', 'orientation' => 'SAGITTAL',
+            'seriesDescription' => $this->isT2() ? 'T2WI Sagittal' : 'T1WI Sagittal',
+            'frameCount' => 16, 'sliceThickness' => 3.0, 'spacingBetweenSlices' => 3.3,
+            'rowSpacing' => 0.31, 'colSpacing' => 0.31,
+            'windowCenter' => $this->isT2() ? 700 : 600, 'windowWidth' => $this->isT2() ? 1400 : 1200,
+            'noise' => $this->seed . '|kneemr' . $this->weight,
+        ));
     }
 
     protected function sample($nx, $ny, $p, $x, $y, $i) {

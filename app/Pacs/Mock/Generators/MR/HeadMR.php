@@ -8,19 +8,15 @@
  * ============================================================ */
 class PvMockHeadMR extends PvMockAbstractMR {
 
-    private $noise;
-
     protected function initMR() {
-        $this->bodyPartExamined = 'HEAD';
-        $this->seriesDescription = $this->isT2() ? 'T2WI Axial' : 'T1WI Axial';
-        $this->frameCount = 24;
-        $this->sliceThickness = 5.0;
-        $this->spacingBetweenSlices = 6.0;
-        $this->rowSpacing = 0.45;
-        $this->colSpacing = 0.45;
-        $this->windowCenter = $this->isT2() ? 700 : 600;
-        $this->windowWidth = $this->isT2() ? 1400 : 1200;
-        $this->noise = PvMockProceduralNoise::perlin2D($this->seed . '|headmr' . $this->weight, 64);
+        $this->configure(array(
+            'bodyPartExamined' => 'HEAD',
+            'seriesDescription' => $this->isT2() ? 'T2WI Axial' : 'T1WI Axial',
+            'frameCount' => 24, 'sliceThickness' => 5.0, 'spacingBetweenSlices' => 6.0,
+            'rowSpacing' => 0.45, 'colSpacing' => 0.45,
+            'windowCenter' => $this->isT2() ? 700 : 600, 'windowWidth' => $this->isT2() ? 1400 : 1200,
+            'noise' => $this->seed . '|headmr' . $this->weight,
+        ));
     }
 
     protected function sample($nx, $ny, $p, $x, $y, $i) {

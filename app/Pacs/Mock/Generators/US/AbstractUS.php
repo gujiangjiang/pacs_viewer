@@ -8,7 +8,6 @@
  * ============================================================ */
 abstract class PvMockAbstractUS extends PvMockAbstractGenerator {
 
-    protected $noise;
     protected $speckleTile = null;
     protected $tileSize = 128;
 

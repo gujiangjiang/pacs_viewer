@@ -9,26 +9,18 @@
  * ============================================================ */
 class PvMockLimbDR extends PvMockAbstractGenerator {
 
-    private $noise;
-
     public function __construct($seed = 'mock', $weight = 'T1') {
         $this->seed = (string)$seed;
-        $this->modality = 'DR';
-        $this->orientation = 'PA';
-        $this->bodyPartExamined = 'KNEE';
-        $this->seriesDescription = 'AP Knee';
-        $this->frameCount = 1;
-        $this->rows = 1024;
-        $this->cols = 1024;
-        $this->sliceThickness = 0.0;
-        $this->spacingBetweenSlices = 0.0;
-        $this->rowSpacing = 0.20;
-        $this->colSpacing = 0.20;
-        $this->bitsStored = 12;
-        $this->highBit = 11;
-        $this->windowCenter = 1500.0;
-        $this->windowWidth = 3000.0;
-        $this->noise = PvMockProceduralNoise::perlin2D($this->seed . '|limbdr', 64);
+        $this->configure(array(
+            'modality' => 'DR', 'orientation' => 'PA', 'bodyPartExamined' => 'KNEE',
+            'seriesDescription' => 'AP Knee', 'frameCount' => 1,
+            'rows' => 1024, 'cols' => 1024,
+            'sliceThickness' => 0.0, 'spacingBetweenSlices' => 0.0,
+            'rowSpacing' => 0.20, 'colSpacing' => 0.20,
+            'bitsStored' => 12, 'highBit' => 11,
+            'windowCenter' => 1500.0, 'windowWidth' => 3000.0,
+            'noise' => $this->seed . '|limbdr',
+        ));
     }
 
     protected function sample($nx, $ny, $p, $x, $y, $i) {

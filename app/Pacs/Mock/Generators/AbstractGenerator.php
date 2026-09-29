@@ -36,6 +36,20 @@ abstract class PvMockAbstractGenerator implements PvMockSliceGeneratorInterface,
     protected $rescaleIntercept = -1024.0;   // 存储值 + Intercept = HU
     protected $rescaleSlope = 1.0;
     protected $seed = 'mock';
+    protected $noise;                        // 各生成器的 Perlin 噪声源
+
+    /**
+     * 统一配置：按需覆盖生成器属性。
+     * - 传入键为属性名（modality / frameCount / rowSpacing …）时直接赋值；
+     * - 特殊键 `noise`：其值作为种子，构建 64×64 Perlin 噪声源。
+     * 供各子类构造函数消除重复的属性赋值样板。
+     */
+    protected function configure(array $cfg) {
+        foreach ($cfg as $key => $val) {
+            if ($key === 'noise') { $this->noise = PvMockProceduralNoise::perlin2D($val, 64); continue; }
+            $this->$key = $val;
+        }
+    }
 
     /* ---------------- 核心：逐帧像素生成 ---------------- */
 

@@ -11,22 +11,16 @@
  * ============================================================ */
 class PvMockChestCT extends PvMockAbstractGenerator {
 
-    private $noise;
-
     public function __construct($seed = 'mock', $weight = 'T1') {
         $this->seed = (string)$seed;
-        $this->modality = 'CT';
-        $this->orientation = 'AXIAL';
-        $this->bodyPartExamined = 'CHEST';
-        $this->seriesDescription = 'Axial 5.0mm';
-        $this->frameCount = 40;
-        $this->sliceThickness = 5.0;
-        $this->spacingBetweenSlices = 5.0;
-        $this->rowSpacing = 0.72;
-        $this->colSpacing = 0.72;
-        $this->windowCenter = -600.0;   // 肺窗
-        $this->windowWidth = 1500.0;
-        $this->noise = PvMockProceduralNoise::perlin2D($this->seed . '|chestct', 64);
+        $this->configure(array(
+            'modality' => 'CT', 'orientation' => 'AXIAL', 'bodyPartExamined' => 'CHEST',
+            'seriesDescription' => 'Axial 5.0mm', 'frameCount' => 40,
+            'sliceThickness' => 5.0, 'spacingBetweenSlices' => 5.0,
+            'rowSpacing' => 0.72, 'colSpacing' => 0.72,
+            'windowCenter' => -600.0, 'windowWidth' => 1500.0,   // 肺窗
+            'noise' => $this->seed . '|chestct',
+        ));
     }
 
     /** 肺窗 + 纵隔窗双预设 */

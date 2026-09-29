@@ -11,22 +11,16 @@
  * ============================================================ */
 class PvMockLumbarCT extends PvMockAbstractGenerator {
 
-    private $noise;
-
     public function __construct($seed = 'mock', $weight = 'T1') {
         $this->seed = (string)$seed;
-        $this->modality = 'CT';
-        $this->orientation = 'AXIAL';
-        $this->bodyPartExamined = 'SPINE';
-        $this->seriesDescription = 'Axial 3.0mm';
-        $this->frameCount = 28;
-        $this->sliceThickness = 3.0;
-        $this->spacingBetweenSlices = 3.0;
-        $this->rowSpacing = 0.55;
-        $this->colSpacing = 0.55;
-        $this->windowCenter = 40.0;
-        $this->windowWidth = 350.0;
-        $this->noise = PvMockProceduralNoise::perlin2D($this->seed . '|lumbarct', 64);
+        $this->configure(array(
+            'modality' => 'CT', 'orientation' => 'AXIAL', 'bodyPartExamined' => 'SPINE',
+            'seriesDescription' => 'Axial 3.0mm', 'frameCount' => 28,
+            'sliceThickness' => 3.0, 'spacingBetweenSlices' => 3.0,
+            'rowSpacing' => 0.55, 'colSpacing' => 0.55,
+            'windowCenter' => 40.0, 'windowWidth' => 350.0,
+            'noise' => $this->seed . '|lumbarct',
+        ));
     }
 
     public function getModalitySpecificTags() {

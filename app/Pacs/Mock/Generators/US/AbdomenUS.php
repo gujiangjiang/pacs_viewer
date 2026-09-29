@@ -9,14 +9,12 @@
 class PvMockAbdomenUS extends PvMockAbstractUS {
 
     protected function initUS() {
-        $this->bodyPartExamined = 'ABDOMEN';
-        $this->seriesDescription = 'US Cine';
-        $this->frameCount = 20;
-        $this->sliceThickness = 0.0;
-        $this->spacingBetweenSlices = 0.0;
-        $this->rowSpacing = 0.35;
-        $this->colSpacing = 0.35;
-        $this->noise = PvMockProceduralNoise::perlin2D($this->seed . '|abdus', 64);
+        $this->configure(array(
+            'bodyPartExamined' => 'ABDOMEN', 'seriesDescription' => 'US Cine',
+            'frameCount' => 20, 'sliceThickness' => 0.0, 'spacingBetweenSlices' => 0.0,
+            'rowSpacing' => 0.35, 'colSpacing' => 0.35,
+            'noise' => $this->seed . '|abdus',
+        ));
     }
 
     protected function sample($nx, $ny, $p, $x, $y, $i) {
