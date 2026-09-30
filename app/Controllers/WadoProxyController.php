@@ -12,7 +12,6 @@ class PvWadoProxyController {
     public static function instance() {
         PvAuth::requireLogin();
         @set_time_limit(120);   // 大序列 / 首次生成可能较慢
-        if (!PvPacsClient::isDicomWeb()) { self::fail(404, '当前接口协议不是 DICOMweb'); }
 
         $study = (string)pvw_input('study');
         $series = (string)pvw_input('series');

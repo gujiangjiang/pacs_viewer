@@ -44,7 +44,6 @@ $routes = array(
     'admin/icon-upload'     => array('PvAdminController', 'iconUpload'),
     'admin/icon-reset'      => array('PvAdminController', 'iconReset'),
     'mockserver'            => array('PvMockController', 'index'),
-    'mock'                  => array('PvMockController', 'api'),
     'dicom'                 => array('PvMockController', 'dicom'),
     'thumb'                 => array('PvMockController', 'thumb'),
     'api/mock/save'         => array('PvMockController', 'save'),

@@ -3,19 +3,12 @@
  * ============================================================
  * app/Pacs/MockServer.php — 内置模拟 PACS 服务器
  * ============================================================
- * 本 PACS 浏览器自身不含数据。为便于联调，内置一个「模拟 PACS 服务器」：
- *   · 通过【对外 API】提供标准 PACS 接口（search / study / ping），
- *     可配置到本浏览器的 DICOM/PACS 接口地址，或提供给门诊系统调用；
- *   · 患者数据来源二选一：
- *       - builtin：确定性仿真数据（开箱即用，默认）；
- *       - fhir   ：通过 FHIR R4 从门诊系统获取「已缴费、已登记」患者及其检查；
- *   · 影像由内置模拟服务器按标准 DICOM 生成（WADO-URI，多模态多帧），
- *     通用阅片器按标准协议取像 / 解码 / 渲染，用于验证阅片链路。
- *
- * 对外接口（与 PvPacsClient 约定一致）：
- *   GET {mock}?action=ping&key=KEY
- *   GET {mock}?action=search&q=关键词&key=KEY
- *   GET {mock}?action=study&uid=检查UID&key=KEY
+ * 本 PACS 浏览器自身不含数据。为便于联调，内置一个「模拟 PACS 服务器」，
+ * 对外提供**标准接口**，可配置到本浏览器或供任何标准客户端联调：
+ *   · DICOMweb（QIDO-RS 检索 / WADO-RS 取像），见 DicomWebController；
+ *   · 标准 DICOM 文件（WADO-URI，?r=dicom，多模态原生多帧）。
+ *   · 患者数据使用确定性仿真数据（开箱即用）。
+ * 认证：登录或对外密钥（key / X-API-Key / Bearer）二选一。
  * ============================================================ */
 class PvMockServer {
 
@@ -24,9 +17,6 @@ class PvMockServer {
 
     /** 内置模拟服务器固定使用内置仿真患者数据（FHIR 已独立为「数据来源」配置项） */
     public static function source()  { return 'builtin'; }
-
-    /** 对外 API 的绝对地址（旧：自定义 JSON 网关，保留兼容） */
-    public static function externalEndpoint() { return pvw_abs_url('mock'); }
 
     /** 标准 DICOMweb 根地址（QIDO-RS / WADO-RS，内置模拟服务器对外提供） */
     public static function dicomWebEndpoint() {
@@ -40,16 +30,10 @@ class PvMockServer {
         return $k !== '' && is_string($key) && hash_equals($k, $key);
     }
 
-    /** 判断给定接口地址是否指向本模拟服务器（JSON 网关 ?r=mock 或 DICOMweb /dicom-web） */
+    /** 判断给定接口地址是否指向本模拟服务器（DICOMweb /dicom-web） */
     public static function isSelfEndpoint($url) {
-        $url = (string)$url;
-        $path = parse_url($url, PHP_URL_PATH);
-        if (is_string($path) && $path !== '' && strpos($path, '/dicom-web') !== false) return true;
-        $q = parse_url($url, PHP_URL_QUERY);
-        if (!$q) return false;
-        $params = array();
-        parse_str($q, $params);
-        return isset($params['r']) && $params['r'] === 'mock';
+        $path = parse_url((string)$url, PHP_URL_PATH);
+        return is_string($path) && $path !== '' && strpos($path, '/dicom-web') !== false;
     }
 
     /* ---------------- 数据来源 ---------------- */
@@ -102,50 +86,6 @@ class PvMockServer {
     /** 调阅单次检查（复用内置仿真数据源的完整组装，含按检查号回退匹配） */
     public static function study($uid) {
         return PvDemoPacs::study($uid);
-    }
-
-    /**
-     * 统一处理对外动作（search / study / ping），返回标准 {code,msg,data}。
-     * 供对外 API 控制器与进程内直连共用，避免两处重复分发。
-     */
-    public static function dispatch($action, array $params) {
-        $action = (string)$action;
-        if ($action === 'ping') {
-            return array('code' => 200, 'msg' => 'success', 'data' => self::ping());
-        }
-        if ($action === 'search') {
-            $q = isset($params['q']) ? (string)$params['q'] : '';
-            $all = self::search($q);
-            $total = count($all);
-            $limit = isset($params['limit']) ? max(0, (int)$params['limit']) : 0;
-            $offset = isset($params['offset']) ? max(0, (int)$params['offset']) : 0;
-            $page = ($limit > 0) ? array_slice($all, $offset, $limit) : array_slice($all, $offset);
-            return array('code' => 200, 'msg' => 'success', 'data' => array(
-                'list'     => $page,
-                'total'    => $total,
-                'offset'   => $offset,
-                'limit'    => $limit,
-                'has_more' => ($limit > 0) ? ($offset + count($page) < $total) : false,
-            ));
-        }
-        if ($action === 'study') {
-            $d = self::study(isset($params['uid']) ? (string)$params['uid'] : '');
-            if (!$d) return array('code' => 404, 'msg' => '未找到该检查', 'data' => null);
-            return array('code' => 200, 'msg' => 'success', 'data' => $d);
-        }
-        return array('code' => 400, 'msg' => '未知操作', 'data' => null);
-    }
-
-    public static function ping() {
-        $count = 0;
-        try { $count = count(self::rows('')); } catch (Exception $e) { $count = 0; }
-        return array(
-            'name'    => '内置模拟 PACS 服务器',
-            'version' => PV_VERSION,
-            'mode'    => 'Mock',
-            'source'  => self::source(),
-            'studies' => $count,
-        );
     }
 
     /* ---------------- 标准 DICOM 输出（WADO-URI 二进制流） ---------------- */

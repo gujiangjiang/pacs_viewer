@@ -31,6 +31,13 @@
                 <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-copy="#pvMockUrl">复制</button>
             </span>
         </label>
+        <label class="pv-field"><span>DICOM 网络身份（AE Title / 主机:端口）</span>
+            <span class="pv-copy-row">
+                <input type="text" id="pvMockAe" readonly
+                       value="AE: <?php echo pvw_e(isset($mockAeTitle) ? $mockAeTitle : 'PACSVIEWMOCK'); ?> · <?php echo pvw_e(isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost'); ?> / 104">
+                <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-copy="#pvMockAe">复制</button>
+            </span>
+        </label>
         <label class="pv-field"><span>接口密钥（请求参数 key）</span>
             <span class="pv-copy-row">
                 <input type="text" id="pvMockKey" readonly value="<?php echo pvw_e($mockKey); ?>">

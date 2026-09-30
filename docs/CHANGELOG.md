@@ -14,6 +14,21 @@
 
 ---
 
+## [0.25.0] - 2026-09-30
+
+### 移除
+- **移除自定义 JSON 网关**：删除 `?r=mock` 的 `action/q/uid/key` 接口、`pacs_protocol`
+  设置与协议下拉、`PvPacsClient` 的网关实现、`PvMockServer::dispatch()/ping()/
+  externalEndpoint()`。项目只保留**标准 DICOMweb**（QIDO-RS/WADO-RS）与标准 DICOM
+  文件（WADO-URI）。
+
+### 变更
+- **补回标准 DICOM 网络身份参数**：外部接口页新增「本系统 / 目标 AE Title、PACS 主机、
+  DICOM 端口」（供标识与对接展示）；内置模拟服务器也展示其 AE Title 与主机:端口。
+- 模拟服务器「一键应用」仅填入 DICOMweb 根地址与密钥；来源标签与文档同步为 DICOMweb。
+
+---
+
 ## [0.24.0] - 2026-09-30
 
 ### 变更（重要：回归标准协议）

@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.24.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.25.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -58,10 +58,10 @@ FHIR R4 可选作患者信息补充。
   - **键盘快捷键**（按 `?` 查看说明：翻帧 / 工具 / 布局 / 变换 / 导出等）；
   - **Web Worker 后台解码**标准 DICOM（含重采样），大序列滚动主线程零阻塞；
   - **原生多帧 DICOM**（`NumberOfFrames > 1`）：一次取回整条序列、实例级缓存、按帧滚动。
-- **标准 DICOMweb（默认）**：以 DICOM 标准 HTTP 接口对接 PACS——**QIDO-RS** 检索、
-  **WADO-RS** 取像（含原生多帧），影像经服务端同源代理下发；另可切换 **JSON 网关**
-  （本项目自定义：`action/q/uid/key` 返回 JSON）以兼容旧网关。二者均非传统
-  DICOM（DIMSE）——若 PACS 仅有 DIMSE，需先经网关转换。
+- **标准 DICOMweb**：以 DICOM 标准 HTTP 接口对接 PACS——**QIDO-RS** 检索、
+  **WADO-RS** 取像（含原生多帧），影像经服务端同源代理下发；并支持标准 DICOM 网络
+  身份参数（AE Title / 主机 / 端口）。传统 DICOM（DIMSE）不能由浏览器直连，若 PACS
+  仅有 DIMSE，需先经网关转换为 DICOMweb。
 - **内置模拟 PACS 服务器**（【管理设置 → 模拟服务器】子 Tab）：对外提供**标准
   DICOMweb**（`/dicom-web/studies` QIDO-RS、WADO-RS 取像）与标准 DICOM 文件
   （WADO-URI）；使用内置仿真患者数据；可预览患者、一键应用、重新生成密钥、整体启停。
@@ -105,7 +105,7 @@ FHIR R4 可选作患者信息补充。
 │   ├── Pacs/                 #   PacsClient(远程接口) + DemoPacs(内置仿真)
 │   │                         #   + FhirClient(门诊 FHIR) + MockServer(模拟服务器)
 │   ├── Services/             #   StudyService(检查聚合) / IconRenderer(代码绘制图标) / UploadStore(上传存储)
-│   ├── Controllers/          #   认证 / 安装 / 检索 / 阅片 / 管理 / 模拟服务器 / PWA / 上传 / JSON 接口
+│   ├── Controllers/          #   认证 / 安装 / 检索 / 阅片 / 管理 / 模拟服务器 / PWA / 上传 / DICOMweb
 │   └── Repositories/         #   账号 / 检索日志
 ├── views/                    # 页面模板（auth / install / search / viewer / admin / mock / error）
 ├── tools/                    # 工具（serve.sh 守护 / lint.php / mock_validate.php / mock_warm.php 预生成）
@@ -156,32 +156,18 @@ GET {DICOMweb根}/studies/{uid}/series/{se}/instances                     （实
 GET {DICOMweb根}/studies/{uid}/series/{se}/instances/{i}                 （WADO-RS 实例字节流）
 ```
 
-## PACS 接口约定
+## PACS 接口约定（标准 DICOMweb）
 
-在【管理设置 → 外部接口】选择协议并配置地址后，检索与调阅数据全部来自该地址。
-
-**协议一：DICOMweb（默认，DICOM 标准）**
+在【管理设置 → 外部接口】配置 DICOMweb 根地址后，检索与调阅数据全部来自该地址：
 
 - 检索：`GET {根}/studies?PatientName=关键词&limit=&offset=&includefield=all`（QIDO-RS）
 - 调阅：`GET {根}/studies/{uid}/series` 及 `/instances`（WADO-RS；实例含原生多帧）
+- 取像：`GET {根}/studies/{uid}/series/{se}/instances/{i}`（WADO-RS 实例字节流）
 - 认证：可选 `Authorization: Bearer` / `X-API-Key` 请求头
 
-**协议二：JSON 网关（本项目自定义，兼容旧网关）**
-
-```
-GET {endpoint}?action=search&q=关键词&key=APIKEY
-    → {"code":200,"data":{"list":[{study_uid,patient_id,name,gender,age,
-        outpatient_no,accession_no,modality,description,study_date,
-        institution,station_name,series_count}, ...]}}
-
-GET {endpoint}?action=study&uid=STUDY_UID&key=APIKEY
-    → {"code":200,"data":{patient:{...}, study:{...}, series:[...]}}
-
-GET {endpoint}?action=ping&key=APIKEY
-    → {"code":200,"data":{name,version}}
-```
-
-管理页【测试接口连通性】按钮按所选协议测试。两种协议均非传统 DICOM（DIMSE）。
+另支持标准 DICOM 网络身份参数（本系统 / 目标 AE Title、主机、DICOM 端口）用于标识与
+对接展示。**传统 DICOM（DIMSE，TCP 104）不能由浏览器直连**；若 PACS 仅有 DIMSE，
+需先经网关转换为 DICOMweb。管理页【测试接口连通性】按钮即按 DICOMweb 测试。
 
 ## 通用上传与鉴权下载
 

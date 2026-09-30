@@ -69,8 +69,7 @@ class PvDatabase {
                 'installed'        => '0',               // 是否已完成首次运行安装
                 'site_title'       => 'PACS 影像浏览器',
                 'hospital_name'    => '',
-                'pacs_endpoint'    => '',                // 远程 PACS/DICOMWeb 接口地址
-                'pacs_protocol'    => 'dicomweb',        // dicomweb 标准 DICOMweb（默认）/ gateway 自定义 JSON 网关
+                'pacs_endpoint'    => '',                // 远程 DICOMweb 接口根地址
                 'pacs_api_key'     => '',
                 'pacs_ae_title'    => 'CLINIC_OPD',
                 'pacs_remote_ae'   => 'PACS_SERVER',
@@ -83,6 +82,7 @@ class PvDatabase {
                 // 内置模拟 PACS 服务器
                 'mock_enabled'        => '1',
                 'mock_api_key'        => bin2hex(random_bytes(8)),
+                'mock_ae_title'       => 'PACSVIEWMOCK',   // 模拟服务器 DICOM AE Title
                 'fhir_endpoint'       => '',
                 'fhir_api_key'        => '',
                 'fhir_timeout'        => '5',

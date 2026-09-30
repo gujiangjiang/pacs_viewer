@@ -66,12 +66,10 @@ class PvMockController {
         pvw_csrf_check();
         $url = PvMockServer::dicomWebEndpoint();
         $key = PvMockServer::apiKey();
-        // 协议设为 dicomweb：模拟服务器对外提供标准 DICOMweb（QIDO-RS / WADO-RS）
-        PvSettings::saveMany(array('pacs_endpoint' => $url, 'pacs_api_key' => $key, 'pacs_protocol' => 'dicomweb'));
+        PvSettings::saveMany(array('pacs_endpoint' => $url, 'pacs_api_key' => $key));
         self::reply('已将模拟服务器（标准 DICOMweb）填入影像接口', array(
             'endpoint' => $url,
             'key'      => $key,
-            'protocol' => 'dicomweb',
         ));
     }
 
@@ -87,28 +85,6 @@ class PvMockController {
                 'list'     => $list,
                 'total'    => count($list),
             ));
-        } catch (Exception $e) {
-            pvw_json(500, $e->getMessage());
-        }
-    }
-
-    /* ==================== 对外 API（无需登录，凭密钥访问） ==================== */
-
-    public static function api() {
-        if (!PvMockServer::enabled()) pvw_json(403, '内置模拟 PACS 服务器未启用');
-        $key = (string)pvw_input('key');
-        if (!PvMockServer::checkKey($key)) pvw_json(403, '模拟服务器密钥校验失败');
-
-        $action = (string)pvw_input('action');
-        try {
-            if ($action === 'wado') { self::emitWado(); }
-            $r = PvMockServer::dispatch($action, array(
-                'q'      => (string)pvw_input('q'),
-                'uid'    => (string)pvw_input('uid'),
-                'limit'  => (int)pvw_input('limit', 0),
-                'offset' => (int)pvw_input('offset', 0),
-            ));
-            pvw_json($r['code'], $r['msg'], $r['data']);
         } catch (Exception $e) {
             pvw_json(500, $e->getMessage());
         }

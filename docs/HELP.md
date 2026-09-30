@@ -40,13 +40,12 @@ Web PACS 影像浏览器 · 独立 PHP 网站
 
 页面为左右分栏：左侧 **DICOM / PACS**（必填）与 **FHIR R4**（补充），右侧显示对应配置。
 
-- **PACS 接口（必填）**：影像检索与调阅的基础，提供两种 **HTTP 协议**，按 PACS 实际能力选择：
-  - **DICOMweb**（DICOM 标准）：QIDO-RS 检索 + WADO-RS 取像，适配 dcm4chee、Orthanc
-    （DICOMweb 插件）等现代 PACS 网关，**推荐**；
-  - **JSON 网关**（本项目自定义）：`action/q/uid/key` 查询参数、返回 `{code,msg,data}`，
-    仅当对方按此约定实现时选用。
-  - 二者都**不是传统 DICOM（DIMSE，TCP 104）**。本项目不直接连接 DIMSE；若 PACS 仅提供
-    DIMSE，需在中间部署网关将其转为 DICOMweb（或 JSON 网关）后再在此配置。
+- **PACS 接口（必填）**：影像检索与调阅的基础，采用 **DICOM 标准 HTTP 接口 DICOMweb**：
+  - **QIDO-RS** 检索 + **WADO-RS** 取像（含原生多帧），适配 dcm4chee、Orthanc（DICOMweb
+    插件）等现代 PACS 网关；
+  - 同时支持标准 DICOM 网络身份参数（**AE Title / 主机 / DICOM 端口**）用于标识与对接展示；
+  - DICOMweb 是 DICOM 标准的 HTTP 版本。**传统 DICOM（DIMSE，TCP 104）不能由浏览器
+    直连**；若 PACS 仅提供 DIMSE，需在中间部署网关将其转为 DICOMweb 后再在此配置。
 - **FHIR R4（可选补充）**：勾选「启用 FHIR 补充」后，作为患者信息的**补充**（非二选一）：
   - 命中 FHIR 的检查 → 用 FHIR 患者主数据补充姓名 / 性别 / 出生日期 / 年龄 / 门诊号等
     （检索结果卡片显示 `FHIR` 标记），影像仍来自 PACS；
@@ -58,10 +57,11 @@ PACS 接口字段：
 
 | 字段 | 说明 |
 | --- | --- |
-| 接口协议 | **DICOMweb**（DICOM 标准）或 **JSON 网关**（本项目自定义） |
-| 接口地址 | DICOMweb 填以 `/dicom-web` 结尾的根地址（如 `http://192.168.1.100:8042/dicom-web`）；JSON 网关填其接口根地址（如 `http://192.168.1.100:8080/gateway`） |
-| 接口密钥 | 可选：DICOMweb 以 `Authorization: Bearer` / `X-API-Key` 请求头发送；JSON 网关作为 `key` 查询参数 |
+| DICOMweb 根地址 | 以 `/dicom-web` 结尾的根地址（如 `http://192.168.1.100:8042/dicom-web`） |
+| 接口密钥 | 可选：以 `Authorization: Bearer` / `X-API-Key` 请求头发送 |
 | 超时（秒） | 远程请求超时 |
+| 本系统 / 目标 AE Title | DICOM 网络身份（DIMSE 标识），用于对接展示 |
+| PACS 主机 / DICOM 端口 | 传统 DICOM（DIMSE）网络地址；本项目经 DICOMweb(HTTP) 取数 |
 
 FHIR R4 字段：`启用 FHIR 补充`、`FHIR 接口地址`、`访问密钥`（可选）、`超时`，
 可点【测试 FHIR 连接】；PACS 接口可点【测试接口连通性】。
@@ -129,33 +129,25 @@ PACS / WADO 客户端直接解析，像素与元数据均为标准 Tag（无任�
   响应附 `X-Content-Type-Options: nosniff` 与 `CSP: sandbox`。
 - 前端调用：`PvUI.upload('upload', file, { category: 'demo' }).then(...)`。
 
-## 五、远程 PACS 接口约定
+## 五、远程 PACS 接口约定（标准 DICOMweb）
+
+本项目通过**标准 DICOMweb（HTTP / REST）**访问 PACS：
 
 ```
-GET {endpoint}?action=search&q=关键词&key=APIKEY
-    → {"code":200,"msg":"ok","data":{"list":[
-        {"study_uid":"...","patient_id":"...","name":"...","gender":"男",
-         "age":"45岁","outpatient_no":"...","accession_no":"...",
-         "modality":"CT","description":"胸部CT平扫","study_date":"2026-09-27 10:00:00",
-         "institution":"...","station_name":"...","series_count":3}, ...]}}
-
-GET {endpoint}?action=study&uid=STUDY_UID&key=APIKEY
-    → {"code":200,"data":{
-        "patient":{...,"patient_id","name","gender","age","outpatient_no"},
-        "study":{"accession_no","study_uid","modality","description","study_date",
-                 "institution","station_name","slice_thickness"},
-        "series":[{"series_id","description","orientation","slice_count",
-                   "is_mock","slice_thickness","pixel_spacing","seed","images":[]}]}}
-
-GET {endpoint}?action=ping&key=APIKEY
-    → {"code":200,"data":{"name":"...","version":"..."}}
+GET {根}/studies?PatientName=关键词&limit=20&offset=0&includefield=all   （QIDO-RS 检索）
+GET {根}/studies/{studyUID}                                              （检查元数据）
+GET {根}/studies/{studyUID}/series                                       （序列）
+GET {根}/studies/{studyUID}/series/{seriesUID}/instances                 （实例，含 NumberOfFrames）
+GET {根}/studies/{studyUID}/series/{seriesUID}/instances/{sopUID}        （WADO-RS 实例字节流）
 ```
 
-- `series[].format="dicom"` 时，`images` 为**标准 DICOM 帧地址（WADO-URI）**列表，
-  由前端按标准 DICOM 协议取像并解码渲染；`is_hu`、`window_center/width`、
-  `rows/columns`、`bits_*`、`rescale_*` 描述像素参数。
-- `series[].images` 若给出普通图片 URL（无 `format`），前端按图像加载。
-- 接口返回 `code!=200` 时前端展示其 `msg`。
+- 元数据返回 DICOM JSON（`application/dicom+json`）；实例返回 `application/dicom`
+  （支持原生多帧 `NumberOfFrames > 1`）。
+- 认证（可选）：`Authorization: Bearer` / `X-API-Key` 请求头。
+- 本项目将 DICOM JSON 解析为内部模型；`series[].images` 经服务端代理 `?r=wadoprx`
+  同源下发，避免浏览器跨域与密钥外泄。
+- 传统 DICOM（DIMSE）不由本项目直连；若 PACS 仅有 DIMSE，需先在中间部署网关将其
+  转换为 DICOMweb。
 
 ## 六、键鼠快捷交互速查表
 
