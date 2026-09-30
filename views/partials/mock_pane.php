@@ -1,193 +1,214 @@
 <?php
 /**
- * views/partials/mock_pane.php — 模拟服务器面板（管理设置子 Tab / 独立页共用）
- * 需要变量：$v($k,$d) 设置读取、$mockUrl、$mockKey、$pacsEndpoint
+ * views/partials/mock_pane.php — 模拟服务器面板（管理设置子 Tab）
+ * 左右两栏：左侧导航（服务器状态 / 控制 / 数据来源 / 部位与切片 / 标准 API / 患者查询）。
+ * 需要变量：$v($k,$d) 设置读取、$mockUrl、$mockKey、$mockAeTitle、$anatomy
  */
+$pvMockAe = isset($mockAeTitle) ? $mockAeTitle : 'PACSVIEWMOCK';
+$pvHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+$pvSrc = $v('mock_patient_source', 'builtin') === 'fhir' ? 'fhir' : 'builtin';
 ?>
 <div class="pv-alert pv-alert-info">
     <b>关于「模拟服务器」</b>：本 PACS 浏览器自身不含数据。这里内置了一个模拟 PACS
     服务器，对外提供<b>标准 HTTP 接口</b>：<b>DICOMweb</b>（QIDO-RS 检索 / WADO-RS 取像）
     与<b>标准 DICOM 文件</b>（WADO-URI）；患者数据可来自<b>内置仿真数据</b>或<b>FHIR R4 接口</b>，
     影像按<b>标准 DICOM</b>（含多模态、原生多帧连续断层）生成，可被任何标准客户端联调。
-    可一键把其 <b>DICOMweb 地址</b>与密钥填入【外部接口】；真实部署请在【外部接口】配置。
 </div>
 
-<!-- 服务器状态与控制 -->
-<div class="pv-card">
-    <div class="pv-card-head">
-        <h3 class="pv-form-title">服务器状态与控制</h3>
-        <span class="pv-badge <?php echo $v('mock_enabled', '1') === '1' ? 'ok' : 'off'; ?>"><?php echo $v('mock_enabled', '1') === '1' ? '运行中' : '已停用'; ?></span>
-    </div>
-    <form class="pv-form" method="post" data-ajax-form id="pvMockForm" action="<?php echo pvw_e(pvw_url('api/mock/save')); ?>">
-        <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
-        <div class="pv-field">
-            <label class="pv-switch">
-                <input type="hidden" name="mock_enabled" value="0">
-                <input type="checkbox" name="mock_enabled" value="1" <?php echo $v('mock_enabled', '1') === '1' ? 'checked' : ''; ?>>
-                <span class="pv-track"></span>
-                <span class="pv-switch-label">启用模拟服务器</span>
-            </label>
-            <em class="pv-hint">关闭后对外 API 返回 403，本浏览器也无法通过模拟地址检索</em>
-        </div>
-        <label class="pv-field"><span>DICOMweb 地址（标准接口根地址）</span>
-            <input type="text" id="pvMockUrl" class="pv-copy" data-copy="#pvMockUrl" readonly title="点击复制"
-                   value="<?php echo pvw_e($mockUrl); ?>">
-        </label>
-        <div class="pv-grid2">
-            <label class="pv-field"><span>DICOM AE Title</span>
-                <input type="text" id="pvMockAe" class="pv-copy" data-copy="#pvMockAe" readonly title="点击复制"
-                       value="<?php echo pvw_e(isset($mockAeTitle) ? $mockAeTitle : 'PACSVIEWMOCK'); ?>">
-            </label>
-            <label class="pv-field"><span>DICOM 端口</span>
-                <input type="text" id="pvMockPort" class="pv-copy" data-copy="#pvMockPort" readonly title="点击复制" value="104">
-            </label>
-        </div>
-        <label class="pv-field"><span>主机</span>
-            <input type="text" id="pvMockHost" class="pv-copy" data-copy="#pvMockHost" readonly title="点击复制"
-                   value="<?php echo pvw_e(isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost'); ?>">
-        </label>
-        <p class="pv-hint">以上 AE Title / 主机 / 端口为传统 DICOM（DIMSE）网络身份，仅供参考；
-            本项目经 DICOMweb(HTTP) 取数，不使用、也无需与对端匹配。</p>
-        <label class="pv-field"><span>接口密钥（请求头 X-API-Key / Authorization: Bearer）</span>
-            <span class="pv-copy-row">
-                <input type="text" id="pvMockKey" class="pv-copy" data-copy="#pvMockKey" readonly title="点击复制"
-                       value="<?php echo pvw_e($mockKey); ?>">
-                <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm" id="pvRegenKey">重新生成</button>
-            </span>
-        </label>
+<div class="pv-split pv-mock-split">
+    <aside class="pv-split-nav">
+        <button type="button" class="pv-split-item" data-mp="status">服务器状态</button>
+        <button type="button" class="pv-split-item" data-mp="control">服务器控制</button>
+        <button type="button" class="pv-split-item" data-mp="source">数据来源</button>
+        <button type="button" class="pv-split-item" data-mp="anatomy">部位与切片</button>
+        <button type="button" class="pv-split-item" data-mp="api">标准 API</button>
+        <button type="button" class="pv-split-item" data-mp="patients">患者查询</button>
+    </aside>
+    <div class="pv-split-body">
 
-        <h4 class="pv-ext-title" style="margin-top:8px">患者数据来源</h4>
-        <div class="pv-split">
-            <aside class="pv-split-nav">
-                <button type="button" class="pv-split-item" data-src="builtin">内置模拟数据</button>
-                <button type="button" class="pv-split-item" data-src="fhir">FHIR 接口获取</button>
-            </aside>
-            <div class="pv-split-body">
-                <div data-src-pane="builtin">
-                    <p class="pv-hint">使用内置<b>确定性仿真患者数据</b>（开箱即用）。</p>
+        <!-- 状态 / 控制 / 数据来源：共用一个保存表单 -->
+        <form class="pv-form" method="post" data-ajax-form id="pvMockForm" action="<?php echo pvw_e(pvw_url('api/mock/save')); ?>">
+            <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
+
+            <div class="pv-card" data-mp-pane="status">
+                <div class="pv-card-head">
+                    <h3 class="pv-form-title">服务器状态</h3>
+                    <span class="pv-badge <?php echo $v('mock_enabled', '1') === '1' ? 'ok' : 'off'; ?>"><?php echo $v('mock_enabled', '1') === '1' ? '运行中' : '已停用'; ?></span>
                 </div>
-                <div data-src-pane="fhir" class="pv-hidden">
-                    <p class="pv-hint">由 <b>FHIR R4</b> 接口获取「已缴费、已登记」患者及其检查；
-                        影像仍由内置模拟服务器按标准 DICOM 生成。</p>
-                    <label class="pv-field"><span>FHIR 接口地址</span>
-                        <input type="text" name="fhir_endpoint" value="<?php echo pvw_e($v('fhir_endpoint')); ?>" placeholder="如 http://192.168.1.100/fhir/R4"></label>
-                    <div class="pv-grid2">
-                        <label class="pv-field"><span>访问密钥（可选）</span>
-                            <input type="text" name="fhir_api_key" value="<?php echo pvw_e($v('fhir_api_key')); ?>" placeholder="Bearer / X-API-Key"></label>
-                        <label class="pv-field"><span>超时（秒）</span>
-                            <input type="number" name="fhir_timeout" value="<?php echo pvw_e($v('fhir_timeout', '5')); ?>"></label>
-                    </div>
-                    <div class="pv-form-actions">
-                        <button type="button" class="pv-btn pv-btn-outline" id="pvFhirTestMain">测试 FHIR 连接</button>
-                        <span id="pvFhirResultMain" class="pv-test-result"></span>
-                    </div>
+                <label class="pv-field"><span>DICOMweb 地址（标准接口根地址）</span>
+                    <input type="text" id="pvMockUrl" class="pv-copy" data-copy="#pvMockUrl" readonly title="点击复制"
+                           value="<?php echo pvw_e($mockUrl); ?>">
+                </label>
+                <div class="pv-grid2">
+                    <label class="pv-field"><span>DICOM AE Title</span>
+                        <input type="text" id="pvMockAe" class="pv-copy" data-copy="#pvMockAe" readonly title="点击复制" value="<?php echo pvw_e($pvMockAe); ?>">
+                    </label>
+                    <label class="pv-field"><span>DICOM 端口</span>
+                        <input type="text" id="pvMockPort" class="pv-copy" data-copy="#pvMockPort" readonly title="点击复制" value="104">
+                    </label>
+                </div>
+                <label class="pv-field"><span>主机</span>
+                    <input type="text" id="pvMockHost" class="pv-copy" data-copy="#pvMockHost" readonly title="点击复制" value="<?php echo pvw_e($pvHost); ?>">
+                </label>
+                <p class="pv-hint">AE Title / 主机 / 端口为传统 DICOM（DIMSE）网络身份，仅供参考；
+                    本项目经 DICOMweb(HTTP) 取数，不使用、也无需与对端匹配。</p>
+                <label class="pv-field"><span>接口密钥（请求头 X-API-Key / Authorization: Bearer）</span>
+                    <span class="pv-copy-row">
+                        <input type="text" id="pvMockKey" class="pv-copy" data-copy="#pvMockKey" readonly title="点击复制" value="<?php echo pvw_e($mockKey); ?>">
+                        <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm" id="pvRegenKey">重新生成</button>
+                    </span>
+                </label>
+            </div>
+
+            <div class="pv-card pv-hidden" data-mp-pane="control">
+                <h3 class="pv-form-title">服务器控制</h3>
+                <div class="pv-field">
+                    <label class="pv-switch">
+                        <input type="hidden" name="mock_enabled" value="0">
+                        <input type="checkbox" name="mock_enabled" value="1" <?php echo $v('mock_enabled', '1') === '1' ? 'checked' : ''; ?>>
+                        <span class="pv-track"></span>
+                        <span class="pv-switch-label">启用模拟服务器</span>
+                    </label>
+                    <em class="pv-hint">关闭后对外 API 返回 403，本浏览器也无法通过模拟地址检索</em>
+                </div>
+                <div class="pv-form-actions">
+                    <button type="submit" class="pv-btn pv-btn-primary">保存模拟服务器设置</button>
+                    <button type="button" class="pv-btn pv-btn-accent" id="pvApplyMock">⇩ 一键应用模拟服务器数据（标准 DICOMweb）</button>
+                    <span class="pv-hint">将 DICOMweb 地址与密钥自动填入【外部接口】</span>
                 </div>
             </div>
-        </div>
-        <input type="hidden" name="mock_patient_source" value="<?php echo pvw_e($v('mock_patient_source', 'builtin')); ?>">
 
-        <div class="pv-form-actions">
-            <button type="submit" class="pv-btn pv-btn-primary">保存模拟服务器设置</button>
-            <button type="button" class="pv-btn pv-btn-accent" id="pvApplyMock">⇩ 一键应用模拟服务器数据（标准 DICOMweb）</button>
-            <span class="pv-hint">将上方 DICOMweb 地址与密钥自动填入【管理设置 → 外部接口】</span>
-        </div>
-    </form>
-</div>
+            <div class="pv-card pv-hidden" data-mp-pane="source">
+                <h3 class="pv-form-title">患者数据来源</h3>
+                <div class="pv-split">
+                    <aside class="pv-split-nav">
+                        <button type="button" class="pv-split-item" data-src="builtin">内置模拟数据</button>
+                        <button type="button" class="pv-split-item" data-src="fhir">FHIR 接口获取</button>
+                    </aside>
+                    <div class="pv-split-body">
+                        <div data-src-pane="builtin">
+                            <p class="pv-hint">使用内置<b>确定性仿真患者数据</b>（开箱即用）。</p>
+                        </div>
+                        <div data-src-pane="fhir" class="pv-hidden">
+                            <p class="pv-hint">由 <b>FHIR R4</b> 接口获取患者与就诊记录（如 `Patient/{patient_no}`、
+                                `Encounter?patient=`）；影像仍由内置模拟服务器按标准 DICOM 生成。</p>
+                            <label class="pv-field"><span>FHIR 接口地址</span>
+                                <input type="text" name="fhir_endpoint" value="<?php echo pvw_e($v('fhir_endpoint')); ?>" placeholder="如 http://127.0.0.1:8000/api/fhir/r4"></label>
+                            <div class="pv-grid2">
+                                <label class="pv-field"><span>访问密钥（可选）</span>
+                                    <input type="text" name="fhir_api_key" value="<?php echo pvw_e($v('fhir_api_key')); ?>" placeholder="Bearer / X-API-Key"></label>
+                                <label class="pv-field"><span>超时（秒）</span>
+                                    <input type="number" name="fhir_timeout" value="<?php echo pvw_e($v('fhir_timeout', '5')); ?>"></label>
+                            </div>
+                            <div class="pv-form-actions">
+                                <button type="button" class="pv-btn pv-btn-outline" id="pvFhirTestMain">测试 FHIR 连接</button>
+                                <span id="pvFhirResultMain" class="pv-test-result"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" name="mock_patient_source" value="<?php echo pvw_e($pvSrc); ?>">
+            </div>
+        </form>
 
-<!-- 标准 DICOMweb 端点清单（供外部标准客户端对接） -->
-<div class="pv-card">
-    <h3 class="pv-form-title">标准 DICOMweb 端点（可供外部客户端对接）</h3>
-    <p class="pv-hint">以根地址 <code><?php echo pvw_e($mockUrl); ?></code> 为前缀，按标准语义访问；
-        认证在请求头携带密钥（<code>X-API-Key</code> 或 <code>Authorization: Bearer</code>）。</p>
-    <div class="pv-table-wrap">
-        <table class="pv-table">
-            <thead><tr><th>方法</th><th>路径</th><th>说明</th></tr></thead>
-            <tbody>
-                <tr><td>GET</td><td><code>{根}/studies?PatientName=&amp;limit=&amp;offset=&amp;includefield=all</code></td><td>QIDO-RS 检索检查</td></tr>
-                <tr><td>GET</td><td><code>{根}/studies/{studyUID}/series</code></td><td>序列列表</td></tr>
-                <tr><td>GET</td><td><code>{根}/studies/{studyUID}/series/{seriesUID}/instances</code></td><td>实例列表（含 NumberOfFrames）</td></tr>
-                <tr><td>GET</td><td><code>{根}/studies/{studyUID}/series/{seriesUID}/instances/{sopUID}</code></td><td>WADO-RS 实例字节流（application/dicom）</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- 解剖部位与切片数量 -->
-<div class="pv-card">
-    <h3 class="pv-form-title">解剖部位与切片数量</h3>
-    <p class="pv-hint">按「模态 + 匹配关键词」路由到对应解剖模型，并可配置切片数量。
-        关键词中英均可（逗号分隔），命中即按部位生成对应解剖影像；未命中则按模态回退。</p>
-    <form class="pv-form" method="post" data-ajax-form action="<?php echo pvw_e(pvw_url('api/mock/anatomy')); ?>">
-        <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
-        <div class="pv-table-wrap">
-            <table class="pv-table pv-anatomy-table">
-                <thead><tr><th>模态</th><th>部位</th><th>标签</th><th>匹配关键词</th><th>切片数</th><th>启用</th><th></th></tr></thead>
-                <tbody id="pvAnatomyRows">
-                <?php
-                $bodyKeys = array('head' => '颅脑', 'chest' => '胸部', 'lumbar' => '腰椎/脊柱', 'abdomen' => '腹部', 'knee' => '膝/四肢', 'cardiac' => '心脏');
-                $ai = 0;
-                foreach ($anatomy as $e):
-                    $idx = $ai++;
-                ?>
+        <!-- 部位与切片 -->
+        <div class="pv-card pv-hidden" data-mp-pane="anatomy">
+            <h3 class="pv-form-title">解剖部位与切片数量</h3>
+            <p class="pv-hint">按「模态 + 匹配关键词」路由到对应解剖模型，并可配置切片数量。
+                关键词中英均可（逗号分隔），命中即按部位生成对应解剖影像；未命中则按模态回退。</p>
+            <form class="pv-form" method="post" data-ajax-form action="<?php echo pvw_e(pvw_url('api/mock/anatomy')); ?>">
+                <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
+                <div class="pv-table-wrap">
+                    <table class="pv-table pv-anatomy-table">
+                        <thead><tr><th>模态</th><th>部位</th><th>标签</th><th>匹配关键词</th><th>切片数</th><th>启用</th><th></th></tr></thead>
+                        <tbody id="pvAnatomyRows">
+                        <?php
+                        $bodyKeys = array('head' => '颅脑', 'chest' => '胸部', 'lumbar' => '腰椎/脊柱', 'abdomen' => '腹部', 'knee' => '膝/四肢', 'cardiac' => '心脏');
+                        $ai = 0;
+                        foreach ($anatomy as $e):
+                            $idx = $ai++;
+                        ?>
+                        <tr>
+                            <td><input type="text" class="pv-input pv-in-sm" name="anatomy[<?php echo $idx; ?>][modality]" value="<?php echo pvw_e($e['modality']); ?>" placeholder="CT/MR/DR/US"></td>
+                            <td>
+                                <select class="pv-input pv-in-sm" name="anatomy[<?php echo $idx; ?>][body_key]">
+                                    <?php foreach ($bodyKeys as $bk => $bl): ?>
+                                    <option value="<?php echo pvw_e($bk); ?>" <?php echo $e['body_key'] === $bk ? 'selected' : ''; ?>><?php echo pvw_e($bl); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </td>
+                            <td><input type="text" class="pv-input pv-in-sm" name="anatomy[<?php echo $idx; ?>][label]" value="<?php echo pvw_e($e['label']); ?>"></td>
+                            <td><input type="text" class="pv-input pv-in-lg" name="anatomy[<?php echo $idx; ?>][keywords]" value="<?php echo pvw_e($e['keywords']); ?>"></td>
+                            <td><input type="number" min="1" max="512" class="pv-input pv-in-xs" name="anatomy[<?php echo $idx; ?>][frames]" value="<?php echo (int)$e['frames']; ?>"></td>
+                            <td><input type="checkbox" name="anatomy[<?php echo $idx; ?>][enabled]" value="1" <?php echo $e['enabled'] ? 'checked' : ''; ?>></td>
+                            <td><button type="button" class="pv-btn pv-btn-ghost pv-btn-sm" data-anatomy-remove>删除</button></td>
+                        </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pv-form-actions">
+                    <button type="button" class="pv-btn pv-btn-outline" id="pvAnatomyAdd">＋ 添加部位</button>
+                    <button type="submit" class="pv-btn pv-btn-primary">保存解剖部位配置</button>
+                    <button type="button" class="pv-btn pv-btn-ghost" id="pvAnatomyReset">恢复默认</button>
+                    <span class="pv-hint">修改切片数后，重新打开检查即可生效（新序列规划）</span>
+                </div>
+            </form>
+            <template id="pvAnatomyTpl">
                 <tr>
-                    <td><input type="text" class="pv-input pv-in-sm" name="anatomy[<?php echo $idx; ?>][modality]" value="<?php echo pvw_e($e['modality']); ?>" placeholder="CT/MR/DR/US"></td>
+                    <td><input type="text" class="pv-input pv-in-sm" data-f="modality" value="" placeholder="CT/MR/DR/US"></td>
                     <td>
-                        <select class="pv-input pv-in-sm" name="anatomy[<?php echo $idx; ?>][body_key]">
+                        <select class="pv-input pv-in-sm" data-f="body_key">
                             <?php foreach ($bodyKeys as $bk => $bl): ?>
-                            <option value="<?php echo pvw_e($bk); ?>" <?php echo $e['body_key'] === $bk ? 'selected' : ''; ?>><?php echo pvw_e($bl); ?></option>
+                            <option value="<?php echo pvw_e($bk); ?>"><?php echo pvw_e($bl); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </td>
-                    <td><input type="text" class="pv-input pv-in-sm" name="anatomy[<?php echo $idx; ?>][label]" value="<?php echo pvw_e($e['label']); ?>"></td>
-                    <td><input type="text" class="pv-input pv-in-lg" name="anatomy[<?php echo $idx; ?>][keywords]" value="<?php echo pvw_e($e['keywords']); ?>"></td>
-                    <td><input type="number" min="1" max="512" class="pv-input pv-in-xs" name="anatomy[<?php echo $idx; ?>][frames]" value="<?php echo (int)$e['frames']; ?>"></td>
-                    <td><input type="checkbox" name="anatomy[<?php echo $idx; ?>][enabled]" value="1" <?php echo $e['enabled'] ? 'checked' : ''; ?>></td>
+                    <td><input type="text" class="pv-input pv-in-sm" data-f="label" value=""></td>
+                    <td><input type="text" class="pv-input pv-in-lg" data-f="keywords" value=""></td>
+                    <td><input type="number" min="1" max="512" class="pv-input pv-in-xs" data-f="frames" value="32"></td>
+                    <td><input type="checkbox" data-f="enabled" value="1" checked></td>
                     <td><button type="button" class="pv-btn pv-btn-ghost pv-btn-sm" data-anatomy-remove>删除</button></td>
                 </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
+            </template>
         </div>
-        <div class="pv-form-actions">
-            <button type="button" class="pv-btn pv-btn-outline" id="pvAnatomyAdd">＋ 添加部位</button>
-            <button type="submit" class="pv-btn pv-btn-primary">保存解剖部位配置</button>
-            <button type="button" class="pv-btn pv-btn-ghost" id="pvAnatomyReset">恢复默认</button>
-            <span class="pv-hint">修改切片数后，重新打开检查即可生效（新序列规划）</span>
-        </div>
-    </form>
-    <template id="pvAnatomyTpl">
-        <tr>
-            <td><input type="text" class="pv-input pv-in-sm" data-f="modality" value="" placeholder="CT/MR/DR/US"></td>
-            <td>
-                <select class="pv-input pv-in-sm" data-f="body_key">
-                    <?php foreach ($bodyKeys as $bk => $bl): ?>
-                    <option value="<?php echo pvw_e($bk); ?>"><?php echo pvw_e($bl); ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </td>
-            <td><input type="text" class="pv-input pv-in-sm" data-f="label" value=""></td>
-            <td><input type="text" class="pv-input pv-in-lg" data-f="keywords" value=""></td>
-            <td><input type="number" min="1" max="512" class="pv-input pv-in-xs" data-f="frames" value="32"></td>
-            <td><input type="checkbox" data-f="enabled" value="1" checked></td>
-            <td><button type="button" class="pv-btn pv-btn-ghost pv-btn-sm" data-anatomy-remove>删除</button></td>
-        </tr>
-    </template>
-</div>
 
-<!-- 患者预览 -->
-<div class="pv-card">
-    <div class="pv-card-head">
-        <h3 class="pv-form-title">已缴费已登记患者预览</h3>
-        <span class="pv-dim" id="pvMockSourceLabel">来源：内置仿真数据</span>
-    </div>
-    <form class="pv-searchbox" onsubmit="return false;">
-        <input type="text" id="pvMockKeyword" class="pv-input pv-search-input" placeholder="输入姓名 / 患者号 / 检查号 / 门诊号 / 检查项目">
-        <button type="button" id="pvMockSearch" class="pv-btn pv-btn-primary">检索患者</button>
-    </form>
-    <div id="pvMockResultMeta" class="pv-result-meta" style="display:none"></div>
-    <div id="pvMockPatients" class="pv-mock-patients"></div>
-    <div id="pvMockEmpty" class="pv-empty" style="display:none">
-        <div class="pv-empty-ico">🧪</div>
-        <div class="pv-empty-title">点击「检索患者」查看模拟服务器中的患者与检查</div>
+        <!-- 标准 API -->
+        <div class="pv-card pv-hidden" data-mp-pane="api">
+            <h3 class="pv-form-title">标准 DICOMweb 端点（可供外部客户端对接）</h3>
+            <p class="pv-hint">以根地址 <code><?php echo pvw_e($mockUrl); ?></code> 为前缀，按标准语义访问；
+                认证在请求头携带密钥（<code>X-API-Key</code> 或 <code>Authorization: Bearer</code>）。</p>
+            <div class="pv-table-wrap">
+                <table class="pv-table">
+                    <thead><tr><th>方法</th><th>路径</th><th>说明</th></tr></thead>
+                    <tbody>
+                        <tr><td>GET</td><td><code>{根}/studies?PatientName=&amp;limit=&amp;offset=&amp;includefield=all</code></td><td>QIDO-RS 检索检查</td></tr>
+                        <tr><td>GET</td><td><code>{根}/studies/{studyUID}/series</code></td><td>序列列表</td></tr>
+                        <tr><td>GET</td><td><code>{根}/studies/{studyUID}/series/{seriesUID}/instances</code></td><td>实例列表（含 NumberOfFrames）</td></tr>
+                        <tr><td>GET</td><td><code>{根}/studies/{studyUID}/series/{seriesUID}/instances/{sopUID}</code></td><td>WADO-RS 实例字节流（application/dicom）</td></tr>
+                        <tr><td>GET</td><td><code>{根}/studies/{studyUID}/series/{seriesUID}/instances/{sopUID}/rendered</code></td><td>渲染图（缩略图）</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 患者查询 -->
+        <div class="pv-card pv-hidden" data-mp-pane="patients">
+            <div class="pv-card-head">
+                <h3 class="pv-form-title">已缴费已登记患者预览</h3>
+                <span class="pv-dim" id="pvMockSourceLabel">来源：内置仿真数据</span>
+            </div>
+            <form class="pv-searchbox" onsubmit="return false;">
+                <input type="text" id="pvMockKeyword" class="pv-input pv-search-input" placeholder="输入患者号 / 姓名 / 检查号 / 门诊号 / 检查项目">
+                <button type="button" id="pvMockSearch" class="pv-btn pv-btn-primary">检索患者</button>
+            </form>
+            <div id="pvMockResultMeta" class="pv-result-meta" style="display:none"></div>
+            <div id="pvMockPatients" class="pv-mock-patients"></div>
+            <div id="pvMockEmpty" class="pv-empty" style="display:none">
+                <div class="pv-empty-ico">🧪</div>
+                <div class="pv-empty-title">点击「检索患者」查看模拟服务器中的患者与检查</div>
+            </div>
+        </div>
+
     </div>
 </div>

@@ -59,6 +59,21 @@
         });
     }
 
+    /** 模拟服务器左右两栏：左侧导航切换右侧面板 */
+    function bindMpane() {
+        var items = document.querySelectorAll('.pv-split-item[data-mp]');
+        var panes = document.querySelectorAll('[data-mp-pane]');
+        if (!items.length) return;
+        function select(mp) {
+            Array.prototype.forEach.call(items, function (b) { b.classList.toggle('active', b.getAttribute('data-mp') === mp); });
+            Array.prototype.forEach.call(panes, function (p) { p.classList.toggle('pv-hidden', p.getAttribute('data-mp-pane') !== mp); });
+        }
+        Array.prototype.forEach.call(items, function (b) {
+            b.addEventListener('click', function () { select(b.getAttribute('data-mp')); });
+        });
+        select('status');
+    }
+
     /** 患者数据来源（内置模拟 / FHIR）左右分栏切换，并写入隐藏字段 */
     function bindSource() {
         var items = document.querySelectorAll('.pv-split-item[data-src]');
@@ -119,6 +134,7 @@
             data = data || {};
             PvUI.bindAjaxForms(document);
             bindCopy();
+            bindMpane();
             bindSource();
             bindAnatomy();
             if (data.flash) PvUI.toast(data.flash, 'ok');
@@ -165,7 +181,11 @@
                     sbtn.disabled = true; sbtn.textContent = '检索中…';
                     getJson('api/mock/patients', { q: skw.value }).then(function (j) {
                         sbtn.disabled = false; sbtn.textContent = '检索患者';
-                        if (j && j.code === 200) { renderPatients(j.data.list || []); updateSource(j.data.source); }
+                        if (j && j.code === 200) {
+                            renderPatients(j.data.list || []);
+                            updateSource(j.data.source);
+                            if (j.data.fhir_error) PvUI.toast('FHIR 获取失败：' + j.data.fhir_error, 'err');
+                        }
                         else { renderPatients([]); PvUI.toast((j && j.msg) || '检索失败', 'err'); }
                     }).catch(function () {
                         sbtn.disabled = false; sbtn.textContent = '检索患者';
