@@ -8,9 +8,9 @@
 
     var input, btn, box, empty, meta, onDocKey, clearChk;
 
-    /* 结果分块渲染 + 视口触发续载（近似虚拟滚动），避免一次性创建大量 DOM */
-    var CHUNK = 80;
-    var allItems = [], renderedCount = 0, sentinelEl = null, moreIO = null;
+    /* 服务端分页 + 视口触发续载（流式），配合 content-visibility 虚拟化 */
+    var PAGE = 30;
+    var allItems = [], total = 0, hasMore = false, loading = false, query = '', sentinelEl = null, moreIO = null;
 
     function makeCard(s) {
         var hasImg = s.has_images !== false;
@@ -37,40 +37,43 @@
         return el;
     }
 
+    function setMeta() {
+        if (!meta) return;
+        meta.style.display = '';
+        var fhirOnly = 0;
+        allItems.forEach(function (s) { if (s.has_images === false) fhirOnly++; });
+        meta.textContent = '已加载 ' + allItems.length + ' / 共 ' + total + ' 条检查记录'
+            + (fhirOnly ? '（含 ' + fhirOnly + ' 条仅登记·暂无影像）' : '')
+            + (hasMore ? '，向下滚动加载更多' : '，点击卡片调阅影像');
+    }
+
     function clearMore() {
         if (moreIO) { moreIO.disconnect(); moreIO = null; }
         if (sentinelEl && sentinelEl.parentNode) sentinelEl.parentNode.removeChild(sentinelEl);
         sentinelEl = null;
     }
 
-    function appendChunk() {
-        var end = Math.min(allItems.length, renderedCount + CHUNK);
-        for (var i = renderedCount; i < end; i++) box.appendChild(makeCard(allItems[i]));
-        renderedCount = end;
-        if (renderedCount >= allItems.length) { clearMore(); return; }
+    function placeSentinel() {
+        if (!hasMore) { clearMore(); return; }
         if (!sentinelEl) {
             sentinelEl = document.createElement('div');
             sentinelEl.className = 'pv-more';
-            sentinelEl.textContent = '加载更多…';
         }
+        sentinelEl.textContent = '加载更多…';
         box.appendChild(sentinelEl);
         if (global.IntersectionObserver) {
             if (!moreIO) {
                 moreIO = new global.IntersectionObserver(function (en) {
-                    if (en[0] && en[0].isIntersecting) appendChunk();
+                    if (en[0] && en[0].isIntersecting) loadMore();
                 }, { rootMargin: '400px' });
             }
             moreIO.observe(sentinelEl);
-        } else {
-            appendChunk();   // 无 IntersectionObserver：直接续载
         }
     }
 
-    function render(list) {
+    function paint() {
         clearMore();
         box.innerHTML = '';
-        allItems = list || [];
-        renderedCount = 0;
         if (!allItems.length) {
             empty.style.display = '';
             empty.querySelector('.pv-empty-title').textContent = '未找到匹配的检查记录';
@@ -78,17 +81,35 @@
             return;
         }
         empty.style.display = 'none';
-        meta.style.display = '';
-        var fhirOnly = 0;
-        allItems.forEach(function (s) { if (s.has_images === false) fhirOnly++; });
-        meta.textContent = '共找到 ' + allItems.length + ' 条检查记录'
-            + (fhirOnly ? '（含 ' + fhirOnly + ' 条仅登记·暂无影像）' : '')
-            + '，点击卡片调阅影像';
-        appendChunk();
+        allItems.forEach(function (s) { box.appendChild(makeCard(s)); });
+        setMeta();
+        placeSentinel();
     }
 
-    function saveState(kw, list) {
-        try { sessionStorage.setItem('pacs_search_v1', JSON.stringify({ kw: kw || '', list: list || [] })); } catch (e) {}
+    /** 加载下一页（流式追加） */
+    function loadMore() {
+        if (loading || !hasMore) return;
+        loading = true;
+        if (sentinelEl) sentinelEl.textContent = '加载中…';
+        PvApi.search(query, { limit: PAGE, offset: allItems.length }).then(function (j) {
+            loading = false;
+            if (!j || j.code !== 200) { PvUI.toast((j && j.msg) || '加载失败', 'err'); if (sentinelEl) sentinelEl.textContent = '加载更多…'; return; }
+            var d = j.data || {}, list = d.list || [];
+            total = (typeof d.total === 'number') ? d.total : (allItems.length + list.length);
+            hasMore = !!d.has_more;
+            list.forEach(function (s) { allItems.push(s); box.appendChild(makeCard(s)); });
+            setMeta();
+            placeSentinel();
+            saveState();
+        }).catch(function () {
+            loading = false;
+            PvUI.toast('网络请求失败', 'err');
+            if (sentinelEl) sentinelEl.textContent = '加载更多…';
+        });
+    }
+
+    function saveState() {
+        try { sessionStorage.setItem('pacs_search_v1', JSON.stringify({ kw: query || '', list: allItems, total: total, has_more: hasMore })); } catch (e) {}
     }
     function loadState() {
         try { return JSON.parse(sessionStorage.getItem('pacs_search_v1')); } catch (e) { return null; }
@@ -98,19 +119,25 @@
         btn.disabled = true;
         btn.classList.add('is-loading');
         empty.style.display = 'none';
-        PvApi.search(input.value).then(function (j) {
+        query = input.value;
+        allItems = []; total = 0; hasMore = false;
+        PvApi.search(query, { limit: PAGE, offset: 0 }).then(function (j) {
             btn.disabled = false; btn.classList.remove('is-loading');
             if (!j || j.code !== 200) {
-                box.innerHTML = '';
+                box.innerHTML = ''; clearMore();
                 empty.style.display = '';
                 var em = (j && j.msg) || '检索失败';
                 empty.querySelector('.pv-empty-title').textContent = em;
+                meta.style.display = 'none';
                 PvUI.toast(em, 'err');
                 return;
             }
             var d = j.data || {};
-            render(d.list || []);
-            saveState(input.value, d.list || []);
+            allItems = d.list || [];
+            total = (typeof d.total === 'number') ? d.total : allItems.length;
+            hasMore = !!d.has_more;
+            paint();
+            saveState();
             var modeEl = document.getElementById('pvMode');
             if (modeEl && d.source) {
                 modeEl.textContent = d.source.label || '';
@@ -119,8 +146,10 @@
             if (d.fhir_error) PvUI.toast('FHIR 补充失败：' + d.fhir_error, 'err');
         }).catch(function () {
             btn.disabled = false; btn.classList.remove('is-loading');
+            box.innerHTML = ''; clearMore();
             empty.style.display = '';
             empty.querySelector('.pv-empty-title').textContent = '网络请求失败';
+            meta.style.display = 'none';
             PvUI.toast('网络请求失败', 'err');
         });
     }
@@ -153,18 +182,22 @@
                 if (e.key === 'Enter' && document.activeElement === input) { e.preventDefault(); doSearch(); }
             };
             input.addEventListener('keydown', onDocKey);
-            // 恢复本会话上次的检索结果
+            // 恢复本会话上次的检索结果（含已加载分页）
             var saved = loadState();
             if (saved && typeof saved.kw === 'string') {
                 input.value = saved.kw;
-                render(saved.list || []);
+                query = saved.kw;
+                allItems = saved.list || [];
+                total = (typeof saved.total === 'number') ? saved.total : allItems.length;
+                hasMore = !!saved.has_more;
+                paint();
             }
             input.focus();
         },
         destroy: function () {
             if (input && onDocKey) input.removeEventListener('keydown', onDocKey);
             clearMore();
-            allItems = []; renderedCount = 0;
+            allItems = []; total = 0; hasMore = false; loading = false;
             input = btn = box = empty = meta = onDocKey = null;
         }
     };

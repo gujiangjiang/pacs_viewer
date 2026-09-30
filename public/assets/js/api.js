@@ -44,7 +44,11 @@
     }
 
     global.PvApi = {
-        search: function (q) { return get('search', { q: q }); },
+        search: function (q, opts) {
+            var p = { q: q };
+            if (opts) { if (opts.limit != null) p.limit = opts.limit; if (opts.offset != null) p.offset = opts.offset; }
+            return get('search', p);
+        },
         study:  study,
         ping:   function () { return get('ping', {}); },
         /** 记录操作日志（读片 / 下载 / 阅读 DICOM），失败静默 */
