@@ -47,7 +47,8 @@
         this.raw = document.createElement('canvas'); this.raw.width = BASE; this.raw.height = BASE;
 
         this.imgCache = {};
-        this._frames = {};
+        this._frames = {};         // 显示帧缓存（global frame index → {dec,raw}）
+        this._instances = {};      // 解码实例缓存（instance index → {status,dec}，支持多帧复用）
         this._ctrls = [];          // 在途请求的 AbortController（离开/换序列时中止）
         this._prefetchSeq = 0;     // 预取代次，用于中止后停止预取循环
         this._dir = 1;             // 最近滚动方向（+1 向后 / -1 向前），用于预取偏置
@@ -126,28 +127,43 @@
         this.updateScrollbar();
     };
 
-    /* ---------- 标准 DICOM 帧获取与缓存 ---------- */
+    /* ---------- 标准 DICOM 帧获取与缓存（支持单帧与原生多帧实例） ---------- */
     PvPane.prototype._frameKey = function (series, fi) { return this.st.uid + '|' + series.series_id + '|' + fi; };
+    PvPane.prototype._instKey = function (series, ii) { return this.st.uid + '|' + series.series_id + '|i' + ii; };
+    /** 每实例帧数（缺省 1；>1 表示原生多帧 DICOM 实例） */
+    PvPane.prototype._fpi = function (series) { return series ? Math.max(1, parseInt(series.frames_per_instance, 10) || 1) : 1; };
 
-    /** 取指定帧（异步拉取标准 DICOM 并解码）；返回 {status:'ok'|'loading'} 或 null */
+    /** 取指定帧（异步拉取标准 DICOM 并解码；多帧实例仅解码一次后按帧复用） */
     PvPane.prototype.getFrame = function (series, fi) {
-        var key = this._frameKey(series, fi);
-        var c = this._frames[key];
+        var fkey = this._frameKey(series, fi);
+        var c = this._frames[fkey];
         if (c) return c;
-        var url = series.images && series.images[fi];
+        var fpi = this._fpi(series);
+        var ii = Math.floor(fi / fpi), lf = fi % fpi;
+        var ikey = this._instKey(series, ii);
+        var inst = this._instances[ikey];
+        if (inst && inst.status === 'ok') {
+            // 已解码实例：按帧惰性生成显示值场
+            this._frames[fkey] = { status: 'ok', dec: inst.dec, raw: PvRender.resample(inst.dec, BASE, lf) };
+            return this._frames[fkey];
+        }
+        if (inst && inst.status === 'loading') return null;
+        var url = series.images && series.images[ii];
         if (!url) return null;
-        this._frames[key] = { status: 'loading' };
+        this._instances[ikey] = { status: 'loading' };
         var self = this;
         this._fetchBuffer(url)
-            .then(function (buf) { return PvDecoder.decode(buf, BASE); })
+            .then(function (buf) { return PvDecoder.decode(buf, BASE, lf); })
             .then(function (res) {
-                self._frames[key] = { status: 'ok', dec: res.dec, raw: res.raw };
-                self._trimFrames();
+                self._instances[ikey] = { status: 'ok', dec: res.dec };
+                self._frames[fkey] = { status: 'ok', dec: res.dec, raw: res.raw };
+                self._trimFrames(); self._trimInstances();
                 self.render();
             })
             .catch(function (err) {
                 if (err && err.name === 'AbortError') return;   // 主动中止：不报错
-                delete self._frames[key]; self.setStatus('影像加载失败'); self.render();
+                delete self._instances[ikey]; delete self._frames[fkey];
+                self.setStatus('影像加载失败'); self.render();
             });
         return null;
     };
@@ -168,6 +184,17 @@
         }
     };
 
+    /** 解码实例缓存上限控制（多帧实例较大，限制保留实例数） */
+    PvPane.prototype._trimInstances = function () {
+        var keys = Object.keys(this._instances);
+        if (keys.length <= 24) return;
+        var removed = 0;
+        for (var i = 0; i < keys.length && removed < keys.length - 16; i++) {
+            var inst = this._instances[keys[i]];
+            if (inst && inst.status === 'ok') { delete this._instances[keys[i]]; removed++; }
+        }
+    };
+
     /**
      * 后台预取并解码整条序列，使滚动翻帧基本即时。
      * 并发刻意保持较低（2）：避免占满浏览器每主机连接数，导致切换页面 / 标签时
@@ -175,8 +202,8 @@
      */
     PvPane.prototype.prefetch = function (series) {
         if (!series || series.format !== 'dicom' || !series.images || !series.images.length) return;
-        var self = this, n = series.images.length, MAX = 2, cursor = 0;
-        var seq = this._prefetchSeq;
+        var self = this, n = this.frameCount(), fpi = this._fpi(series), MAX = 2, cursor = 0;
+        var seq = this._prefetchSeq, pendingInst = {};
         var order = [], seen = {}, cur = this.st.fi, dir = this._dir || 1;
         var push = function (k) { if (k >= 0 && k < n && !seen[k]) { seen[k] = 1; order.push(k); } };
         push(cur);
@@ -189,17 +216,26 @@
         function next() {
             if (seq !== self._prefetchSeq || cursor >= order.length) return;
             var idx = order[cursor++];
-            var key = self._frameKey(series, idx);
-            if (self._frames[key]) { next(); return; }
-            self._frames[key] = { status: 'loading' };
-            self._fetchBuffer(series.images[idx])
-                .then(function (buf) { return PvDecoder.decode(buf, BASE); })
+            var ii = Math.floor(idx / fpi), lf = idx % fpi;
+            var ikey = self._instKey(series, ii), fkey = self._frameKey(series, idx);
+            // 同一实例只解码一次：已缓存或已在途则跳过
+            if (self._frames[fkey] || self._instances[ikey] || pendingInst[ii]) { next(); return; }
+            var url = series.images[ii];
+            if (!url) { next(); return; }
+            pendingInst[ii] = 1;
+            self._instances[ikey] = { status: 'loading' };
+            self._fetchBuffer(url)
+                .then(function (buf) { return PvDecoder.decode(buf, BASE, lf); })
                 .then(function (res) {
-                    self._frames[key] = { status: 'ok', dec: res.dec, raw: res.raw };
-                    self._trimFrames();
+                    self._instances[ikey] = { status: 'ok', dec: res.dec };
+                    self._frames[fkey] = { status: 'ok', dec: res.dec, raw: res.raw };
+                    self._trimFrames(); self._trimInstances();
                     if (self.curSeries() === series && self.st.fi === idx) self.render();
                 })
-                .catch(function (err) { if (!(err && err.name === 'AbortError')) delete self._frames[key]; })
+                .catch(function (err) {
+                    delete self._instances[ikey];
+                    if (!(err && err.name === 'AbortError')) delete self._frames[fkey];
+                })
                 .then(function () { next(); });
         }
         /* 稍作延迟再启动预取：给首帧渲染与即时交互让路；若其间切换序列/离开，
@@ -510,7 +546,7 @@
         if (!d || !d.series[si]) return;
         this._abortFetches();      // 中止上一条序列仍在进行的预取
         this.st.uid = uid; this.st.si = si; this.st.fi = 0;
-        this._wheelAcc = 0; this.st.annos = []; this.st.draft = null; this._frames = {}; this._dir = 1;
+        this._wheelAcc = 0; this.st.annos = []; this.st.draft = null; this._frames = {}; this._instances = {}; this._dir = 1;
         this.applyDefaults(); this.fit();
         this.updateTitle(); this.updateScrollbar();
         this.viewer.afterPaneLoad(this);
@@ -597,7 +633,8 @@
             var dec = f.dec;
             var sx = Math.floor(x * dec.columns / BASE), sy = Math.floor(y * dec.rows / BASE);
             if (sx < 0 || sy < 0 || sx >= dec.columns || sy >= dec.rows) { this._setHU(''); return; }
-            var stored = dec.pixels[sy * dec.columns + sx];
+            var base = (this.st.fi % this._fpi(ser)) * dec.rows * dec.columns;   // 多帧偏移
+            var stored = dec.pixels[base + sy * dec.columns + sx];
             var val = stored * dec.rescaleSlope + dec.rescaleIntercept;
             this._setHU((ser.is_hu ? 'HU ' : '灰度 ') + Math.round(val) + '　(' + x + ', ' + y + ')');
         } else {
@@ -627,12 +664,15 @@
         var cx = cv.getContext('2d'); cx.fillStyle = '#000'; cx.fillRect(0, 0, BASE, BASE);
         if (!ser) return Promise.resolve(cv);
         if (ser.format === 'dicom') {
+            var fpi = this._fpi(ser), ii = Math.floor(fi / fpi), lf = fi % fpi;
             var cached = this._frames[this._frameKey(ser, fi)];
             if (cached && cached.status === 'ok') { this._paintRaw(cx, cached.raw); return Promise.resolve(cv); }
-            var durl = ser.images && ser.images[fi];
+            var inst = this._instances[this._instKey(ser, ii)];
+            if (inst && inst.status === 'ok') { this._paintRaw(cx, PvRender.resample(inst.dec, BASE, lf)); return Promise.resolve(cv); }
+            var durl = ser.images && ser.images[ii];
             if (!durl) return Promise.resolve(cv);
             return fetch(durl, { credentials: 'same-origin' }).then(function (r) { return r.arrayBuffer(); })
-                .then(function (buf) { return PvDecoder.decode(buf, BASE); })
+                .then(function (buf) { return PvDecoder.decode(buf, BASE, lf); })
                 .then(function (res) { self._paintRaw(cx, res.raw); return cv; })
                 .catch(function () { return cv; });
         }

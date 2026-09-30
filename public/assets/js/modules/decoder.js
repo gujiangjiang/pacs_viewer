@@ -26,40 +26,42 @@
                 delete pending[d.id];
                 if (d.ok) { p.resolve(d); return; }
                 // Worker 解码失败：回退主线程解码（保留了原始缓冲）
-                decodeMain(p.buffer, p.size).then(p.resolve, p.reject);
+                decodeMain(p.buffer, p.size, p.frame).then(p.resolve, p.reject);
             };
             worker.onerror = function () {
                 // Worker 异常：标记不可用，未完成请求全部回退主线程
                 worker = false;
                 Object.keys(pending).forEach(function (k) {
                     var p = pending[k]; delete pending[k];
-                    decodeMain(p.buffer, p.size).then(p.resolve, p.reject);
+                    decodeMain(p.buffer, p.size, p.frame).then(p.resolve, p.reject);
                 });
             };
         } catch (e) { worker = false; }
         return worker;
     }
 
-    function decodeMain(buffer, size) {
+    function decodeMain(buffer, size, frame) {
         return new Promise(function (resolve, reject) {
             var dec = global.PvDicom ? global.PvDicom.decode(buffer) : null;
             if (!dec) { reject(new Error('decode')); return; }
-            resolve({ ok: true, dec: dec, raw: global.PvRender.resample(dec, size) });
+            resolve({ ok: true, dec: dec, raw: global.PvRender.resample(dec, size, frame || 0) });
         });
     }
 
-    function decode(buffer, size) {
+    /** @param {ArrayBuffer} buffer @param {number} size 重采样边长 @param {number} [frame] 多帧内的帧号 */
+    function decode(buffer, size, frame) {
+        frame = frame || 0;
         var w = ensureWorker();
-        if (!w) return decodeMain(buffer, size);
+        if (!w) return decodeMain(buffer, size, frame);
         return new Promise(function (resolve, reject) {
             var id = ++seq;
             // 不转移 buffer：保留原始数据，便于 Worker 异常时回退主线程解码
-            pending[id] = { resolve: resolve, reject: reject, buffer: buffer, size: size };
+            pending[id] = { resolve: resolve, reject: reject, buffer: buffer, size: size, frame: frame };
             try {
-                w.postMessage({ id: id, buffer: buffer, size: size });
+                w.postMessage({ id: id, buffer: buffer, size: size, frame: frame });
             } catch (e) {
                 delete pending[id];
-                decodeMain(buffer, size).then(resolve, reject);
+                decodeMain(buffer, size, frame).then(resolve, reject);
             }
         });
     }

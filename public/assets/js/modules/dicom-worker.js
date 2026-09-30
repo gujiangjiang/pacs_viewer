@@ -16,7 +16,7 @@ self.onmessage = function (e) {
     try {
         var dec = self.PvDicom ? self.PvDicom.decode(d.buffer) : null;
         if (!dec) { out.ok = false; out.error = 'decode'; self.postMessage(out); return; }
-        var raw = self.PvRender.resample(dec, d.size);
+        var raw = self.PvRender.resample(dec, d.size, d.frame || 0);
         out.ok = true;
         out.dec = dec;
         out.raw = raw;

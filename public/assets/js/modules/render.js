@@ -17,14 +17,19 @@
      * @param {number} size 目标尺寸
      * @return {Float32Array}
      */
-    function resample(dec, size) {
+    function resample(dec, size, frame) {
         var sw = dec.columns, sh = dec.rows, px = dec.pixels;
+        var frames = dec.numberOfFrames || 1;
+        var f = frame | 0;
+        if (f < 0) f = 0;
+        if (f >= frames) f = frames - 1;
+        var base = f * sw * sh;                 // 多帧：定位到该帧像素起点
         var slope = dec.rescaleSlope, intercept = dec.rescaleIntercept;
         var out = new Float32Array(size * size);
         var identity = (slope === 1 && intercept === 0);
         for (var y = 0; y < size; y++) {
             var sy = (sh === size) ? y : Math.min(sh - 1, (y * sh / size) | 0);
-            var srow = sy * sw;
+            var srow = base + sy * sw;
             var orow = y * size;
             for (var x = 0; x < size; x++) {
                 var sx = (sw === size) ? x : Math.min(sw - 1, (x * sw / size) | 0);

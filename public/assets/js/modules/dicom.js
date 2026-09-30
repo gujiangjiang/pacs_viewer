@@ -78,7 +78,7 @@
                      (transferSyntax.indexOf('1.2.840.10008.1.2.2') === 0);
         if (transferSyntax === TS_IMPLICIT) d.explicit = false;
 
-        var meta = { rows: 0, columns: 0, bitsAllocated: 16, bitsStored: 16, pixelRepresentation: 0, rescaleIntercept: 0, rescaleSlope: 1 };
+        var meta = { rows: 0, columns: 0, numberOfFrames: 1, bitsAllocated: 16, bitsStored: 16, pixelRepresentation: 0, rescaleIntercept: 0, rescaleSlope: 1 };
         var wc = null, ww = null, pixelInfo = null;
 
         while (d.pos + 8 <= b.length) {
@@ -88,6 +88,7 @@
             var g = r.group, e = r.element, vpos = r.vpos, len = r.len;
             if (g === 0x0028 && e === 0x0010) meta.rows = d.u16(vpos);
             else if (g === 0x0028 && e === 0x0011) meta.columns = d.u16(vpos);
+            else if (g === 0x0028 && e === 0x0008) { var nf = parseInt(d.ascii(vpos, len), 10); if (nf > 0) meta.numberOfFrames = nf; }   // NumberOfFrames
             else if (g === 0x0028 && e === 0x0100) meta.bitsAllocated = d.u16(vpos);
             else if (g === 0x0028 && e === 0x0101) meta.bitsStored = d.u16(vpos);
             else if (g === 0x0028 && e === 0x0103) meta.pixelRepresentation = d.u16(vpos);
@@ -101,7 +102,8 @@
 
         if (!pixelInfo || !meta.rows || !meta.columns) return null;
 
-        var count = meta.rows * meta.columns;
+        var frames = meta.numberOfFrames > 0 ? meta.numberOfFrames : 1;
+        var count = meta.rows * meta.columns * frames;
         var pixels;
         if (meta.bitsAllocated === 16) {
             var signed = meta.pixelRepresentation === 1;
