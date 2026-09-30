@@ -4,8 +4,11 @@
     <form class="pv-card pv-form" method="post" data-ajax-form action="<?php echo pvw_e(pvw_url('admin/save')); ?>">
         <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
         <input type="hidden" name="tab" value="pacs">
-        <h3 class="pv-form-title">外部接口</h3>
-        <p class="pv-hint">DICOM / PACS 网关为<b>必填</b>（患者检索与影像获取均以它为基础）；FHIR R4 为<b>可选的患者信息补充</b>，两者不同步时互为补充、互不影响。</p>
+        <h3 class="pv-form-title">影像接口（DICOM / PACS）</h3>
+        <p class="pv-hint">影像检索与调阅均通过下方 <b>HTTP 接口</b> 获取，请按 PACS 实际能力选择协议：
+            <b>DICOMweb</b>（DICOM 标准，QIDO-RS 检索 / WADO-RS 取像，推荐）或
+            <b>JSON 网关</b>（本项目自定义的轻量 JSON 接口）。传统 DICOM（DIMSE，TCP 104）
+            无法由浏览器直接连接，需先经网关转换为上述其一。FHIR R4 为可选的患者信息补充。</p>
 
         <div class="pv-split">
             <aside class="pv-split-nav">
@@ -14,36 +17,25 @@
             </aside>
             <div class="pv-split-body">
                 <div class="pv-ext-pane" data-ext-pane="pacs">
-                    <h4 class="pv-ext-title">DICOM / PACS 网关（必填）</h4>
-                    <p class="pv-hint">检索与调阅数据来自下方接口地址；本地联调可指向【模拟服务器】对外 API（在该页一键填入）。</p>
+                    <h4 class="pv-ext-title">PACS 接口（必填）</h4>
                     <label class="pv-field"><span>接口协议</span>
                         <select name="pacs_protocol">
-                            <option value="gateway" <?php echo $v('pacs_protocol', 'gateway') === 'gateway' ? 'selected' : ''; ?>>本项目网关（默认；action/q/uid/key 查询参数，返回 JSON）</option>
-                            <option value="dicomweb" <?php echo $v('pacs_protocol', 'gateway') === 'dicomweb' ? 'selected' : ''; ?>>标准 DICOMweb（QIDO-RS / WADO-RS）</option>
+                            <option value="dicomweb" <?php echo $v('pacs_protocol', 'gateway') === 'dicomweb' ? 'selected' : ''; ?>>DICOMweb（DICOM 标准：QIDO-RS 检索 / WADO-RS 取像）</option>
+                            <option value="gateway" <?php echo $v('pacs_protocol', 'gateway') === 'gateway' ? 'selected' : ''; ?>>JSON 网关（本项目自定义：action/q/uid/key 查询参数）</option>
                         </select>
-                        <em class="pv-hint">本项目网关为本项目约定的轻量协议（内置模拟服务器即用此协议）；需对接真实 PACS 时可选标准 DICOMweb。</em></label>
-                    <label class="pv-field"><span>PACS 接口地址（PACS_SERVER_URL）</span>
-                        <input type="text" name="pacs_endpoint" value="<?php echo pvw_e($v('pacs_endpoint')); ?>" placeholder="如 http://192.168.1.100:8042/dicom-web"></label>
+                        <em class="pv-hint">DICOMweb 是 DICOM 标准 HTTP 接口，适配 dcm4chee、Orthanc(DICOMweb 插件) 等现代 PACS 网关；JSON 网关是本项目约定的轻量 JSON 接口，仅当对方按此约定实现时选用。两者都不是传统 DICOM（DIMSE）。</em></label>
+                    <label class="pv-field"><span>接口地址（根地址）</span>
+                        <input type="text" name="pacs_endpoint" value="<?php echo pvw_e($v('pacs_endpoint')); ?>" placeholder="DICOMweb 例：http://192.168.1.100:8042/dicom-web　JSON 网关例：http://192.168.1.100:8080/gateway">
+                        <em class="pv-hint">DICOMweb 填以 <code>/dicom-web</code> 结尾的根地址；JSON 网关填其接口根地址。检索与取像都会基于它拼接。</em></label>
                     <div class="pv-grid2">
                         <label class="pv-field"><span>接口密钥</span>
-                            <input type="text" name="pacs_api_key" value="<?php echo pvw_e($v('pacs_api_key')); ?>" placeholder="可选"></label>
+                            <input type="text" name="pacs_api_key" value="<?php echo pvw_e($v('pacs_api_key')); ?>" placeholder="可选">
+                            <em class="pv-hint">DICOMweb 以 Bearer / X-API-Key 请求头发送；JSON 网关作为 key 查询参数。</em></label>
                         <label class="pv-field"><span>超时（秒）</span>
                             <input type="number" name="pacs_timeout" value="<?php echo pvw_e($v('pacs_timeout', '5')); ?>"></label>
                     </div>
-                    <div class="pv-grid2">
-                        <label class="pv-field"><span>本系统 AETitle（PACS_AE_TITLE）</span>
-                            <input type="text" name="pacs_ae_title" value="<?php echo pvw_e($v('pacs_ae_title')); ?>"></label>
-                        <label class="pv-field"><span>目标 PACS AETitle</span>
-                            <input type="text" name="pacs_remote_ae" value="<?php echo pvw_e($v('pacs_remote_ae')); ?>"></label>
-                    </div>
-                    <div class="pv-grid2">
-                        <label class="pv-field"><span>PACS 主机</span>
-                            <input type="text" name="pacs_server_host" value="<?php echo pvw_e($v('pacs_server_host')); ?>" placeholder="192.168.1.100"></label>
-                        <label class="pv-field"><span>DICOM 端口</span>
-                            <input type="text" name="pacs_server_port" value="<?php echo pvw_e($v('pacs_server_port', '104')); ?>"></label>
-                    </div>
                     <div class="pv-form-actions">
-                        <button type="button" id="pvTestPacs" class="pv-btn pv-btn-outline">测试 DICOM / PACS 接口</button>
+                        <button type="button" id="pvTestPacs" class="pv-btn pv-btn-outline">测试接口连通性</button>
                         <span id="pvTestResult" class="pv-test-result"></span>
                     </div>
                 </div>

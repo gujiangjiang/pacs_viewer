@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.23.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.23.1-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -60,8 +60,9 @@
 - **内置模拟 PACS 服务器**（【管理设置 → 模拟服务器】子 Tab）：对外 API
   （`search` / `study` / `ping`）供本浏览器或门诊系统调用；使用内置仿真患者数据；
   可预览患者、一键应用模拟数据、重新生成密钥、整体启停。
-- **外部接口协议**：支持**本项目网关**（`action/q/uid/key` 查询参数返回 JSON）与
-  **标准 DICOMweb**（QIDO-RS / WADO-RS，含原生多帧），影像经服务端同源代理下发。
+- **影像接口协议**：支持 **DICOMweb**（DICOM 标准 HTTP：QIDO-RS / WADO-RS，含原生多帧）
+  与 **JSON 网关**（本项目自定义：`action/q/uid/key` 返回 JSON）；影像经服务端同源代理
+  下发。二者均非传统 DICOM（DIMSE）——若 PACS 仅有 DIMSE，需经网关转换。
 - **管理设置**：站点 / 医院信息、外部接口配置、接口连通性测试、
   账号管理（模态框）、检索日志、影像视图序列上限（3-10）、模拟服务器、存储情况。
 - **操作日志**：记录账号、操作（搜索 / 读片 / 下载 / 阅读 DICOM）、详情

@@ -40,9 +40,13 @@ Web PACS 影像浏览器 · 独立 PHP 网站
 
 页面为左右分栏：左侧 **DICOM / PACS**（必填）与 **FHIR R4**（补充），右侧显示对应配置。
 
-- **DICOM / PACS 网关（必填）**：患者检索与影像获取的基础。接口返回本身即携带患者信息
-  （PatientName / PatientID / 出生日期 / 性别等）；DICOM 数据集、C-FIND、DICOMweb
-  QIDO-RS 都能传输患者信息，因此**无需 FHIR** 也可检索与查看。
+- **PACS 接口（必填）**：影像检索与调阅的基础，提供两种 **HTTP 协议**，按 PACS 实际能力选择：
+  - **DICOMweb**（DICOM 标准）：QIDO-RS 检索 + WADO-RS 取像，适配 dcm4chee、Orthanc
+    （DICOMweb 插件）等现代 PACS 网关，**推荐**；
+  - **JSON 网关**（本项目自定义）：`action/q/uid/key` 查询参数、返回 `{code,msg,data}`，
+    仅当对方按此约定实现时选用。
+  - 二者都**不是传统 DICOM（DIMSE，TCP 104）**。本项目不直接连接 DIMSE；若 PACS 仅提供
+    DIMSE，需在中间部署网关将其转为 DICOMweb（或 JSON 网关）后再在此配置。
 - **FHIR R4（可选补充）**：勾选「启用 FHIR 补充」后，作为患者信息的**补充**（非二选一）：
   - 命中 FHIR 的检查 → 用 FHIR 患者主数据补充姓名 / 性别 / 出生日期 / 年龄 / 门诊号等
     （检索结果卡片显示 `FHIR` 标记），影像仍来自 PACS；
@@ -50,19 +54,17 @@ Web PACS 影像浏览器 · 独立 PHP 网站
   - PACS 有影像但 FHIR 无记录 → 正常显示 PACS 数据；
   - FHIR 接口异常不影响 PACS 检索结果（仅顶部提示补充失败）。
 
-PACS / DICOM 网关字段：
+PACS 接口字段：
 
 | 字段 | 说明 |
 | --- | --- |
-| PACS 接口地址 | 远程接口基址，如 `http://192.168.1.100:8042/dicom-web/gateway`；也可填模拟服务器对外地址 |
-| 接口密钥 | 可选，作为 `key` 参数随请求发送 |
+| 接口协议 | **DICOMweb**（DICOM 标准）或 **JSON 网关**（本项目自定义） |
+| 接口地址 | DICOMweb 填以 `/dicom-web` 结尾的根地址（如 `http://192.168.1.100:8042/dicom-web`）；JSON 网关填其接口根地址（如 `http://192.168.1.100:8080/gateway`） |
+| 接口密钥 | 可选：DICOMweb 以 `Authorization: Bearer` / `X-API-Key` 请求头发送；JSON 网关作为 `key` 查询参数 |
 | 超时（秒） | 远程请求超时 |
-| 本系统 AETitle | 本工具侧 AETitle（如 `CLINIC_OPD`） |
-| 目标 PACS AETitle | 远程 PACS 侧 AETitle |
-| PACS 主机 / DICOM 端口 | DICOM 元数据（如 `192.168.1.100` / `104`） |
 
 FHIR R4 字段：`启用 FHIR 补充`、`FHIR 接口地址`、`访问密钥`（可选）、`超时`，
-可点【测试 FHIR 连接】；PACS 网关可点【测试 DICOM / PACS 接口】。
+可点【测试 FHIR 连接】；PACS 接口可点【测试接口连通性】。
 
 > 两个【测试】按钮测试的是**当前输入框中的值**（无需先保存），便于边改边测；
 > 点击【保存外部接口配置】时会**先自动测试**：DICOM / PACS 必测，启用 FHIR 时
