@@ -46,7 +46,7 @@
         this.wctx = this.work.getContext('2d');
         this.raw = document.createElement('canvas'); this.raw.width = BASE; this.raw.height = BASE;
 
-        this.cache = {}; this.cacheKeys = []; this.imgCache = {};
+        this.imgCache = {};
         this._frames = {};
         this.st = {
             uid: '', si: 0, fi: 0, ww: 400, wl: 40, isHU: true,

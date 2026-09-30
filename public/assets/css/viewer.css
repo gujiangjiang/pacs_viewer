@@ -100,9 +100,7 @@
 .pv-film-empty { color: var(--pv-txt2); font-size: 12px; text-align: center; padding: 24px 0; }
 
 /* 读片舞台 */
-.pv-stage { position: relative; flex: 1 1 auto; min-width: 0; background: #000; overflow: hidden; }
 .pv-canvas-wrap { position: absolute; inset: 0; }
-.pv-stage canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
 .pv-vw-status {
     position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); z-index: 5; pointer-events: none;
     max-width: 70%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;

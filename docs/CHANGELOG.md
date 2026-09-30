@@ -14,6 +14,16 @@
 
 ---
 
+## [0.20.0] - 2026-09-30
+
+### 移除
+- **死代码清理（大项 G 完成）**：移除前端未使用的 `PvRender.HU_MIN/HU_MAX`、
+  `PvPane` 的 `cache/cacheKeys`，以及 `base.css` / `viewer.css` 中已无引用的样式
+  规则（`.pv-stage`、`.pv-brand-hosp`、`.pv-input-sm`、`.pv-alert-ok/error`、
+  `.pv-form-inline`、`body.pv-page-viewer` 空规则等）。
+
+---
+
 ## [0.19.1] - 2026-09-30
 
 ### 移除

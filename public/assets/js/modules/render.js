@@ -7,7 +7,6 @@
     'use strict';
 
     var BASE = 512;                       // 画布逻辑尺寸
-    var HU_MIN = -1000, HU_MAX = 1500;    // 仅用于伪 HU 兜底显示范围
 
     function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
 
@@ -64,7 +63,7 @@
     }
 
     global.PvRender = {
-        BASE: BASE, HU_MIN: HU_MIN, HU_MAX: HU_MAX,
+        BASE: BASE,
         resample: resample, window: window, decodeToImage: decodeToImage, clamp: clamp
     };
 })(window);
