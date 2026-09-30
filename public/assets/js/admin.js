@@ -61,6 +61,8 @@
             Array.prototype.forEach.call(document.querySelectorAll('form[data-ajax-form]'), function (form) {
                 form.__pvOnOk = function (j) {
                     applyChrome(j && j.data);
+                    // data-ok-noreload：保存后停留当前子页（如模拟服务器控制 / 数据来源）
+                    if (form.hasAttribute('data-ok-noreload')) { if (global.PvMockRefresh) global.PvMockRefresh(); return; }
                     var hid = form.querySelector('[name=tab]');
                     var tab = form.getAttribute('data-ok-tab') || (hid ? hid.value : curTab);
                     goTab(tab);

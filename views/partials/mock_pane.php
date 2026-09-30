@@ -1,12 +1,20 @@
 <?php
 /**
  * views/partials/mock_pane.php — 模拟服务器面板（管理设置子 Tab）
- * 左右两栏：左侧导航（服务器状态 / 控制 / 数据来源 / 部位与切片 / 标准 API / 患者查询）。
- * 需要变量：$v($k,$d) 设置读取、$mockUrl、$mockKey、$mockAeTitle、$anatomy
+ * 左栏导航：服务器状态（指标预览）/ 控制 / 数据来源 / 部位与切片 / 标准 API / 患者查询。
+ * 变量：$v($k,$d)、$mockUrl、$mockKey、$mockAeTitle、$anatomy
  */
 $pvMockAe = isset($mockAeTitle) ? $mockAeTitle : 'PACSVIEWMOCK';
 $pvHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+$pvEnabled = $v('mock_enabled', '1') === '1';
 $pvSrc = $v('mock_patient_source', 'builtin') === 'fhir' ? 'fhir' : 'builtin';
+$pvPartList = array();
+foreach ((array)$anatomy as $e) {
+    if (empty($e['enabled'])) continue;
+    $pvPartList[] = ($e['modality'] !== '' ? $e['modality'] . '·' : '') . $e['label'] . '（' . (int)$e['frames'] . ' 帧）';
+}
+$pvPartCount = count($pvPartList);
+$pvPartText = $pvPartList ? implode('、', $pvPartList) : '未启用任何部位';
 ?>
 <div class="pv-alert pv-alert-info">
     <b>关于「模拟服务器」</b>：本 PACS 浏览器自身不含数据。这里内置了一个模拟 PACS
@@ -26,58 +34,77 @@ $pvSrc = $v('mock_patient_source', 'builtin') === 'fhir' ? 'fhir' : 'builtin';
     </aside>
     <div class="pv-split-body">
 
-        <!-- 状态 / 控制 / 数据来源：共用一个保存表单 -->
-        <form class="pv-form" method="post" data-ajax-form id="pvMockForm" action="<?php echo pvw_e(pvw_url('api/mock/save')); ?>">
+        <!-- 服务器状态：指标预览（只读） -->
+        <div class="pv-card" data-mp-pane="status">
+            <div class="pv-card-head">
+                <h3 class="pv-form-title">服务器状态</h3>
+                <span id="pvStatBadge" class="pv-badge <?php echo $pvEnabled ? 'ok' : 'off'; ?>"><?php echo $pvEnabled ? '运行中' : '已停用'; ?></span>
+            </div>
+            <div class="pv-table-wrap">
+                <table class="pv-table">
+                    <tbody>
+                        <tr><th>模拟服务器</th><td id="pvStatEnabled"><?php echo $pvEnabled ? '运行中' : '已停用'; ?></td></tr>
+                        <tr><th>患者数据来源</th><td id="pvStatSource"><?php echo $pvSrc === 'fhir' ? 'FHIR 接口获取' : '内置模拟数据'; ?></td></tr>
+                        <tr><th>已启用部位</th><td><span id="pvStatPartCount"><?php echo $pvPartCount; ?></span> 项</td></tr>
+                        <tr><th>部位与切片</th><td id="pvStatParts"><?php echo pvw_e($pvPartText); ?></td></tr>
+                        <tr><th>影像生成</th><td>标准 DICOM · 多模态 · 原生多帧</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="pv-hint">此处仅为预览指标；参数配置请到「服务器控制」与「数据来源」，部位与切片数量到「部位与切片」。</p>
+        </div>
+
+        <!-- 控制 + 数据来源：共用一个保存表单（保存后停留当前子页） -->
+        <form class="pv-form" method="post" data-ajax-form data-ok-noreload id="pvMockForm" action="<?php echo pvw_e(pvw_url('api/mock/save')); ?>">
             <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
 
-            <div class="pv-card" data-mp-pane="status">
-                <div class="pv-card-head">
-                    <h3 class="pv-form-title">服务器状态</h3>
-                    <span class="pv-badge <?php echo $v('mock_enabled', '1') === '1' ? 'ok' : 'off'; ?>"><?php echo $v('mock_enabled', '1') === '1' ? '运行中' : '已停用'; ?></span>
-                </div>
-                <label class="pv-field"><span>DICOMweb 地址（标准接口根地址）</span>
-                    <input type="text" id="pvMockUrl" class="pv-copy" data-copy="#pvMockUrl" readonly title="点击复制"
-                           value="<?php echo pvw_e($mockUrl); ?>">
-                </label>
-                <div class="pv-grid2">
-                    <label class="pv-field"><span>DICOM AE Title</span>
-                        <input type="text" id="pvMockAe" class="pv-copy" data-copy="#pvMockAe" readonly title="点击复制" value="<?php echo pvw_e($pvMockAe); ?>">
-                    </label>
-                    <label class="pv-field"><span>DICOM 端口</span>
-                        <input type="text" id="pvMockPort" class="pv-copy" data-copy="#pvMockPort" readonly title="点击复制" value="104">
-                    </label>
-                </div>
-                <label class="pv-field"><span>主机</span>
-                    <input type="text" id="pvMockHost" class="pv-copy" data-copy="#pvMockHost" readonly title="点击复制" value="<?php echo pvw_e($pvHost); ?>">
-                </label>
-                <p class="pv-hint">AE Title / 主机 / 端口为传统 DICOM（DIMSE）网络身份，仅供参考；
-                    本项目经 DICOMweb(HTTP) 取数，不使用、也无需与对端匹配。</p>
-                <label class="pv-field"><span>接口密钥（请求头 X-API-Key / Authorization: Bearer）</span>
-                    <span class="pv-copy-row">
-                        <input type="text" id="pvMockKey" class="pv-copy" data-copy="#pvMockKey" readonly title="点击复制" value="<?php echo pvw_e($mockKey); ?>">
-                        <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm" id="pvRegenKey">重新生成</button>
-                    </span>
-                </label>
-            </div>
-
+            <!-- 服务器控制 -->
             <div class="pv-card pv-hidden" data-mp-pane="control">
                 <h3 class="pv-form-title">服务器控制</h3>
                 <div class="pv-field">
                     <label class="pv-switch">
                         <input type="hidden" name="mock_enabled" value="0">
-                        <input type="checkbox" name="mock_enabled" value="1" <?php echo $v('mock_enabled', '1') === '1' ? 'checked' : ''; ?>>
+                        <input type="checkbox" name="mock_enabled" value="1" id="pvMockEnabled" <?php echo $pvEnabled ? 'checked' : ''; ?>>
                         <span class="pv-track"></span>
                         <span class="pv-switch-label">启用模拟服务器</span>
                     </label>
                     <em class="pv-hint">关闭后对外 API 返回 403，本浏览器也无法通过模拟地址检索</em>
                 </div>
+
+                <div id="pvMockParams" class="<?php echo $pvEnabled ? '' : 'pv-hidden'; ?>">
+                    <label class="pv-field"><span>DICOMweb 地址（标准接口根地址）</span>
+                        <input type="text" id="pvMockUrl" class="pv-copy" data-copy="#pvMockUrl" readonly title="点击复制" value="<?php echo pvw_e($mockUrl); ?>">
+                    </label>
+                    <div class="pv-grid2">
+                        <label class="pv-field"><span>DICOM AE Title</span>
+                            <input type="text" id="pvMockAe" class="pv-copy" data-copy="#pvMockAe" readonly title="点击复制" value="<?php echo pvw_e($pvMockAe); ?>">
+                        </label>
+                        <label class="pv-field"><span>DICOM 端口</span>
+                            <input type="text" id="pvMockPort" class="pv-copy" data-copy="#pvMockPort" readonly title="点击复制" value="104">
+                        </label>
+                    </div>
+                    <label class="pv-field"><span>主机</span>
+                        <input type="text" id="pvMockHost" class="pv-copy" data-copy="#pvMockHost" readonly title="点击复制" value="<?php echo pvw_e($pvHost); ?>">
+                    </label>
+                    <p class="pv-hint">AE Title / 主机 / 端口为传统 DICOM（DIMSE）网络身份，仅供参考；本项目经 DICOMweb(HTTP) 取数，不使用、也无需与对端匹配。</p>
+                    <label class="pv-field"><span>接口密钥（请求头 X-API-Key / Authorization: Bearer）</span>
+                        <span class="pv-copy-row">
+                            <input type="text" id="pvMockKey" class="pv-copy" data-copy="#pvMockKey" readonly title="点击复制" value="<?php echo pvw_e($mockKey); ?>">
+                            <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm" id="pvRegenKey">重新生成</button>
+                        </span>
+                    </label>
+                    <div class="pv-form-actions">
+                        <button type="button" class="pv-btn pv-btn-accent" id="pvApplyMock">⇩ 一键应用模拟服务器数据（标准 DICOMweb）</button>
+                        <span class="pv-hint">将 DICOMweb 地址与密钥自动填入【外部接口】</span>
+                    </div>
+                </div>
+
                 <div class="pv-form-actions">
-                    <button type="submit" class="pv-btn pv-btn-primary">保存模拟服务器设置</button>
-                    <button type="button" class="pv-btn pv-btn-accent" id="pvApplyMock">⇩ 一键应用模拟服务器数据（标准 DICOMweb）</button>
-                    <span class="pv-hint">将 DICOMweb 地址与密钥自动填入【外部接口】</span>
+                    <button type="submit" class="pv-btn pv-btn-primary">保存服务器控制</button>
                 </div>
             </div>
 
+            <!-- 患者数据来源 -->
             <div class="pv-card pv-hidden" data-mp-pane="source">
                 <h3 class="pv-form-title">患者数据来源</h3>
                 <div class="pv-split">
@@ -108,6 +135,9 @@ $pvSrc = $v('mock_patient_source', 'builtin') === 'fhir' ? 'fhir' : 'builtin';
                     </div>
                 </div>
                 <input type="hidden" name="mock_patient_source" value="<?php echo pvw_e($pvSrc); ?>">
+                <div class="pv-form-actions">
+                    <button type="submit" class="pv-btn pv-btn-primary">保存数据来源</button>
+                </div>
             </div>
         </form>
 
@@ -116,7 +146,7 @@ $pvSrc = $v('mock_patient_source', 'builtin') === 'fhir' ? 'fhir' : 'builtin';
             <h3 class="pv-form-title">解剖部位与切片数量</h3>
             <p class="pv-hint">按「模态 + 匹配关键词」路由到对应解剖模型，并可配置切片数量。
                 关键词中英均可（逗号分隔），命中即按部位生成对应解剖影像；未命中则按模态回退。</p>
-            <form class="pv-form" method="post" data-ajax-form action="<?php echo pvw_e(pvw_url('api/mock/anatomy')); ?>">
+            <form class="pv-form" method="post" data-ajax-form data-ok-noreload action="<?php echo pvw_e(pvw_url('api/mock/anatomy')); ?>">
                 <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
                 <div class="pv-table-wrap">
                     <table class="pv-table pv-anatomy-table">

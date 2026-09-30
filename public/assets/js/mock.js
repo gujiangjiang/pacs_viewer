@@ -59,6 +59,36 @@
         });
     }
 
+    /** 启停联动：禁用时隐藏参数区 */
+    function syncMockParams() {
+        var en = document.getElementById('pvMockEnabled');
+        var box = document.getElementById('pvMockParams');
+        if (box) box.classList.toggle('pv-hidden', !(en && en.checked));
+    }
+    /** 刷新「服务器状态」指标（启停 / 来源 / 部位与切片） */
+    function refreshMockStatus() {
+        var en = document.getElementById('pvMockEnabled');
+        var on = !!(en && en.checked);
+        var badge = document.getElementById('pvStatBadge');
+        if (badge) { badge.textContent = on ? '运行中' : '已停用'; badge.className = 'pv-badge ' + (on ? 'ok' : 'off'); }
+        var st = document.getElementById('pvStatEnabled'); if (st) st.textContent = on ? '运行中' : '已停用';
+        var srcEl = document.getElementById('pvStatSource');
+        var src = document.querySelector('[name="mock_patient_source"]');
+        if (srcEl) srcEl.textContent = (src && src.value === 'fhir') ? 'FHIR 接口获取' : '内置模拟数据';
+        var rows = document.querySelectorAll('#pvAnatomyRows tr');
+        var list = [], count = 0;
+        Array.prototype.forEach.call(rows, function (tr) {
+            var cb = tr.querySelector('input[type=checkbox]');
+            if (!cb || !cb.checked) return;
+            var val = function (f) { var el = tr.querySelector('[name$="[' + f + ']"]'); return el ? el.value : ''; };
+            count++;
+            list.push((val('modality') ? val('modality') + '·' : '') + (val('label') || val('body_key')) + '（' + (val('frames') || 0) + ' 帧）');
+        });
+        var c = document.getElementById('pvStatPartCount'); if (c) c.textContent = count;
+        var p = document.getElementById('pvStatParts'); if (p) p.textContent = list.length ? list.join('、') : '未启用任何部位';
+    }
+    global.PvMockRefresh = function () { syncMockParams(); refreshMockStatus(); };
+
     /** 模拟服务器左右两栏：左侧导航切换右侧面板 */
     function bindMpane() {
         var items = document.querySelectorAll('.pv-split-item[data-mp]');
@@ -137,6 +167,10 @@
             bindMpane();
             bindSource();
             bindAnatomy();
+            var pvEn = document.getElementById('pvMockEnabled');
+            if (pvEn) pvEn.addEventListener('change', function () { syncMockParams(); refreshMockStatus(); });
+            syncMockParams();
+            refreshMockStatus();
             if (data.flash) PvUI.toast(data.flash, 'ok');
 
             var regen = document.getElementById('pvRegenKey');
