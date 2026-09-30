@@ -10,7 +10,6 @@
 class PvMockDicomTagBuilder {
 
     /* 传输语法 */
-    const TS_IMPLICIT_LE = '1.2.840.10008.1.2';
     const TS_EXPLICIT_LE = '1.2.840.10008.1.2.1';
 
     /* SOP Class（按模态选择标准存储类） */
@@ -127,7 +126,6 @@ class PvMockDicomTagBuilder {
     /* ---------------- 值编码 ---------------- */
 
     private static function us($v) { return pack('v', ((int)$v) & 0xFFFF); }
-    private static function ss($v) { return pack('v', ((int)$v) & 0xFFFF); }
 
     /** DS 数值 / 数组 → 反斜杠分隔的 ASCII 字符串 */
     public static function ds($v) {

@@ -3,9 +3,9 @@
  * ============================================================
  * app/Pacs/Mock/Utils/ProceduralNoise.php — 仿真数学算子
  * ============================================================
- * 提供确定性的伪随机发生器、Perlin 值噪声、分形叠加（fBm）、高斯平滑、
- * 高斯 / 瑞利（超声斑点）分布等数学工具。所有算子均以「种子」驱动，
- * 同一输入永远得到同一输出，保证多帧连续切片可复现。
+ * 提供确定性的伪随机发生器、Perlin 值噪声、分形叠加（fBm）与瑞利
+ * （超声斑点）分布采样。所有算子均以「种子」驱动，同一输入永远得到同一输出，
+ * 保证多帧连续切片可复现。
  *
  * 设计：以闭包返回发生器，避免静态可变状态在并发请求间串扰。
  * ============================================================ */
@@ -87,65 +87,6 @@ class PvMockProceduralNoise {
     }
 
     /**
-     * 一维高斯卷积核（归一化）。
-     * @return array 浮点数组
-     */
-    public static function gaussianKernel($sigma) {
-        $sigma = max(0.1, (float)$sigma);
-        $radius = (int)max(1, ceil($sigma * 3));
-        $kernel = array();
-        $sum = 0.0;
-        for ($i = -$radius; $i <= $radius; $i++) {
-            $v = exp(-($i * $i) / (2 * $sigma * $sigma));
-            $kernel[$i] = $v; $sum += $v;
-        }
-        foreach ($kernel as $k => $v) $kernel[$k] = $v / $sum;
-        return $kernel;
-    }
-
-    /**
-     * 对二维浮点场执行可分离高斯模糊。
-     * @param array $field 索引为 y*width + x 的浮点数组
-     * @return array 模糊后的等长数组
-     */
-    public static function gaussianBlur(array $field, $width, $height, $sigma) {
-        $k = self::gaussianKernel($sigma);
-        $radius = max(array_keys($k));
-        $tmp = array_fill(0, $width * $height, 0.0);
-        for ($y = 0; $y < $height; $y++) {
-            for ($x = 0; $x < $width; $x++) {
-                $acc = 0.0;
-                for ($d = -$radius; $d <= $radius; $d++) {
-                    $xx = $x + $d;
-                    if ($xx < 0 || $xx >= $width) $xx = $x;
-                    $acc += $field[$y * $width + $xx] * $k[$d];
-                }
-                $tmp[$y * $width + $x] = $acc;
-            }
-        }
-        $out = array_fill(0, $width * $height, 0.0);
-        for ($y = 0; $y < $height; $y++) {
-            for ($x = 0; $x < $width; $x++) {
-                $acc = 0.0;
-                for ($d = -$radius; $d <= $radius; $d++) {
-                    $yy = $y + $d;
-                    if ($yy < 0 || $yy >= $height) $yy = $y;
-                    $acc += $tmp[$yy * $width + $x] * $k[$d];
-                }
-                $out[$y * $width + $x] = $acc;
-            }
-        }
-        return $out;
-    }
-
-    /** 高斯分布采样（Box-Muller），均值 mean、标准差 std */
-    public static function gaussian($rng, $mean = 0.0, $std = 1.0) {
-        $u1 = max(1e-9, $rng()); $u2 = $rng();
-        $z = sqrt(-2.0 * log($u1)) * cos(2.0 * M_PI * $u2);
-        return $mean + $z * $std;
-    }
-
-    /**
      * 瑞利（Rayleigh）分布采样，用于超声斑点噪声。
      * @param callable $rng
      * @param float $sigma 尺度参数
@@ -153,24 +94,5 @@ class PvMockProceduralNoise {
     public static function rayleigh($rng, $sigma = 1.0) {
         $u = max(1e-9, $rng());
         return $sigma * sqrt(-2.0 * log($u));
-    }
-
-    /**
-     * 生成「斑点乘性噪声」场：符合瑞利分布的幅度，叠加为乘性噪声。
-     * @param int $seed
-     * @param int $width
-     * @param int $height
-     * @param float $sigma
-     * @return array 长度 width*height 的浮点场
-     */
-    public static function speckleField($seed, $width, $height, $sigma = 0.45) {
-        $r = self::rng(self::seed($seed));
-        $n = $width * $height;
-        $out = array_fill(0, $n, 1.0);
-        $scale = $sigma * sqrt(2.0 / M_PI);
-        for ($i = 0; $i < $n; $i++) {
-            $out[$i] = 1.0 + ($r() - 0.5) * 2.0 * $scale;
-        }
-        return $out;
     }
 }

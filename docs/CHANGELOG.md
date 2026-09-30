@@ -14,6 +14,17 @@
 
 ---
 
+## [0.19.1] - 2026-09-30
+
+### 移除
+- 清理后端死代码：`PvMockGeometryHelper` 未使用的几何算子（超椭圆 / 并集 / 交集 /
+  平滑多边形 / 射线法 / 扇形判定 / Catmull-Rom 插值）、`PvMockProceduralNoise` 未使用
+  的高斯核 / 高斯模糊 / 高斯采样 / 斑点场、`PvMockDicomTagBuilder` 的 `TS_IMPLICIT_LE`
+  与 `ss()`、`PvMockDispatcher::supportedParts()`、`PvDemoPacs::ping()`，以及已废弃
+  的设置项 `mock_patient_source`。
+
+---
+
 ## [0.19.0] - 2026-09-30
 
 ### 变更

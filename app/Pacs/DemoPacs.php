@@ -111,11 +111,6 @@ class PvDemoPacs {
         return PvMockDispatcher::seriesPlan($modality, $description, $seed, $bodyPart);
     }
 
-    /** 接口自检信息 */
-    public static function ping() {
-        return array('name' => '内置模拟 PACS 服务', 'version' => PV_VERSION, 'mode' => 'Demo', 'studies' => count(self::studies()));
-    }
-
     public static function institution() { return pvw_hospital(); }
 
     /* ---------- 确定性伪随机 ---------- */

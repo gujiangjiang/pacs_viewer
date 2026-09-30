@@ -45,13 +45,6 @@ class PvMockGeometryHelper {
         return sqrt($q) - 1.0;
     }
 
-    /** 超椭圆（|x|^n + |y|^n = 1），n=2 即椭圆，n 越大越接近矩形 */
-    public static function inSuperellipse($nx, $ny, $cx, $cy, $rx, $ry, $n = 2.0) {
-        $dx = abs(($nx - $cx) / ($rx + 1e-9));
-        $dy = abs(($ny - $cy) / ($ry + 1e-9));
-        return (pow($dx, $n) + pow($dy, $n)) <= 1.0;
-    }
-
     /**
      * 帧间特征带：在 [a,b] 区间内平滑出现又消失，用于解剖结构随帧推进的
      * 生灭（如脑室、肺门、椎间盘）。
@@ -61,84 +54,6 @@ class PvMockGeometryHelper {
         if ($b <= $a) return 0.0;
         $fade = max(1e-4, min($fade, ($b - $a) / 2));
         return self::smoothstep($a, $a + $fade, $p) * (1.0 - self::smoothstep($b - $fade, $b, $p));
-    }
-
-    /** 多椭圆并集（器官复合轮廓） */
-    public static function inUnion(array $shapes, $nx, $ny) {
-        foreach ($shapes as $s) {
-            $cx = $s[0]; $cy = $s[1]; $rx = $s[2]; $ry = $s[3];
-            $ang = isset($s[4]) ? $s[4] : 0.0;
-            if (self::inEllipse($nx, $ny, $cx, $cy, $rx, $ry, $ang)) return true;
-        }
-        return false;
-    }
-
-    /** 两个椭圆的最大值（交集） */
-    public static function inIntersection(array $shapes, $nx, $ny) {
-        foreach ($shapes as $s) {
-            $cx = $s[0]; $cy = $s[1]; $rx = $s[2]; $ry = $s[3];
-            $ang = isset($s[4]) ? $s[4] : 0.0;
-            if (!self::inEllipse($nx, $ny, $cx, $cy, $rx, $ry, $ang)) return false;
-        }
-        return true;
-    }
-
-    /**
-     * 平滑多边形插值：在顶点间做 Catmull-Rom 采样，得到平滑闭合轮廓点集。
-     * @param array $pts [[x,y], ...]
-     * @param int   $samplesPerSeg 每段采样数
-     * @return array 采样后的点集
-     */
-    public static function smoothPolygon(array $pts, $samplesPerSeg = 8) {
-        $n = count($pts);
-        if ($n < 3) return $pts;
-        $out = array();
-        for ($i = 0; $i < $n; $i++) {
-            $p0 = $pts[($i - 1 + $n) % $n];
-            $p1 = $pts[$i];
-            $p2 = $pts[($i + 1) % $n];
-            $p3 = $pts[($i + 2) % $n];
-            for ($t = 0; $t < $samplesPerSeg; $t++) {
-                $u = $t / $samplesPerSeg;
-                $out[] = array(self::catmull($p0[0], $p1[0], $p2[0], $p3[0], $u), self::catmull($p0[1], $p1[1], $p2[1], $p3[1], $u));
-            }
-        }
-        return $out;
-    }
-
-    private static function catmull($p0, $p1, $p2, $p3, $t) {
-        $t2 = $t * $t; $t3 = $t2 * $t;
-        return 0.5 * ((2 * $p1) + (-$p0 + $p2) * $t + (2 * $p0 - 5 * $p1 + 4 * $p2 - $p3) * $t2 + (-$p0 + 3 * $p1 - 3 * $p2 + $p3) * $t3);
-    }
-
-    /** 判断点是否在平滑多边形内（射线法） */
-    public static function inPolygon(array $pts, $x, $y) {
-        $inside = false;
-        $n = count($pts);
-        for ($i = 0, $j = $n - 1; $i < $n; $j = $i++) {
-            $xi = $pts[$i][0]; $yi = $pts[$i][1];
-            $xj = $pts[$j][0]; $yj = $pts[$j][1];
-            if ((($yi > $y) !== ($yj > $y)) && ($x < ($xj - $xi) * ($y - $yi) / ($yj - $yi + 1e-12) + $xi)) {
-                $inside = !$inside;
-            }
-        }
-        return $inside;
-    }
-
-    /**
-     * 扇形（凸阵）视野判定，用于超声。
-     * @param float $nx,$ny 归一化坐标
-     * @param float $cx,$cy 顶点位置
-     * @param float $radius 归一化最大深度
-     * @param float $halfAngle 半张角（弧度）
-     * @return bool
-     */
-    public static function inSector($nx, $ny, $cx, $cy, $radius, $halfAngle) {
-        $dx = $nx - $cx; $dy = $ny - $cy;
-        $r = sqrt($dx * $dx + $dy * $dy);
-        if ($r > $radius || $r < 1e-6) return false;
-        $ang = abs(atan2($dx, $dy));
-        return $ang <= $halfAngle;
     }
 
     /** 到折线（脊柱等）的水平距离 */

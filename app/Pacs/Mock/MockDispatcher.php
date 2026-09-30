@@ -49,11 +49,6 @@ class PvMockDispatcher {
         return '';
     }
 
-    /** 部位支持下限（供文档 / 验收报告使用） */
-    public static function supportedParts() {
-        return array('head', 'chest', 'lumbar', 'abdomen', 'knee');
-    }
-
     /* ---------------- 生成器实例化 ---------------- */
 
     /**
