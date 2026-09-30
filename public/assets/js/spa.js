@@ -111,6 +111,15 @@
 
     function isStatic(page) { return !!STATIC_PAGES[page]; }
 
+    /** 是否携带有效参数（如打开指定检查 uid）——带参数时不吃缓存、须实时取数 */
+    function hasParams(params) {
+        if (!params) return false;
+        for (var k in params) {
+            if (params[k] !== undefined && params[k] !== null && params[k] !== '') return true;
+        }
+        return false;
+    }
+
     /** 静态度缓存副本：清空一次性 flash，避免每次切换重复弹出提示 */
     function cacheCopy(data) {
         var c = {};
@@ -146,14 +155,16 @@
         if (busy) return;
         opts = opts || {};
 
+        var withParams = hasParams(params);
+
         // 已在当前静态页：重复点击同一标签直接忽略（避免无谓重渲染）
-        if (!opts.force && page === currentPage && isStatic(page)) return;
+        if (!opts.force && !withParams && page === currentPage && isStatic(page)) return;
 
         // 释放当前页面资源（含中止阅片器在途预取），避免占用连接
         if (currentPage && currentPage !== page) { teardown(currentPage); currentPage = null; }
 
-        // 静态页命中缓存：纯前端切换，零后端请求、零遮罩、零延迟
-        if (isStatic(page) && pageCache[page]) { apply(pageCache[page]); return; }
+        // 静态页命中缓存（且无参数）：纯前端切换，零后端请求、零遮罩、零延迟
+        if (!withParams && isStatic(page) && pageCache[page]) { apply(pageCache[page]); return; }
 
         var url = route(page, params);
         busy = true;
@@ -168,7 +179,8 @@
         }).then(function (res) {
             busy = false; clearTimeout(busyTimer); document.body.classList.remove('pv-nav-busy');
             if (!res || res.code !== 200 || !res.data) { global.location.href = url; return; }
-            if (isStatic(page)) pageCache[page] = cacheCopy(res.data);   // 缓存静态壳，后续零后端切换
+            // 仅缓存「无参数」的静态壳，带参导航（打开指定检查）不得覆盖通用壳
+            if (isStatic(page) && !withParams) pageCache[page] = cacheCopy(res.data);
             apply(res.data);
         }).catch(function () {
             busy = false; clearTimeout(busyTimer); document.body.classList.remove('pv-nav-busy');
