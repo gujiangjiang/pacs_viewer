@@ -7,7 +7,10 @@
  * 二级：磁盘目录 data/mock_cache/（跨进程持久，首次生成后长期复用，重启不丢）。
  * 读取顺序：内存 → 磁盘（命中则回填内存）；写入：内存 + 磁盘。
  *
- * 容量控制（内存层）：默认取 apc.shm_size 的 75%，超出后按插入顺序淘汰最旧条目。
+ * 容量控制：
+ *   · 内存层：默认取 apc.shm_size 的 75%，超出后按插入顺序淘汰最旧条目；
+ *   · 磁盘层：索引文件 mock_cache/__idx.json 记录 [key, size, 时间]，超出
+ *     DISK_MAX 或超过 DISK_TTL 未使用即从最旧开始淘汰，防止无限增长。
  * ============================================================ */
 class PvMockCache {
 
@@ -15,10 +18,14 @@ class PvMockCache {
     const IDX = 'pvmock:__idx';
     const TTL = 3600;
     const DISK_DIR = 'mock_cache';
+    const DISK_IDX = '__idx.json';
+    const DISK_MAX = 536870912;   // 磁盘缓存上限 512MB
+    const DISK_TTL = 604800;      // 磁盘条目最长保留 7 天
 
     private static $mem = array();       // 进程内兜底
     private static $memBytes = 0;
     private static $maxBytes = null;
+    private static $diskIdx = null;      // 磁盘索引 [key, size, time]
 
     /** 当前请求是否可用 APCu 共享内存 */
     public static function enabled() {
@@ -131,24 +138,77 @@ class PvMockCache {
         return self::diskDir() . '/' . $key . '.bin';
     }
 
+    /** 读取磁盘索引（缺失时由现存文件重建一次） */
+    private static function loadDiskIdx() {
+        if (is_array(self::$diskIdx)) return self::$diskIdx;
+        $file = self::diskDir() . '/' . self::DISK_IDX;
+        $idx = array();
+        if (is_file($file)) {
+            $j = json_decode((string)@file_get_contents($file), true);
+            if (is_array($j)) $idx = $j;
+        }
+        if (!$idx) {
+            foreach ((array)@glob(self::diskDir() . '/*.bin') as $f) {
+                $idx[] = array(basename($f, '.bin'), (int)@filesize($f), (int)@filemtime($f));
+            }
+        }
+        self::$diskIdx = $idx;
+        return $idx;
+    }
+
+    private static function saveDiskIdx() {
+        @file_put_contents(self::diskDir() . '/' . self::DISK_IDX, json_encode(self::$diskIdx), LOCK_EX);
+    }
+
     private static function storeDisk($key, $value) {
+        if (self::DISK_MAX <= 0) return;
         $file = self::diskFile($key);
-        if (is_file($file) && @filesize($file) === strlen($value)) return;   // 已存在
-        @file_put_contents($file, $value, LOCK_EX);
+        if (!is_file($file) || @filesize($file) !== strlen($value)) {
+            @file_put_contents($file, $value, LOCK_EX);
+        }
+        $idx = self::loadDiskIdx();
+        $now = time();
+        // 移除同键旧条目后追加到末尾（最新）
+        $out = array();
+        foreach ($idx as $e) { if ($e[0] !== $key) $out[] = $e; }
+        $out[] = array($key, strlen($value), $now);
+
+        // 1) TTL 淘汰（保留刚写入的）
+        $cut = $now - self::DISK_TTL;
+        $kept = array();
+        foreach ($out as $e) {
+            if ($e[0] !== $key && $e[2] < $cut) { @unlink(self::diskFile($e[0])); continue; }
+            $kept[] = $e;
+        }
+        $out = $kept;
+
+        // 2) 容量淘汰（从最旧开始，保留刚写入的）
+        $total = 0; foreach ($out as $e) $total += $e[1];
+        $i = 0;
+        while ($total > self::DISK_MAX && $i < count($out)) {
+            if ($out[$i][0] === $key) { $i++; continue; }
+            @unlink(self::diskFile($out[$i][0]));
+            $total -= $out[$i][1];
+            array_splice($out, $i, 1);
+        }
+
+        self::$diskIdx = $out;
+        self::saveDiskIdx();
     }
 
     private static function diskBytes() {
-        $n = 0;
-        foreach ((array)@glob(self::diskDir() . '/*.bin') as $f) { $n += (int)@filesize($f); }
+        $n = 0; foreach (self::loadDiskIdx() as $e) $n += $e[1];
         return $n;
     }
 
     private static function diskFiles() {
-        return count((array)@glob(self::diskDir() . '/*.bin'));
+        return count(self::loadDiskIdx());
     }
 
     private static function clearDisk() {
         foreach ((array)@glob(self::diskDir() . '/*.bin') as $f) { @unlink($f); }
+        @unlink(self::diskDir() . '/' . self::DISK_IDX);
+        self::$diskIdx = array();
     }
 
     /* ---------------- 容量解析 ---------------- */
