@@ -57,6 +57,13 @@
   data/.serve.pid`），**不要**再手工 `--listen` 起临时实例，避免端口 / 实例冲突。
 - 需要临时端口验证时可 `PV_PORT=8099 tools/serve.sh ensure`，用完 `stop`。
 
+## 自测数据保护（铁律）
+
+- **严禁覆盖 `data/` 下的运行数据**：尤其是 `pacs_viewer.db` 中的 `settings`
+  （`pacs_endpoint` / `pacs_api_key` / `pacs_protocol` 等为使用者的真实配置）。
+- 自测如需临时改设置，**必须先读取原值、测试后原样写回**；不得写死默认值恢复。
+- 优先用「临时覆盖」机制（如 `PingWith` 的 override）或独立测试库，避免触碰线上设置。
+
 ## 架构与目录约定
 
 - `public/` 为 Web 根：`public/index.php` 是**唯一前端控制器**（`?r=` 路由），
