@@ -50,6 +50,7 @@
         this._frames = {};
         this._ctrls = [];          // 在途请求的 AbortController（离开/换序列时中止）
         this._prefetchSeq = 0;     // 预取代次，用于中止后停止预取循环
+        this._dir = 1;             // 最近滚动方向（+1 向后 / -1 向前），用于预取偏置
         this.st = {
             uid: '', si: 0, fi: 0, ww: 400, wl: 40, isHU: true,
             zoom: 1, panX: 0, panY: 0, rot: 0, flipH: false, flipV: false, invert: false,
@@ -177,10 +178,12 @@
         if (!series || series.format !== 'dicom' || !series.images || !series.images.length) return;
         var self = this, n = series.images.length, MAX = 2, cursor = 0;
         var seq = this._prefetchSeq;
-        var order = [], seen = {}, cur = this.st.fi;
+        var order = [], seen = {}, cur = this.st.fi, dir = this._dir || 1;
         var push = function (k) { if (k >= 0 && k < n && !seen[k]) { seen[k] = 1; order.push(k); } };
         push(cur);
-        for (var d = 1; d < n; d++) { push(cur + d); push(cur - d); }
+        /* 按最近滚动方向优先预取前方帧（更跟手），再补后方 */
+        for (var d = 1; d < n; d++) push(cur + d * dir);
+        for (var d = 1; d < n; d++) push(cur - d * dir);
         /* 大型序列仅预取离当前帧最近的有限窗口（order 已按距离由近到远排序），
          * 其余按需加载，降低内存与网络占用。 */
         if (order.length > 60) order = order.slice(0, 60);
@@ -509,7 +512,7 @@
         if (!d || !d.series[si]) return;
         this._abortFetches();      // 中止上一条序列仍在进行的预取
         this.st.uid = uid; this.st.si = si; this.st.fi = 0;
-        this._wheelAcc = 0; this.st.annos = []; this.st.draft = null; this._frames = {};
+        this._wheelAcc = 0; this.st.annos = []; this.st.draft = null; this._frames = {}; this._dir = 1;
         this.applyDefaults(); this.fit();
         this.updateTitle(); this.updateScrollbar();
         this.viewer.afterPaneLoad(this);
@@ -519,6 +522,7 @@
         var n = this.frameCount();
         if (n <= 1) return;
         i = clamp(i, 0, n - 1);
+        if (i > this.st.fi) this._dir = 1; else if (i < this.st.fi) this._dir = -1;
         this.st.fi = i;
         this._scheduleRender(); this.updateScrollbar();
         this.setStatus('切片 ' + (i + 1) + ' / ' + n);
