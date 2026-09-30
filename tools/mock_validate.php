@@ -71,7 +71,7 @@ foreach ($matrix as $c) {
 
 /* ---------- 2. DICOM 实例连续性 ---------- */
 echo "== DICOM 实例连续性（InstanceNumber / SliceLocation / SOP UID） ==" . PHP_EOL;
-$studies = PvDemoPacs::studies();
+$studies = PvMockServer::rows('');   // 按当前患者来源取行（内置或 FHIR）
 $checked = array();
 foreach ($studies as $row) {
     $m = strtoupper($row['modality']);
