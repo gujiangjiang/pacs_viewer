@@ -17,8 +17,10 @@ $pvSrc = isset($source) ? $source : array('label' => '未配置 PACS 接口', 's
     </form>
     <div class="pv-search-meta">
         <span>数据来源：<b id="pvMode" class="<?php echo $pvSrc['state'] !== 'unset' ? 'is-remote' : 'is-demo'; ?>"><?php echo pvw_e($pvSrc['label']); ?></b><?php if (!empty($pvSrc['fhir'])) { ?> <span class="pv-dim">+ FHIR 补充</span><?php } ?></span>
-        <label class="pv-check" title="勾选后打开影像会先清空影像视图；不勾选则追加到已打开的检查之后">
-            <input type="checkbox" id="pvClearOnOpen" <?php echo !empty($clearOnOpen) ? 'checked' : ''; ?>> 打开影像时清空已加载序列
+        <label class="pv-switch" title="开启后打开影像会先清空影像视图；关闭则追加到已打开的检查之后">
+            <input type="checkbox" id="pvClearOnOpen" <?php echo !empty($clearOnOpen) ? 'checked' : ''; ?>>
+            <span class="pv-track"></span>
+            <span class="pv-switch-label">打开影像时清空已加载序列</span>
         </label>
     </div>
 </div>

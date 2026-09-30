@@ -20,24 +20,42 @@
     </div>
     <form class="pv-form" method="post" data-ajax-form id="pvMockForm" action="<?php echo pvw_e(pvw_url('api/mock/save')); ?>">
         <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
-        <label class="pv-field pv-inline-field">
-            <span>启用模拟服务器</span>
-            <input type="checkbox" name="mock_enabled" value="1" <?php echo $v('mock_enabled', '1') === '1' ? 'checked' : ''; ?>>
+        <div class="pv-field">
+            <label class="pv-switch">
+                <input type="checkbox" name="mock_enabled" value="1" <?php echo $v('mock_enabled', '1') === '1' ? 'checked' : ''; ?>>
+                <span class="pv-track"></span>
+                <span class="pv-switch-label">启用模拟服务器</span>
+            </label>
             <em class="pv-hint">关闭后对外 API 返回 403，本浏览器也无法通过模拟地址检索</em>
-        </label>
+        </div>
         <label class="pv-field"><span>DICOMweb 地址（标准接口根地址）</span>
             <span class="pv-copy-row">
                 <input type="text" id="pvMockUrl" readonly value="<?php echo pvw_e($mockUrl); ?>">
                 <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-copy="#pvMockUrl">复制</button>
             </span>
         </label>
-        <label class="pv-field"><span>DICOM 网络身份（AE Title / 主机:端口）</span>
+        <div class="pv-grid2">
+            <label class="pv-field"><span>DICOM AE Title</span>
+                <span class="pv-copy-row">
+                    <input type="text" id="pvMockAe" readonly value="<?php echo pvw_e(isset($mockAeTitle) ? $mockAeTitle : 'PACSVIEWMOCK'); ?>">
+                    <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-copy="#pvMockAe">复制</button>
+                </span>
+            </label>
+            <label class="pv-field"><span>DICOM 端口</span>
+                <span class="pv-copy-row">
+                    <input type="text" id="pvMockPort" readonly value="104">
+                    <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-copy="#pvMockPort">复制</button>
+                </span>
+            </label>
+        </div>
+        <label class="pv-field"><span>主机</span>
             <span class="pv-copy-row">
-                <input type="text" id="pvMockAe" readonly
-                       value="AE: <?php echo pvw_e(isset($mockAeTitle) ? $mockAeTitle : 'PACSVIEWMOCK'); ?> · <?php echo pvw_e(isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost'); ?> / 104">
-                <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-copy="#pvMockAe">复制</button>
+                <input type="text" id="pvMockHost" readonly value="<?php echo pvw_e(isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost'); ?>">
+                <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-copy="#pvMockHost">复制</button>
             </span>
         </label>
+        <p class="pv-hint">以上 AE Title / 主机 / 端口为传统 DICOM（DIMSE）网络身份，仅供参考；
+            本项目经 DICOMweb(HTTP) 取数，不使用、也无需与对端匹配。</p>
         <label class="pv-field"><span>接口密钥（请求头 X-API-Key / Authorization: Bearer）</span>
             <span class="pv-copy-row">
                 <input type="text" id="pvMockKey" readonly value="<?php echo pvw_e($mockKey); ?>">

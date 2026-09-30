@@ -44,8 +44,9 @@
                         <label class="pv-field"><span>DICOM 端口</span>
                             <input type="text" name="pacs_server_port" value="<?php echo pvw_e($v('pacs_server_port', '104')); ?>" placeholder="104"></label>
                     </div>
-                    <p class="pv-hint">AE Title / 主机 / DICOM 端口属传统 DICOM（DIMSE）网络身份；本项目通过
-                        DICOMweb（HTTP）取数，这些参数用于标识与对接展示（DIMSE 需由网关转换）。</p>
+                    <p class="pv-hint">AE Title / 主机 / DICOM 端口属传统 DICOM（DIMSE）网络身份，
+                        <b>仅作登记与展示</b>：本项目经 DICOMweb（HTTP）取数，<b>不使用、也无需与对端匹配</b>
+                        （DIMSE 需由网关转为 DICOMweb）。</p>
                     <div class="pv-form-actions">
                         <button type="button" id="pvTestPacs" class="pv-btn pv-btn-outline">测试接口连通性</button>
                         <span id="pvTestResult" class="pv-test-result"></span>
@@ -55,11 +56,14 @@
                 <div class="pv-ext-pane pv-hidden" data-ext-pane="fhir">
                     <h4 class="pv-ext-title">FHIR R4（患者信息补充，可选）</h4>
                     <p class="pv-hint">开启后：命中 FHIR 的检查会用其患者主数据（姓名 / 性别 / 出生日期 / 年龄 / 门诊号等）补充；FHIR 中「已登记但 PACS 暂无影像」的检查也会列出（标记为仅登记）。影像始终来自 DICOM / PACS。</p>
-                    <label class="pv-field pv-inline-field">
-                        <span>启用 FHIR 补充</span>
-                        <input type="hidden" name="fhir_enabled" value="0">
-                        <input type="checkbox" name="fhir_enabled" value="1" <?php echo $v('fhir_enabled', '0') === '1' ? 'checked' : ''; ?>>
-                    </label>
+                    <div class="pv-field">
+                        <label class="pv-switch">
+                            <input type="hidden" name="fhir_enabled" value="0">
+                            <input type="checkbox" name="fhir_enabled" value="1" <?php echo $v('fhir_enabled', '0') === '1' ? 'checked' : ''; ?>>
+                            <span class="pv-track"></span>
+                            <span class="pv-switch-label">启用 FHIR 补充</span>
+                        </label>
+                    </div>
                     <label class="pv-field"><span>FHIR 接口地址</span>
                         <input type="text" name="fhir_endpoint" value="<?php echo pvw_e($v('fhir_endpoint')); ?>" placeholder="如 http://192.168.1.100/fhir/R4"></label>
                     <div class="pv-grid2">
