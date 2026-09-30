@@ -109,13 +109,14 @@ class PvDicomWebClient {
             if ($desc === '') $desc = 'Series ' . $seNo;
 
             $instRes = self::getJson('/studies/' . rawurlencode($uid) . '/series/' . rawurlencode($seUid) . '/instances', array('includefield' => 'all'));
-            $instances = array(); $count = 0;
+            $instances = array(); $counts = array(); $count = 0;
             foreach ((array)$instRes as $ires) {
                 if (!is_array($ires)) continue;
                 $iuid = self::val('00080018', $ires);
                 if ($iuid === '') continue;
                 $nf = (int)self::val('00280008', $ires); if ($nf < 1) $nf = 1;
                 $instances[] = array('uid' => $iuid, 'frames' => $nf);
+                $counts[] = $nf;
                 $count += $nf;
             }
             if (!$instances) continue;
@@ -144,6 +145,11 @@ class PvDicomWebClient {
                 'rescale_intercept' => self::num('00281052', $first),
                 'rescale_slope' => self::num('00281053', $first),
                 'seed' => '', 'images' => $images, 'frames_per_instance' => $fpi,
+                'instances' => $counts,
+                'thumbnail' => PvMockServer::isSelfEndpoint(self::base())
+                    ? self::base() . '/studies/' . rawurlencode($uid) . '/series/' . rawurlencode($seUid)
+                      . '/instances/' . rawurlencode($instances[0]['uid']) . '/rendered'
+                    : '',
             );
         }
         return array('patient' => $patient, 'study' => $st, 'series' => $series);

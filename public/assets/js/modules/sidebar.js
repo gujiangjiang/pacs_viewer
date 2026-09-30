@@ -198,7 +198,23 @@
             if (this._pending[key]) return;
             this._pending[key] = 1;
             var self = this;
-            // 优先使用服务端缩略图端点（小图，快且省流量）
+            // 回退：下载首个实例并解码其首帧
+            var decodeFirst = function () {
+                var dsrc = series.images && series.images[0];
+                if (!dsrc) { delete self._pending[key]; return; }
+                fetch(dsrc, { credentials: 'same-origin' }).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
+                    var dec = window.PvDicom ? PvDicom.decode(buf) : null;
+                    if (dec) {
+                        var ww = parseFloat(series.window_width) || 256, wl = parseFloat(series.window_center) || 128;
+                        var img = PvRender.decodeToImage(dec, THUMB, ww, wl, false);
+                        THUMB_CACHE[key] = img;
+                        lsSet(hk, encodeGray(img));
+                        self._repaintThumbs(key);
+                    }
+                    delete self._pending[key];
+                }).catch(function () { delete self._pending[key]; });
+            };
+            // 优先使用服务端缩略图/渲染图端点（小图，快且省流量）；失败时回退解码首帧
             if (series.thumbnail) {
                 var im = new Image();
                 im.onload = function () {
@@ -213,24 +229,11 @@
                     } catch (e) {}
                     delete self._pending[key];
                 };
-                im.onerror = function () { delete self._pending[key]; };
+                im.onerror = function () { decodeFirst(); };
                 im.src = series.thumbnail;
                 return;
             }
-            // 回退：无缩略图端点（如远程 PACS）时下载首帧并解码
-            var dsrc = series.images && series.images[0];
-            if (!dsrc) { delete self._pending[key]; return; }
-            fetch(dsrc, { credentials: 'same-origin' }).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
-                var dec = window.PvDicom ? PvDicom.decode(buf) : null;
-                if (dec) {
-                    var ww = parseFloat(series.window_width) || 256, wl = parseFloat(series.window_center) || 128;
-                    var img = PvRender.decodeToImage(dec, THUMB, ww, wl, false);
-                    THUMB_CACHE[key] = img;
-                    lsSet(hk, encodeGray(img));
-                    self._repaintThumbs(key);
-                }
-                delete self._pending[key];
-            }).catch(function () { delete self._pending[key]; });
+            decodeFirst();
             return;
         }
         var src = series.images && series.images[0];

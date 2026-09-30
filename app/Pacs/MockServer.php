@@ -102,8 +102,10 @@ class PvMockServer {
         list($row, $series, $seriesIndex, $gen) = self::resolveSeries($p);
 
         $totalFrames = $gen->getFrameCount();
-        $fpi = isset($series['frames_per_instance']) ? max(1, (int)$series['frames_per_instance']) : 1;
-        $totalInstances = max(1, (int)ceil($totalFrames / $fpi));
+        $frameCounts = (isset($series['instances']) && is_array($series['instances']) && $series['instances'])
+            ? array_map('intval', $series['instances'])
+            : array(max(1, $totalFrames));
+        $totalInstances = max(1, count($frameCounts));
 
         $instance = 1;
         if (!empty($p['objectUID']) || !empty($p['object_uid'])) {
@@ -115,16 +117,16 @@ class PvMockServer {
         if ($instance < 1) $instance = 1;
         if ($instance > $totalInstances) $instance = $totalInstances;
 
-        $start = ($instance - 1) * $fpi;
-        $frameCount = min($fpi, $totalFrames - $start);
-        if ($frameCount < 1) $frameCount = 1;
+        $start = 0;
+        for ($k = 0; $k < $instance - 1; $k++) $start += $frameCounts[$k];
+        $frameCount = max(1, $frameCounts[$instance - 1]);
 
         $base = ($row['patient_id'] ? $row['patient_id'] : 'patient') . '_' . ($row['accession_no'] ? $row['accession_no'] : 'study')
             . '_s' . ($seriesIndex + 1) . '_i' . $instance . '.dcm';
 
         /* 内存 / 磁盘缓存：同一实例仅生成一次，后续直接读取 */
         $key = md5(implode('|', array(
-            PV_VERSION, $row['study_uid'], $seriesIndex, $instance, $fpi,
+            PV_VERSION, $row['study_uid'], $seriesIndex, $instance,
             $gen->getFrameCount(), $gen->getBodyPartExamined(),
         )));
         $cached = PvMockCache::get($key);

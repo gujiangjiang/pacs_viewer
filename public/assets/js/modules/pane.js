@@ -133,13 +133,30 @@
     /** 每实例帧数（缺省 1；>1 表示原生多帧 DICOM 实例） */
     PvPane.prototype._fpi = function (series) { return series ? Math.max(1, parseInt(series.frames_per_instance, 10) || 1) : 1; };
 
+    /** 全局帧号 → {实例序号 ii, 实例内帧号 lf}（支持各实例帧数不同的多帧序列） */
+    PvPane.prototype._frameLoc = function (series, fi) {
+        var insts = series && series.instances;
+        if (insts && insts.length) {
+            var acc = 0;
+            for (var i = 0; i < insts.length; i++) {
+                var c = insts[i] | 0;
+                if (fi < acc + c) return { ii: i, lf: fi - acc };
+                acc += c;
+            }
+            var last = insts.length - 1;
+            return { ii: last, lf: Math.max(0, (insts[last] | 0) - 1) };
+        }
+        var fpi = this._fpi(series);
+        return { ii: Math.floor(fi / fpi), lf: fi % fpi };
+    };
+
     /** 取指定帧（异步拉取标准 DICOM 并解码；多帧实例仅解码一次后按帧复用） */
     PvPane.prototype.getFrame = function (series, fi) {
         var fkey = this._frameKey(series, fi);
         var c = this._frames[fkey];
         if (c) return c;
-        var fpi = this._fpi(series);
-        var ii = Math.floor(fi / fpi), lf = fi % fpi;
+        var loc = this._frameLoc(series, fi);
+        var ii = loc.ii, lf = loc.lf;
         var ikey = this._instKey(series, ii);
         var inst = this._instances[ikey];
         if (inst && inst.status === 'ok') {
@@ -202,7 +219,7 @@
      */
     PvPane.prototype.prefetch = function (series) {
         if (!series || series.format !== 'dicom' || !series.images || !series.images.length) return;
-        var self = this, n = this.frameCount(), fpi = this._fpi(series), MAX = 2, cursor = 0;
+        var self = this, n = this.frameCount(), MAX = 2, cursor = 0;
         var seq = this._prefetchSeq, pendingInst = {};
         var order = [], seen = {}, cur = this.st.fi, dir = this._dir || 1;
         var push = function (k) { if (k >= 0 && k < n && !seen[k]) { seen[k] = 1; order.push(k); } };
@@ -216,7 +233,7 @@
         function next() {
             if (seq !== self._prefetchSeq || cursor >= order.length) return;
             var idx = order[cursor++];
-            var ii = Math.floor(idx / fpi), lf = idx % fpi;
+            var loc = self._frameLoc(series, idx), ii = loc.ii, lf = loc.lf;
             var ikey = self._instKey(series, ii), fkey = self._frameKey(series, idx);
             // 同一实例只解码一次：已缓存或已在途则跳过
             if (self._frames[fkey] || self._instances[ikey] || pendingInst[ii]) { next(); return; }
@@ -633,7 +650,7 @@
             var dec = f.dec;
             var sx = Math.floor(x * dec.columns / BASE), sy = Math.floor(y * dec.rows / BASE);
             if (sx < 0 || sy < 0 || sx >= dec.columns || sy >= dec.rows) { this._setHU(''); return; }
-            var base = (this.st.fi % this._fpi(ser)) * dec.rows * dec.columns;   // 多帧偏移
+            var base = this._frameLoc(ser, this.st.fi).lf * dec.rows * dec.columns;   // 多帧偏移
             var stored = dec.pixels[base + sy * dec.columns + sx];
             var val = stored * dec.rescaleSlope + dec.rescaleIntercept;
             this._setHU((ser.is_hu ? 'HU ' : '灰度 ') + Math.round(val) + '　(' + x + ', ' + y + ')');
@@ -664,7 +681,7 @@
         var cx = cv.getContext('2d'); cx.fillStyle = '#000'; cx.fillRect(0, 0, BASE, BASE);
         if (!ser) return Promise.resolve(cv);
         if (ser.format === 'dicom') {
-            var fpi = this._fpi(ser), ii = Math.floor(fi / fpi), lf = fi % fpi;
+            var loc = this._frameLoc(ser, fi), ii = loc.ii, lf = loc.lf;
             var cached = this._frames[this._frameKey(ser, fi)];
             if (cached && cached.status === 'ok') { this._paintRaw(cx, cached.raw); return Promise.resolve(cv); }
             var inst = this._instances[this._instKey(ser, ii)];

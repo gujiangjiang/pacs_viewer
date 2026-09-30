@@ -34,6 +34,7 @@ class PvDicomWebController {
         if (count($seg) === 2) { self::studyMeta($studyUid); return; }
         if (count($seg) === 3 && $seg[2] === 'series') { self::series($studyUid); return; }
         if (count($seg) === 5 && $seg[2] === 'series' && $seg[4] === 'instances') { self::instances($studyUid, $seg[3]); return; }
+        if (count($seg) === 7 && $seg[2] === 'series' && $seg[4] === 'instances' && $seg[6] === 'rendered') { self::rendered($studyUid, $seg[3]); return; }
         if (count($seg) === 6 && $seg[2] === 'series' && $seg[4] === 'instances') { self::instance($studyUid, $seg[3], $seg[5]); return; }
         self::jsonError(404, '不支持的 DICOMweb 路径');
     }
@@ -80,7 +81,7 @@ class PvDicomWebController {
                 '0020000E' => array('vr' => 'UI', 'Value' => array($seUid)),
                 '00080060' => array('vr' => 'CS', 'Value' => array(strtoupper($row['modality']))),
                 '0008103E' => array('vr' => 'LO', 'Value' => array((string)$s['description'])),
-                '00201209' => array('vr' => 'IS', 'Value' => array((string)max(1, (int)ceil($s['slice_count'] / max(1, (int)$s['frames_per_instance']))))),
+                '00201209' => array('vr' => 'IS', 'Value' => array((string)(isset($s['instances']) ? count($s['instances']) : 1))),
             );
         }
         self::json($out);
@@ -93,14 +94,12 @@ class PvDicomWebController {
         if ($idx < 0) self::jsonError(404, '未找到该序列');
         $plan = PvMockDispatcher::seriesPlan(strtoupper($row['modality']), $row['description'], $row['study_uid']);
         $s = $plan[$idx];
-        $fpi = max(1, (int)$s['frames_per_instance']);
-        $totalFrames = (int)$s['slice_count'];
-        $totalInst = max(1, (int)ceil($totalFrames / $fpi));
+        $counts = (isset($s['instances']) && is_array($s['instances']) && $s['instances']) ? $s['instances'] : array(max(1, (int)$s['slice_count']));
+        $totalInst = count($counts);
         $seriesUid = PvMockDicomTagBuilder::deriveUid($row['study_uid'], array($idx + 1));
         $out = array();
         for ($i = 1; $i <= $totalInst; $i++) {
-            $nf = min($fpi, $totalFrames - ($i - 1) * $fpi);
-            if ($nf < 1) $nf = 1;
+            $nf = max(1, (int)$counts[$i - 1]);
             $iuid = PvMockDicomTagBuilder::deriveUid($seriesUid, array($i));
             $out[] = array(
                 '00080018' => array('vr' => 'UI', 'Value' => array($iuid)),
@@ -140,6 +139,26 @@ class PvDicomWebController {
         }
         if (!headers_sent()) {
             header('Content-Type: application/dicom');
+            header('Content-Length: ' . strlen($r['binary']));
+            header('Cache-Control: private, max-age=86400');
+        }
+        echo $r['binary'];
+        exit;
+    }
+
+    /** WADO-RS 渲染图（rendered）：返回小尺寸 PNG，供缩略图使用 */
+    private static function rendered($studyUid, $seUid) {
+        $row = self::findRow($studyUid);
+        if (!$row) self::jsonError(404, '未找到该检查');
+        $idx = self::seriesIndexByUid($row, $seUid);
+        if ($idx < 0) self::jsonError(404, '未找到该序列');
+        try {
+            $r = PvMockServer::thumbnail(array('uid' => $row['study_uid'], 'series' => $idx + 1));
+        } catch (Exception $e) {
+            self::jsonError(404, $e->getMessage());
+        }
+        if (!headers_sent()) {
+            header('Content-Type: ' . $r['content_type']);
             header('Content-Length: ' . strlen($r['binary']));
             header('Cache-Control: private, max-age=86400');
         }

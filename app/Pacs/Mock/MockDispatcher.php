@@ -150,9 +150,14 @@ class PvMockDispatcher {
         $count = (int)$gen->getFrameCount();
         $seriesNo = (int)$id;
 
-        /* 原生多帧：整条序列作为一个 DICOM 实例（NumberOfFrames = count） */
-        $perInstance = $count > 0 ? $count : 1;
-        $instances = max(1, (int)ceil($count / $perInstance));
+        /* 原生多帧：按约 1MB/实例分块（首帧更快渲染，避免整条大实例黑屏等待） */
+        $bytesPerFrame = max(1, (int)$dim['rows'] * (int)$dim['columns'] * ((int)$dim['bits_allocated'] / 8));
+        $perInstance = max(1, (int)floor(1048576 / $bytesPerFrame));
+        if ($count <= 0) $count = 1;
+        if ($perInstance > $count) $perInstance = $count;
+        $frameCounts = array();
+        for ($left = $count; $left > 0; $left -= $perInstance) $frameCounts[] = min($perInstance, $left);
+        $instances = count($frameCounts);
         $images = array();
         $ver = substr(md5(PV_VERSION . '|' . $modality . '|' . $body . '|' . $weight . '|' . $count . '|mf'), 0, 8);
         for ($i = 1; $i <= $instances; $i++) {
@@ -187,7 +192,8 @@ class PvMockDispatcher {
             'primary' => true,
             'images' => $images,
             'thumbnail' => $thumb,
-            'frames_per_instance' => (int)$perInstance,   // 每实例帧数（原生多帧）
+            'frames_per_instance' => (int)$perInstance,   // 每实例帧数（满实例）
+            'instances' => $frameCounts,                  // 各实例帧数（末例可能更少）
         );
     }
 
