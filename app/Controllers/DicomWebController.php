@@ -1,0 +1,212 @@
+<?php
+/**
+ * ============================================================
+ * app/Controllers/DicomWebController.php — 内置模拟 DICOMweb 端点
+ * ============================================================
+ * 供「接口协议 = dicomweb」时本浏览器自测；以标准语义暴露 QIDO-RS / WADO-RS：
+ *   GET ?r=dicomweb/studies                            QIDO 检索
+ *   GET ?r=dicomweb/studies/{uid}                      检查元数据
+ *   GET ?r=dicomweb/studies/{uid}/series               序列列表
+ *   GET ?r=dicomweb/studies/{uid}/series/{se}/instances 实例列表（含 NumberOfFrames）
+ *   GET ?r=dicomweb/studies/{uid}/series/{se}/instances/{i}  DICOM 字节流
+ * 认证：登录或对外密钥（key）二选一。
+ * ============================================================ */
+class PvDicomWebController {
+
+    public static function handle() {
+        if (!PvMockServer::enabled()) { self::jsonError(403, '内置模拟 PACS 服务器未启用'); }
+        if (!PvAuth::check() && !PvMockServer::checkKey(self::requestKey())) {
+            self::jsonError(403, '模拟服务器密钥校验失败');
+        }
+        $r = isset($_GET['r']) ? (string)$_GET['r'] : '';
+        $path = trim(substr($r, strlen('dicomweb')), '/');
+        $seg = $path === '' ? array() : explode('/', $path);
+        if (!isset($seg[0]) || $seg[0] !== 'studies') { self::jsonError(404, '不支持的 DICOMweb 路径'); }
+
+        if (count($seg) === 1) { self::qidoStudies(); return; }
+        $studyUid = $seg[1];
+        if (count($seg) === 2) { self::studyMeta($studyUid); return; }
+        if (count($seg) === 3 && $seg[2] === 'series') { self::series($studyUid); return; }
+        if (count($seg) === 5 && $seg[2] === 'series' && $seg[4] === 'instances') { self::instances($studyUid, $seg[3]); return; }
+        if (count($seg) === 6 && $seg[2] === 'series' && $seg[4] === 'instances') { self::instance($studyUid, $seg[3], $seg[5]); return; }
+        self::jsonError(404, '不支持的 DICOMweb 路径');
+    }
+
+    /* ---------------- QIDO-RS ---------------- */
+
+    private static function qidoStudies() {
+        $name = trim((string)pvw_input('PatientName'));
+        $pid = trim((string)pvw_input('PatientID'));
+        $acc = trim((string)pvw_input('AccessionNumber'));
+        $suid = trim((string)pvw_input('StudyInstanceUID'));
+        $limit = max(0, (int)pvw_input('limit', 0));
+        $offset = max(0, (int)pvw_input('offset', 0));
+
+        $rows = PvDemoPacs::studies();
+        $out = array();
+        foreach ($rows as $row) {
+            if ($suid !== '' && $row['study_uid'] !== $suid) continue;
+            if ($pid !== '' && stripos($row['patient_id'], $pid) === false) continue;
+            if ($acc !== '' && stripos($row['accession_no'], $acc) === false) continue;
+            if ($name !== '' && mb_stripos($row['name'], $name, 0, 'UTF-8') === false) continue;
+            $out[] = self::studyResource($row);
+        }
+        if ($limit > 0) $out = array_slice($out, $offset, $limit);
+        self::json($out);
+    }
+
+    private static function studyMeta($uid) {
+        $row = self::findRow($uid);
+        if (!$row) self::jsonError(404, '未找到该检查');
+        self::json(array(self::studyResource($row)));
+    }
+
+    /* ---------------- WADO-RS ---------------- */
+
+    private static function series($studyUid) {
+        $row = self::findRow($studyUid);
+        if (!$row) self::jsonError(404, '未找到该检查');
+        $plan = PvMockDispatcher::seriesPlan(strtoupper($row['modality']), $row['description'], $row['study_uid']);
+        $out = array();
+        foreach ($plan as $i => $s) {
+            $seUid = PvMockDicomTagBuilder::deriveUid($row['study_uid'], array($i + 1));
+            $out[] = array(
+                '0020000E' => array('vr' => 'UI', 'Value' => array($seUid)),
+                '00080060' => array('vr' => 'CS', 'Value' => array(strtoupper($row['modality']))),
+                '0008103E' => array('vr' => 'LO', 'Value' => array((string)$s['description'])),
+                '00201209' => array('vr' => 'IS', 'Value' => array((string)max(1, (int)ceil($s['slice_count'] / max(1, (int)$s['frames_per_instance']))))),
+            );
+        }
+        self::json($out);
+    }
+
+    private static function instances($studyUid, $seUid) {
+        $row = self::findRow($studyUid);
+        if (!$row) self::jsonError(404, '未找到该检查');
+        $idx = self::seriesIndexByUid($row, $seUid);
+        if ($idx < 0) self::jsonError(404, '未找到该序列');
+        $plan = PvMockDispatcher::seriesPlan(strtoupper($row['modality']), $row['description'], $row['study_uid']);
+        $s = $plan[$idx];
+        $fpi = max(1, (int)$s['frames_per_instance']);
+        $totalFrames = (int)$s['slice_count'];
+        $totalInst = max(1, (int)ceil($totalFrames / $fpi));
+        $seriesUid = PvMockDicomTagBuilder::deriveUid($row['study_uid'], array($idx + 1));
+        $out = array();
+        for ($i = 1; $i <= $totalInst; $i++) {
+            $nf = min($fpi, $totalFrames - ($i - 1) * $fpi);
+            if ($nf < 1) $nf = 1;
+            $iuid = PvMockDicomTagBuilder::deriveUid($seriesUid, array($i));
+            $out[] = array(
+                '00080018' => array('vr' => 'UI', 'Value' => array($iuid)),
+                '0020000E' => array('vr' => 'UI', 'Value' => array($seriesUid)),
+                '00200013' => array('vr' => 'IS', 'Value' => array((string)$i)),
+                '00280008' => array('vr' => 'IS', 'Value' => array((string)$nf)),
+                '00080060' => array('vr' => 'CS', 'Value' => array(strtoupper($row['modality']))),
+            );
+        }
+        self::json($out);
+    }
+
+    private static function instance($studyUid, $seUid, $iuid) {
+        $row = self::findRow($studyUid);
+        if (!$row) self::jsonError(404, '未找到该检查');
+        $idx = self::seriesIndexByUid($row, $seUid);
+        if ($idx < 0) self::jsonError(404, '未找到该序列');
+        $seriesUid = PvMockDicomTagBuilder::deriveUid($row['study_uid'], array($idx + 1));
+        $inst = self::instanceByUid($seriesUid, $iuid);
+        try {
+            $r = PvMockServer::wado(array('uid' => $row['study_uid'], 'series' => $idx + 1, 'instance' => $inst));
+        } catch (Exception $e) {
+            self::jsonError(404, $e->getMessage());
+        }
+        if (!headers_sent()) {
+            header('Content-Type: application/dicom');
+            header('Content-Length: ' . strlen($r['binary']));
+            header('Cache-Control: private, max-age=86400');
+        }
+        echo $r['binary'];
+        exit;
+    }
+
+    /* ---------------- 工具 ---------------- */
+
+    /** 从查询参数或请求头（X-API-Key / Authorization: Bearer）取访问密钥 */
+    private static function requestKey() {
+        $key = (string)pvw_input('key');
+        if ($key !== '') return $key;
+        if (isset($_SERVER['HTTP_X_API_KEY'])) return (string)$_SERVER['HTTP_X_API_KEY'];
+        if (isset($_SERVER['HTTP_AUTHORIZATION']) && stripos($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ') === 0) {
+            return substr($_SERVER['HTTP_AUTHORIZATION'], 7);
+        }
+        return '';
+    }
+
+    private static function findRow($uid) {
+        foreach (PvDemoPacs::studies() as $row) {
+            if ($row['study_uid'] === $uid || $row['accession_no'] === $uid) return $row;
+        }
+        return null;
+    }
+
+    private static function seriesIndexByUid($row, $seUid) {
+        $plan = PvMockDispatcher::seriesPlan(strtoupper($row['modality']), $row['description'], $row['study_uid']);
+        foreach ($plan as $i => $s) {
+            if (PvMockDicomTagBuilder::deriveUid($row['study_uid'], array($i + 1)) === $seUid) return $i;
+        }
+        return -1;
+    }
+
+    private static function instanceByUid($seriesUid, $iuid) {
+        for ($i = 1; $i <= 9999; $i++) {
+            if (PvMockDicomTagBuilder::deriveUid($seriesUid, array($i)) === $iuid) return $i;
+        }
+        return 1;
+    }
+
+    private static function studyResource($row) {
+        return array(
+            '0020000D' => array('vr' => 'UI', 'Value' => array((string)$row['study_uid'])),
+            '00100010' => array('vr' => 'PN', 'Value' => array(array('Alphabetic' => (string)$row['name']))),
+            '00100020' => array('vr' => 'LO', 'Value' => array((string)$row['patient_id'])),
+            '00100030' => array('vr' => 'DA', 'Value' => array(self::toDa($row['birth_date']))),
+            '00100040' => array('vr' => 'CS', 'Value' => array(self::toSex($row['gender']))),
+            '00080050' => array('vr' => 'SH', 'Value' => array((string)$row['accession_no'])),
+            '00080020' => array('vr' => 'DA', 'Value' => array(self::toDa($row['study_date']))),
+            '00080030' => array('vr' => 'TM', 'Value' => array(self::toTm($row['study_date']))),
+            '00080060' => array('vr' => 'CS', 'Value' => array(strtoupper($row['modality']))),
+            '00080061' => array('vr' => 'CS', 'Value' => array(strtoupper($row['modality']))),
+            '00081030' => array('vr' => 'LO', 'Value' => array((string)$row['description'])),
+            '00080080' => array('vr' => 'LO', 'Value' => array(isset($row['institution']) ? (string)$row['institution'] : '')),
+            '00081010' => array('vr' => 'SH', 'Value' => array(isset($row['station_name']) ? (string)$row['station_name'] : '')),
+            '00201209' => array('vr' => 'IS', 'Value' => array((string)(isset($row['series_count']) ? $row['series_count'] : 1))),
+        );
+    }
+
+    private static function toDa($s) {
+        $d = preg_replace('/[^0-9]/', '', (string)$s);
+        return strlen($d) >= 8 ? substr($d, 0, 8) : '';
+    }
+    private static function toTm($s) {
+        $s = trim((string)$s);
+        if (strlen($s) < 16) return '';
+        $t = preg_replace('/[^0-9]/', '', substr($s, 11, 8));
+        return strlen($t) >= 6 ? substr($t, 0, 6) : '';
+    }
+    private static function toSex($s) {
+        $s = trim((string)$s);
+        if ($s === '男' || strtoupper($s) === 'M' || $s === '1') return 'M';
+        if ($s === '女' || strtoupper($s) === 'F' || $s === '2') return 'F';
+        return 'O';
+    }
+
+    private static function json($data) {
+        if (!headers_sent()) header('Content-Type: application/dicom+json; charset=utf-8');
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    private static function jsonError($code, $msg) {
+        if (!headers_sent()) { http_response_code((int)$code); header('Content-Type: application/json; charset=utf-8'); }
+        echo json_encode(array('resourceType' => 'OperationOutcome', 'issue' => array(array('severity' => 'error', 'diagnostics' => $msg))), JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}

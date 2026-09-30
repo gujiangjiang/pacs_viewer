@@ -16,8 +16,14 @@
                 <div class="pv-ext-pane" data-ext-pane="pacs">
                     <h4 class="pv-ext-title">DICOM / PACS 网关（必填）</h4>
                     <p class="pv-hint">检索与调阅数据来自下方接口地址；本地联调可指向【模拟服务器】对外 API（在该页一键填入）。</p>
+                    <label class="pv-field"><span>接口协议</span>
+                        <select name="pacs_protocol">
+                            <option value="gateway" <?php echo $v('pacs_protocol', 'gateway') === 'gateway' ? 'selected' : ''; ?>>简化网关（action/q/uid/key 查询参数，JSON）</option>
+                            <option value="dicomweb" <?php echo $v('pacs_protocol', 'gateway') === 'dicomweb' ? 'selected' : ''; ?>>标准 DICOMweb（QIDO-RS / WADO-RS）</option>
+                        </select>
+                        <em class="pv-hint">简化网关为本项目约定的轻量协议；标准 DICOMweb 适配真实 PACS。</em></label>
                     <label class="pv-field"><span>PACS 接口地址（PACS_SERVER_URL）</span>
-                        <input type="text" name="pacs_endpoint" value="<?php echo pvw_e($v('pacs_endpoint')); ?>" placeholder="如 http://192.168.1.100:8042/dicom-web/gateway"></label>
+                        <input type="text" name="pacs_endpoint" value="<?php echo pvw_e($v('pacs_endpoint')); ?>" placeholder="如 http://192.168.1.100:8042/dicom-web"></label>
                     <div class="pv-grid2">
                         <label class="pv-field"><span>接口密钥</span>
                             <input type="text" name="pacs_api_key" value="<?php echo pvw_e($v('pacs_api_key')); ?>" placeholder="可选"></label>

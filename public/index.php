@@ -55,13 +55,14 @@ $routes = array(
     'upload'                => array('PvUploadController', 'upload'),
     'upload/delete'         => array('PvUploadController', 'delete'),
     'file'                  => array('PvUploadController', 'file'),
+    'wadoprx'               => array('PvWadoProxyController', 'instance'),
 );
 
 /* 首次运行安装门禁：未完成安装时，除安装向导外一律引导至安装页；
  * 已完成安装后，安装入口不再可用。 */
 $pvInstalled = PvSettings::isInstalled();
 $isInstallRoute = ($r === 'install' || $r === 'install/submit');
-$pvPublicAsset = ($r === 'mock' || $r === 'dicom' || $r === 'thumb' || $r === 'manifest' || $r === 'sw' || $r === 'icon');
+$pvPublicAsset = ($r === 'mock' || $r === 'dicom' || $r === 'thumb' || $r === 'manifest' || $r === 'sw' || $r === 'icon' || strpos($r, 'dicomweb') === 0);
 if (!$pvInstalled && !$isInstallRoute && !$pvPublicAsset) {
     pvw_redirect(pvw_url('install'));
 }
@@ -74,6 +75,12 @@ if ($pvInstalled && $r === 'install') {
 if ($r === '') {
     if (!PvAuth::check()) pvw_redirect(pvw_url('login'));
     PvSearchController::index();
+    exit;
+}
+
+/* 内置模拟 DICOMweb 端点（QIDO-RS / WADO-RS，路径式：dicomweb/studies/...） */
+if (strpos($r, 'dicomweb') === 0) {
+    PvDicomWebController::handle();
     exit;
 }
 

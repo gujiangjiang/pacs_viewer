@@ -61,11 +61,13 @@ define('PV_ENTRY', $pvEntry);                    // 入口脚本 URL
 require_once PV_APP . '/Database.php';
 require_once PV_APP . '/Support/icons.php';
 require_once PV_APP . '/Support/Cache.php';
+require_once PV_APP . '/Support/Http.php';
 require_once PV_APP . '/Settings.php';
 require_once PV_APP . '/Auth.php';
 require_once PV_APP . '/Pacs/DemoPacs.php';
 require_once PV_APP . '/Pacs/PacsClient.php';
 require_once PV_APP . '/Pacs/FhirClient.php';
+require_once PV_APP . '/Pacs/DicomWebClient.php';
 require_once PV_APP . '/Pacs/MockServer.php';
 require_once PV_APP . '/Pacs/Mock/Contracts/SliceGeneratorInterface.php';
 require_once PV_APP . '/Pacs/Mock/Contracts/VolumeGeneratorInterface.php';
@@ -104,6 +106,8 @@ require_once PV_APP . '/Controllers/MockController.php';
 require_once PV_APP . '/Controllers/PwaController.php';
 require_once PV_APP . '/Controllers/UploadController.php';
 require_once PV_APP . '/Controllers/ApiController.php';
+require_once PV_APP . '/Controllers/DicomWebController.php';
+require_once PV_APP . '/Controllers/WadoProxyController.php';
 
 PvDatabase::init();   // 首次访问自动建库 / 建表 / 播种管理员
 

@@ -6,7 +6,7 @@ class PvAdminController {
     private static $settingKeys = array(
         'site_title', 'hospital_name',
         'fhir_enabled',
-        'pacs_endpoint', 'pacs_api_key',
+        'pacs_endpoint', 'pacs_protocol', 'pacs_api_key',
         'pacs_ae_title', 'pacs_remote_ae', 'pacs_server_host', 'pacs_server_port', 'pacs_timeout',
         'fhir_endpoint', 'fhir_api_key', 'fhir_timeout',
         'viewer_default_ww', 'viewer_default_wl', 'viewer_study_limit',
@@ -62,8 +62,9 @@ class PvAdminController {
             if ($ep === '') self::reply('请填写 DICOM / PACS 接口地址并测试通过后再保存', false, null, 'pacs');
             $key = isset($pairs['pacs_api_key']) ? $pairs['pacs_api_key'] : PvSettings::get('pacs_api_key', '');
             $to = isset($pairs['pacs_timeout']) ? $pairs['pacs_timeout'] : PvSettings::get('pacs_timeout', '5');
+            $proto = isset($pairs['pacs_protocol']) ? $pairs['pacs_protocol'] : PvSettings::get('pacs_protocol', 'gateway');
             try {
-                PvPacsClient::pingWith($ep, $key, $to);
+                PvPacsClient::pingWith($ep, $key, $to, $proto);
             } catch (Exception $e) {
                 self::reply('DICOM / PACS 接口测试失败，未保存：' . $e->getMessage(), false, null, 'pacs');
             }
@@ -96,7 +97,7 @@ class PvAdminController {
         $ep = trim((string)pvw_input('pacs_endpoint'));
         if ($ep === '') pvw_json(400, '请填写 PACS 接口地址');
         try {
-            $p = PvPacsClient::pingWith($ep, (string)pvw_input('pacs_api_key'), (int)pvw_input('pacs_timeout', 5));
+            $p = PvPacsClient::pingWith($ep, (string)pvw_input('pacs_api_key'), (int)pvw_input('pacs_timeout', 5), (string)pvw_input('pacs_protocol', 'gateway'));
             pvw_json(200, 'success', $p);
         } catch (Exception $e) {
             pvw_json(400, $e->getMessage());

@@ -109,6 +109,7 @@
                     out.textContent = '测试中…';
                     PvUI.post(PvNav.route('api/pacs/test'), {
                         pacs_endpoint: formVal('pacs_endpoint'),
+                        pacs_protocol: formVal('pacs_protocol'),
                         pacs_api_key: formVal('pacs_api_key'),
                         pacs_timeout: formVal('pacs_timeout')
                     }).then(function (j) {

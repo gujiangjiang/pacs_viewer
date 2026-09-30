@@ -29,12 +29,22 @@ class PvPacsClient {
         return self::isRemote() ? 'Remote' : 'Unset';
     }
 
+    /** 接口协议：gateway（简化网关）/ dicomweb（标准 DICOMweb） */
+    public static function protocol() {
+        return (string)PvSettings::get('pacs_protocol', 'gateway') === 'dicomweb' ? 'dicomweb' : 'gateway';
+    }
+    public static function isDicomWeb() { return self::protocol() === 'dicomweb'; }
+
     public static function isRemote() {
         return self::endpoint() !== '';
     }
 
-    /** 使用指定配置测试连通性（不读取已保存设置） */
-    public static function pingWith($endpoint, $key = null, $timeout = null) {
+    /** 使用指定配置测试连通性（不读取已保存设置）；可按协议走 DICOMweb */
+    public static function pingWith($endpoint, $key = null, $timeout = null, $protocol = null) {
+        $proto = ($protocol !== null && $protocol !== '') ? (string)$protocol : self::protocol();
+        if ($proto === 'dicomweb') {
+            return PvDicomWebClient::pingWith($endpoint, $key, $timeout);
+        }
         self::$override = array(
             'endpoint' => $endpoint !== null ? trim((string)$endpoint) : null,
             'key' => $key !== null ? (string)$key : null,
@@ -63,6 +73,7 @@ class PvPacsClient {
      * @return array {list, total, has_more}
      */
     public static function searchPage($keyword, $limit = 0, $offset = 0) {
+        if (self::isDicomWeb()) return PvDicomWebClient::search($keyword, $limit, $offset);
         $params = array('q' => (string)$keyword);
         if ((int)$limit > 0) { $params['limit'] = (int)$limit; $params['offset'] = max(0, (int)$offset); }
         $res = self::request('search', $params);
@@ -81,6 +92,7 @@ class PvPacsClient {
 
     /** 调阅单次检查（患者 + 检查 + 序列） */
     public static function study($uid) {
+        if (self::isDicomWeb()) return PvDicomWebClient::study($uid);
         $res = self::request('study', array('uid' => (string)$uid));
         $d = isset($res['data']) && is_array($res['data']) ? $res['data'] : array();
         if (!isset($d['patient']) || !isset($d['study'])) {
@@ -92,6 +104,7 @@ class PvPacsClient {
 
     /** 接口连通性测试 */
     public static function ping() {
+        if (self::isDicomWeb()) return PvDicomWebClient::ping();
         $res = self::request('ping', array());
         $p = isset($res['data']) && is_array($res['data']) ? $res['data'] : array();
         $p['endpoint'] = PvSettings::get('pacs_endpoint', '');

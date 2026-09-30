@@ -42,7 +42,7 @@
         meta.style.display = '';
         var fhirOnly = 0;
         allItems.forEach(function (s) { if (s.has_images === false) fhirOnly++; });
-        meta.textContent = '已加载 ' + allItems.length + ' / 共 ' + total + ' 条检查记录'
+        meta.textContent = (total > 0 ? '已加载 ' + allItems.length + ' / 共 ' + total + ' 条检查记录' : '已加载 ' + allItems.length + ' 条检查记录')
             + (fhirOnly ? '（含 ' + fhirOnly + ' 条仅登记·暂无影像）' : '')
             + (hasMore ? '，向下滚动加载更多' : '，点击卡片调阅影像');
     }
