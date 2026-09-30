@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.25.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.26.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -166,8 +166,9 @@ GET {DICOMweb根}/studies/{uid}/series/{se}/instances/{i}                 （WAD
 - 认证：可选 `Authorization: Bearer` / `X-API-Key` 请求头
 
 另支持标准 DICOM 网络身份参数（本系统 / 目标 AE Title、主机、DICOM 端口）用于标识与
-对接展示。**传统 DICOM（DIMSE，TCP 104）不能由浏览器直连**；若 PACS 仅有 DIMSE，
-需先经网关转换为 DICOMweb。管理页【测试接口连通性】按钮即按 DICOMweb 测试。
+对接展示。**传统 DICOM（DIMSE，TCP 104）不能由浏览器直连**；若 PACS 仅有 DIMSE，可先
+部署 DICOMweb 网关（如 Orthanc 的 DICOMweb 插件、dcm4chee-arc）将其转为 DICOMweb。
+管理页【测试接口连通性】按钮即按 DICOMweb 测试。
 
 ## 通用上传与鉴权下载
 

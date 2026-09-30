@@ -38,7 +38,7 @@
                 <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-copy="#pvMockAe">复制</button>
             </span>
         </label>
-        <label class="pv-field"><span>接口密钥（请求参数 key）</span>
+        <label class="pv-field"><span>接口密钥（请求头 X-API-Key / Authorization: Bearer）</span>
             <span class="pv-copy-row">
                 <input type="text" id="pvMockKey" readonly value="<?php echo pvw_e($mockKey); ?>">
                 <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-copy="#pvMockKey">复制</button>
@@ -48,9 +48,27 @@
         <div class="pv-form-actions">
             <button type="submit" class="pv-btn pv-btn-primary">保存状态设置</button>
             <button type="button" class="pv-btn pv-btn-accent" id="pvApplyMock">⇩ 一键应用模拟服务器数据（标准 DICOMweb）</button>
-            <span class="pv-hint">将上方 DICOMweb 地址与密钥、协议自动填入【管理设置 → 外部接口】</span>
+            <span class="pv-hint">将上方 DICOMweb 地址与密钥自动填入【管理设置 → 外部接口】</span>
         </div>
     </form>
+</div>
+
+<!-- 标准 DICOMweb 端点清单（供外部标准客户端对接） -->
+<div class="pv-card">
+    <h3 class="pv-form-title">标准 DICOMweb 端点（可供外部客户端对接）</h3>
+    <p class="pv-hint">以根地址 <code><?php echo pvw_e($mockUrl); ?></code> 为前缀，按标准语义访问；
+        认证在请求头携带密钥（<code>X-API-Key</code> 或 <code>Authorization: Bearer</code>）。</p>
+    <div class="pv-table-wrap">
+        <table class="pv-table">
+            <thead><tr><th>方法</th><th>路径</th><th>说明</th></tr></thead>
+            <tbody>
+                <tr><td>GET</td><td><code>{根}/studies?PatientName=&amp;limit=&amp;offset=&amp;includefield=all</code></td><td>QIDO-RS 检索检查</td></tr>
+                <tr><td>GET</td><td><code>{根}/studies/{studyUID}/series</code></td><td>序列列表</td></tr>
+                <tr><td>GET</td><td><code>{根}/studies/{studyUID}/series/{seriesUID}/instances</code></td><td>实例列表（含 NumberOfFrames）</td></tr>
+                <tr><td>GET</td><td><code>{根}/studies/{studyUID}/series/{seriesUID}/instances/{sopUID}</code></td><td>WADO-RS 实例字节流（application/dicom）</td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <!-- 解剖部位与切片数量 -->

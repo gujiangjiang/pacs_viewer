@@ -149,6 +149,19 @@ GET {根}/studies/{studyUID}/series/{seriesUID}/instances/{sopUID}        （WAD
 - 传统 DICOM（DIMSE）不由本项目直连；若 PACS 仅有 DIMSE，需先在中间部署网关将其
   转换为 DICOMweb。
 
+### 对接传统 DICOM（DIMSE，可选）
+
+本浏览器通过 **DICOMweb（HTTP）**取数，**不能直连 DIMSE**（C-FIND / C-MOVE / C-STORE，
+TCP 104）。若你的 PACS 仅提供 DIMSE，可在中间部署一个 **DICOMweb 网关**，再由本浏览器访问：
+
+- **Orthanc**：启用其 DICOMweb 插件（访问根为 `/dicom-web`），并以 DIMSE 关联（C-MOVE/C-GET）
+  连接到 PACS；
+- **dcm4chee-arc**：自带 DICOMweb（QIDO/WADO-RS），可配置 DIMSE 关联；
+- 其他商业网关同理，将 DIMSE 转为 DICOMweb。
+
+把网关的 DICOMweb 根地址（以 `/dicom-web` 结尾）填入【外部接口】即可；【外部接口】的
+「DICOM 网络身份参数（AE Title / 主机 / 端口）」用于登记与网关/PACS 的 DIMSE 配置对应。
+
 ## 六、键鼠快捷交互速查表
 
 > 阅片器顶部为商用 PACS 风格**大图标工具栏**；左侧为可同时展开多个检查的工作区；

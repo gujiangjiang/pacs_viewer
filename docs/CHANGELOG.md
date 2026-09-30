@@ -14,6 +14,22 @@
 
 ---
 
+## [0.26.0] - 2026-09-30
+
+### 修复
+- **修复影像过曝**：切换到 DICOMweb 后，调阅序列丢失了窗宽窗位 / 像素参数，前端退化为
+  默认 256/128，导致 MR/DR 等严重过曝。现 DICOMweb 调阅从**实例元数据**解析
+  `WindowCenter/WindowWidth`、`Rescale`、`Rows/Columns`、`Bits`、`PixelSpacing`、
+  `SliceThickness`、`ImageOrientation` 并写入序列；内置 DICOMweb 实例端点同步返回这些标签。
+
+### 新增
+- **模拟服务器页展示标准 DICOMweb 端点清单**（`{根}/studies` 等），方便外部标准客户端对接。
+
+### 文档
+- `docs/HELP.md` 增补「对接传统 DICOM（DIMSE，可选）」网关说明；`README.md` 同步。
+
+---
+
 ## [0.25.0] - 2026-09-30
 
 ### 移除
