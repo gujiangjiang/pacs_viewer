@@ -2,14 +2,27 @@
 /** app/Controllers/ApiController.php — 前端 JSON 接口（全部数据来自 PACS 接口） */
 class PvApiController {
 
-    /** 检索检查列表 */
+    /** 数据来源指纹：来源配置变化时缓存自然失效 */
+    private static function sourceFingerprint() {
+        return md5(
+            PvPacsClient::mode() . '|' . PvSettings::get('pacs_endpoint', '') . '|'
+            . (PvStudyService::isFhirEnabled() ? '1' : '0') . '|' . (PvMockServer::enabled() ? '1' : '0')
+        );
+    }
+
+    /** 检索检查列表（响应短时缓存，减少高并发下的重复检索） */
     public static function search() {
         PvAuth::requireLoginJson();
         $kw = (string)pvw_input('q');
-        try {
-            $list = PvStudyService::search($kw);
-        } catch (Exception $e) {
-            pvw_json(500, $e->getMessage());
+        $ck = 'search:' . self::sourceFingerprint() . ':' . $kw;
+        $list = PvCache::get($ck);
+        if ($list === null) {
+            try {
+                $list = PvStudyService::search($kw);
+            } catch (Exception $e) {
+                pvw_json(500, $e->getMessage());
+            }
+            PvCache::set($ck, $list, 20);
         }
         $u = PvAuth::user();
         PvQueryLogRepository::add($u['username'], $kw, count($list));
@@ -28,10 +41,15 @@ class PvApiController {
         PvAuth::requireLoginJson();
         $uid = (string)pvw_input('uid');
         if ($uid === '') pvw_json(400, '缺少检查标识');
-        try {
-            $data = PvStudyService::study($uid);
-        } catch (Exception $e) {
-            pvw_json(500, $e->getMessage());
+        $ck = 'study:' . self::sourceFingerprint() . ':' . $uid;
+        $data = PvCache::get($ck);
+        if ($data === null) {
+            try {
+                $data = PvStudyService::study($uid);
+            } catch (Exception $e) {
+                pvw_json(500, $e->getMessage());
+            }
+            PvCache::set($ck, $data, 30);
         }
         pvw_json(200, 'success', $data);
     }
