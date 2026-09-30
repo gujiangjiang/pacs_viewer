@@ -59,6 +59,23 @@
         });
     }
 
+    /** 患者数据来源（内置模拟 / FHIR）左右分栏切换，并写入隐藏字段 */
+    function bindSource() {
+        var items = document.querySelectorAll('.pv-split-item[data-src]');
+        var panes = document.querySelectorAll('[data-src-pane]');
+        var hidden = document.querySelector('[name="mock_patient_source"]');
+        if (!items.length) return;
+        function select(src) {
+            Array.prototype.forEach.call(items, function (b) { b.classList.toggle('active', b.getAttribute('data-src') === src); });
+            Array.prototype.forEach.call(panes, function (p) { p.classList.toggle('pv-hidden', p.getAttribute('data-src-pane') !== src); });
+            if (hidden) hidden.value = src;
+        }
+        Array.prototype.forEach.call(items, function (b) {
+            b.addEventListener('click', function () { select(b.getAttribute('data-src')); });
+        });
+        select(hidden && hidden.value ? hidden.value : 'builtin');
+    }
+
     function bindAnatomy() {
         var rows = document.getElementById('pvAnatomyRows');
         var tpl = document.getElementById('pvAnatomyTpl');
@@ -102,6 +119,7 @@
             data = data || {};
             PvUI.bindAjaxForms(document);
             bindCopy();
+            bindSource();
             bindAnatomy();
             if (data.flash) PvUI.toast(data.flash, 'ok');
 

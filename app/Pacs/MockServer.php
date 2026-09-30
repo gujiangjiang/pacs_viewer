@@ -43,7 +43,12 @@ class PvMockServer {
     /** 患者检查行（统一结构）：按来源取内置仿真数据或 FHIR */
     public static function rows($keyword = '') {
         if (self::source() === 'fhir') {
-            try { return PvFhirClient::search($keyword); } catch (Exception $e) { return array(); }
+            try {
+                $rows = PvFhirClient::search($keyword);
+                foreach ($rows as &$r) { $r['fhir'] = true; }
+                unset($r);
+                return $rows;
+            } catch (Exception $e) { return array(); }
         }
         return PvDemoPacs::search($keyword);
     }

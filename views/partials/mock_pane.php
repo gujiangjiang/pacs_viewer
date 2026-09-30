@@ -7,8 +7,8 @@
 <div class="pv-alert pv-alert-info">
     <b>关于「模拟服务器」</b>：本 PACS 浏览器自身不含数据。这里内置了一个模拟 PACS
     服务器，对外提供<b>标准 HTTP 接口</b>：<b>DICOMweb</b>（QIDO-RS 检索 / WADO-RS 取像）
-    与<b>标准 DICOM 文件</b>（WADO-URI），使用<b>内置仿真患者数据</b>，影像按<b>标准 DICOM</b>
-    （含多模态、原生多帧连续断层）生成，可被任何标准客户端联调。
+    与<b>标准 DICOM 文件</b>（WADO-URI）；患者数据可来自<b>内置仿真数据</b>或<b>FHIR R4 接口</b>，
+    影像按<b>标准 DICOM</b>（含多模态、原生多帧连续断层）生成，可被任何标准客户端联调。
     可一键把其 <b>DICOMweb 地址</b>与密钥填入【外部接口】；真实部署请在【外部接口】配置。
 </div>
 
@@ -55,8 +55,39 @@
                 <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm" id="pvRegenKey">重新生成</button>
             </span>
         </label>
+
+        <h4 class="pv-ext-title" style="margin-top:8px">患者数据来源</h4>
+        <div class="pv-split">
+            <aside class="pv-split-nav">
+                <button type="button" class="pv-split-item" data-src="builtin">内置模拟数据</button>
+                <button type="button" class="pv-split-item" data-src="fhir">FHIR 接口获取</button>
+            </aside>
+            <div class="pv-split-body">
+                <div data-src-pane="builtin">
+                    <p class="pv-hint">使用内置<b>确定性仿真患者数据</b>（开箱即用）。</p>
+                </div>
+                <div data-src-pane="fhir" class="pv-hidden">
+                    <p class="pv-hint">由 <b>FHIR R4</b> 接口获取「已缴费、已登记」患者及其检查；
+                        影像仍由内置模拟服务器按标准 DICOM 生成。</p>
+                    <label class="pv-field"><span>FHIR 接口地址</span>
+                        <input type="text" name="fhir_endpoint" value="<?php echo pvw_e($v('fhir_endpoint')); ?>" placeholder="如 http://192.168.1.100/fhir/R4"></label>
+                    <div class="pv-grid2">
+                        <label class="pv-field"><span>访问密钥（可选）</span>
+                            <input type="text" name="fhir_api_key" value="<?php echo pvw_e($v('fhir_api_key')); ?>" placeholder="Bearer / X-API-Key"></label>
+                        <label class="pv-field"><span>超时（秒）</span>
+                            <input type="number" name="fhir_timeout" value="<?php echo pvw_e($v('fhir_timeout', '5')); ?>"></label>
+                    </div>
+                    <div class="pv-form-actions">
+                        <button type="button" class="pv-btn pv-btn-outline" id="pvFhirTestMain">测试 FHIR 连接</button>
+                        <span id="pvFhirResultMain" class="pv-test-result"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" name="mock_patient_source" value="<?php echo pvw_e($v('mock_patient_source', 'builtin')); ?>">
+
         <div class="pv-form-actions">
-            <button type="submit" class="pv-btn pv-btn-primary">保存状态设置</button>
+            <button type="submit" class="pv-btn pv-btn-primary">保存模拟服务器设置</button>
             <button type="button" class="pv-btn pv-btn-accent" id="pvApplyMock">⇩ 一键应用模拟服务器数据（标准 DICOMweb）</button>
             <span class="pv-hint">将上方 DICOMweb 地址与密钥自动填入【管理设置 → 外部接口】</span>
         </div>
