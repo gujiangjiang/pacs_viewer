@@ -76,8 +76,9 @@ class PvPwaController {
             $asset . '/js/modules/dicom.js' . $ver, $asset . '/js/modules/render.js' . $ver,
             $asset . '/js/modules/osd.js' . $ver, $asset . '/js/modules/sidebar.js' . $ver,
             $asset . '/js/modules/toolbar.js' . $ver, $asset . '/js/modules/measurements.js' . $ver,
-            $asset . '/js/modules/zip.js' . $ver, $asset . '/js/modules/pane.js' . $ver,
-            $asset . '/js/viewer.js' . $ver,
+            $asset . '/js/modules/zip.js' . $ver, $asset . '/js/modules/decoder.js' . $ver,
+            $asset . '/js/modules/dicom-worker.js' . $ver,
+            $asset . '/js/modules/pane.js' . $ver, $asset . '/js/viewer.js' . $ver,
         );
         ?>
 /* Service Worker — PACS 影像浏览器 */

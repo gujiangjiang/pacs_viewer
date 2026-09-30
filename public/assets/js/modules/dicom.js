@@ -126,4 +126,4 @@
     }
 
     global.PvDicom = { decode: decode };
-})(window);
+})(typeof self !== 'undefined' ? self : window);

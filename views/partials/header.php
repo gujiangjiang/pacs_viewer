@@ -42,6 +42,7 @@ $pvPageData = isset($pageData) ? $pageData : array();
     'sw'       => pvw_url('sw'),
     'scope'    => PV_URL_SITE === '' ? '/' : PV_URL_SITE . '/',
     'site'     => $site,
+    'version'  => PV_VERSION,
     'page'     => $pvPage,
     'data'     => $pvPageData,
     'csrf'     => pvw_csrf(),

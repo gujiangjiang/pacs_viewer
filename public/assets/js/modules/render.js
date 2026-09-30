@@ -68,4 +68,4 @@
         BASE: BASE,
         resample: resample, window: window, decodeToImage: decodeToImage, clamp: clamp
     };
-})(window);
+})(typeof self !== 'undefined' ? self : window);

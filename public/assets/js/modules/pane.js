@@ -139,10 +139,9 @@
         this._frames[key] = { status: 'loading' };
         var self = this;
         this._fetchBuffer(url)
-            .then(function (buf) {
-                var dec = window.PvDicom ? PvDicom.decode(buf) : null;
-                if (!dec) { delete self._frames[key]; self.setStatus('DICOM 解码失败'); self.render(); return; }
-                self._frames[key] = { status: 'ok', dec: dec, raw: PvRender.resample(dec, BASE) };
+            .then(function (buf) { return PvDecoder.decode(buf, BASE); })
+            .then(function (res) {
+                self._frames[key] = { status: 'ok', dec: res.dec, raw: res.raw };
                 self._trimFrames();
                 self.render();
             })
@@ -194,10 +193,9 @@
             if (self._frames[key]) { next(); return; }
             self._frames[key] = { status: 'loading' };
             self._fetchBuffer(series.images[idx])
-                .then(function (buf) {
-                    var dec = window.PvDicom ? PvDicom.decode(buf) : null;
-                    if (dec) self._frames[key] = { status: 'ok', dec: dec, raw: PvRender.resample(dec, BASE) };
-                    else delete self._frames[key];
+                .then(function (buf) { return PvDecoder.decode(buf, BASE); })
+                .then(function (res) {
+                    self._frames[key] = { status: 'ok', dec: res.dec, raw: res.raw };
                     self._trimFrames();
                     if (self.curSeries() === series && self.st.fi === idx) self.render();
                 })
@@ -634,11 +632,9 @@
             var durl = ser.images && ser.images[fi];
             if (!durl) return Promise.resolve(cv);
             return fetch(durl, { credentials: 'same-origin' }).then(function (r) { return r.arrayBuffer(); })
-                .then(function (buf) {
-                    var dec = window.PvDicom ? PvDicom.decode(buf) : null;
-                    if (dec) self._paintRaw(cx, PvRender.resample(dec, BASE));
-                    return cv;
-                }).catch(function () { return cv; });
+                .then(function (buf) { return PvDecoder.decode(buf, BASE); })
+                .then(function (res) { self._paintRaw(cx, res.raw); return cv; })
+                .catch(function () { return cv; });
         }
         var src = ser.images && ser.images[fi];
         if (!src) return Promise.resolve(cv);
