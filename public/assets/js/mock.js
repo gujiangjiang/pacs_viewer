@@ -46,11 +46,13 @@
     }
 
     function bindCopy() {
-        Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'), function (btn) {
-            btn.addEventListener('click', function () {
-                var input = document.querySelector(btn.getAttribute('data-copy'));
-                if (!input) return;
-                PvUI.copy(input.value).then(function (ok) {
+        // data-copy 可挂在按钮上（复制其指向元素），或直接挂在输入框上（点击自身即复制）
+        Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'), function (el) {
+            el.addEventListener('click', function () {
+                var src = (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')
+                    ? el : document.querySelector(el.getAttribute('data-copy'));
+                if (!src) return;
+                PvUI.copy(src.value).then(function (ok) {
                     PvUI.toast(ok ? '已复制' : '复制失败，请手动选择复制', ok ? 'ok' : 'err');
                 });
             });

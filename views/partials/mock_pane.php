@@ -29,37 +29,28 @@
             <em class="pv-hint">关闭后对外 API 返回 403，本浏览器也无法通过模拟地址检索</em>
         </div>
         <label class="pv-field"><span>DICOMweb 地址（标准接口根地址）</span>
-            <span class="pv-copy-row">
-                <input type="text" id="pvMockUrl" readonly value="<?php echo pvw_e($mockUrl); ?>">
-                <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-copy="#pvMockUrl">复制</button>
-            </span>
+            <input type="text" id="pvMockUrl" class="pv-copy" data-copy="#pvMockUrl" readonly title="点击复制"
+                   value="<?php echo pvw_e($mockUrl); ?>">
         </label>
         <div class="pv-grid2">
             <label class="pv-field"><span>DICOM AE Title</span>
-                <span class="pv-copy-row">
-                    <input type="text" id="pvMockAe" readonly value="<?php echo pvw_e(isset($mockAeTitle) ? $mockAeTitle : 'PACSVIEWMOCK'); ?>">
-                    <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-copy="#pvMockAe">复制</button>
-                </span>
+                <input type="text" id="pvMockAe" class="pv-copy" data-copy="#pvMockAe" readonly title="点击复制"
+                       value="<?php echo pvw_e(isset($mockAeTitle) ? $mockAeTitle : 'PACSVIEWMOCK'); ?>">
             </label>
             <label class="pv-field"><span>DICOM 端口</span>
-                <span class="pv-copy-row">
-                    <input type="text" id="pvMockPort" readonly value="104">
-                    <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-copy="#pvMockPort">复制</button>
-                </span>
+                <input type="text" id="pvMockPort" class="pv-copy" data-copy="#pvMockPort" readonly title="点击复制" value="104">
             </label>
         </div>
         <label class="pv-field"><span>主机</span>
-            <span class="pv-copy-row">
-                <input type="text" id="pvMockHost" readonly value="<?php echo pvw_e(isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost'); ?>">
-                <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-copy="#pvMockHost">复制</button>
-            </span>
+            <input type="text" id="pvMockHost" class="pv-copy" data-copy="#pvMockHost" readonly title="点击复制"
+                   value="<?php echo pvw_e(isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost'); ?>">
         </label>
         <p class="pv-hint">以上 AE Title / 主机 / 端口为传统 DICOM（DIMSE）网络身份，仅供参考；
             本项目经 DICOMweb(HTTP) 取数，不使用、也无需与对端匹配。</p>
         <label class="pv-field"><span>接口密钥（请求头 X-API-Key / Authorization: Bearer）</span>
             <span class="pv-copy-row">
-                <input type="text" id="pvMockKey" readonly value="<?php echo pvw_e($mockKey); ?>">
-                <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-copy="#pvMockKey">复制</button>
+                <input type="text" id="pvMockKey" class="pv-copy" data-copy="#pvMockKey" readonly title="点击复制"
+                       value="<?php echo pvw_e($mockKey); ?>">
                 <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm" id="pvRegenKey">重新生成</button>
             </span>
         </label>

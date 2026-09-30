@@ -84,6 +84,10 @@ body.pv-nav-busy #pvMain { opacity: .55; transition: opacity .12s; }
     background: #0b0f17; color: var(--pv-txt); font-size: 14px; outline: none;
 }
 .pv-input:focus { border-color: var(--pv-acc2); box-shadow: 0 0 0 3px rgba(14,165,233,.15); }
+/* 点击即复制的输入框 */
+input.pv-copy { cursor: pointer; }
+input.pv-copy:hover { border-color: var(--pv-acc2); }
+input.pv-copy:active { border-color: var(--pv-acc); }
 
 .pv-card { background: var(--pv-panel); border: 1px solid var(--pv-line); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
 .pv-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
