@@ -100,8 +100,13 @@
             if (data.flash) PvUI.toast(data.flash, 'ok');
             clearChk = document.getElementById('pvClearOnOpen');
             if (clearChk) {
-                clearChk.checked = !!data.clearOnOpen;
+                // 优先使用本会话内用户的最新选择：静态页片段会被前端缓存，若直接用
+                // 缓存里的旧值会导致「取消勾选后又自动勾上」。
+                var initial = (typeof global.PvClearOnOpen === 'boolean') ? global.PvClearOnOpen : !!data.clearOnOpen;
+                clearChk.checked = initial;
+                global.PvClearOnOpen = initial;
                 clearChk.addEventListener('change', function () {
+                    global.PvClearOnOpen = clearChk.checked;   // 立即记忆，跨标签切换保持
                     PvUI.post(global.PvNav.route('api/pref'), { clear_on_open: clearChk.checked ? '1' : '0' });
                 });
             }
