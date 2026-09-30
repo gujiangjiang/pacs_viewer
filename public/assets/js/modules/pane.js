@@ -558,16 +558,52 @@
         this.st.zoom = clamp(Math.min(this.cssW / BASE, this.cssH / BASE) * 0.92, 0.05, 16);
         this.st.panX = 0; this.st.panY = 0; this.render();
     };
-    PvPane.prototype.setSeries = function (uid, si) {
+    /** 采集当前序列的视图状态（缩放/平移/窗值/变换/测量/帧） */
+    PvPane.prototype.captureView = function () {
+        var s = this.st;
+        return {
+            ww: s.ww, wl: s.wl, zoom: s.zoom, panX: s.panX, panY: s.panY,
+            rot: s.rot, flipH: s.flipH, flipV: s.flipV, invert: s.invert,
+            fi: s.fi, annos: (s.annos || []).slice()
+        };
+    };
+    /** 应用视图状态（保留原缩放平移，不重新 fit） */
+    PvPane.prototype.applyView = function (v) {
+        if (!v) return;
+        var s = this.st;
+        s.ww = v.ww; s.wl = v.wl; s.zoom = v.zoom; s.panX = v.panX; s.panY = v.panY;
+        s.rot = v.rot; s.flipH = !!v.flipH; s.flipV = !!v.flipV; s.invert = !!v.invert;
+        s.fi = clamp(parseInt(v.fi, 10) || 0, 0, Math.max(0, this.frameCount() - 1));
+        s.annos = (v.annos || []).slice();
+        s.draft = null;
+        s.isHU = this.frameIsHU();
+    };
+
+    /**
+     * 载入序列。
+     * @param {object} [opts] { fresh:true } 重置该序列的操作痕迹（双击）；否则恢复既往状态。
+     */
+    PvPane.prototype.setSeries = function (uid, si, opts) {
         var d = this.viewer.study(uid);
         if (!d || !d.series[si]) return;
+        opts = opts || {};
+        // 切走前保存当前序列的操作痕迹
+        if (this.st.uid && this.curSeries()) this.viewer.savePaneState(this);
         this._abortFetches();      // 中止上一条序列仍在进行的预取
         this.st.uid = uid; this.st.si = si; this.st.fi = 0;
-        this._wheelAcc = 0; this.st.annos = []; this.st.draft = null; this._frames = {}; this._instances = {}; this._dir = 1;
-        this.applyDefaults(); this.fit();
+        this._wheelAcc = 0; this.st.draft = null; this._frames = {}; this._instances = {}; this._dir = 1;
+        var ser = d.series[si];
+        var saved = opts.fresh ? null : this.viewer.seriesState(uid, ser.series_id);
+        if (saved && saved.view) {
+            this.st.annos = [];
+            this.applyView(saved.view);
+        } else {
+            this.st.annos = [];
+            this.applyDefaults(); this.fit();
+        }
         this.updateTitle(); this.updateScrollbar();
         this.viewer.afterPaneLoad(this);
-        this.prefetch(d.series[si]);
+        this.prefetch(ser);
     };
     PvPane.prototype.setFrame = function (i) {
         var n = this.frameCount();

@@ -108,8 +108,15 @@
         Array.prototype.forEach.call(this.el.querySelectorAll('.pv-thumb'), function (th) {
             th.addEventListener('click', function (e) {
                 e.stopPropagation();
+                if (e.detail > 1) return;   // 双击的第二次 click 忽略，交给 dblclick 处理
                 var gi = parseInt(th.getAttribute('data-g'), 10), si = parseInt(th.getAttribute('data-s'), 10);
                 if (self.h.onSeries) self.h.onSeries(gi, si);
+            });
+            // 双击序列：重置该序列的操作痕迹
+            th.addEventListener('dblclick', function (e) {
+                e.stopPropagation();
+                var gi = parseInt(th.getAttribute('data-g'), 10), si = parseInt(th.getAttribute('data-s'), 10);
+                if (self.h.onSeriesReset) self.h.onSeriesReset(gi, si);
             });
         });
         Array.prototype.forEach.call(this.el.querySelectorAll('.pv-sg-head'), function (h) {
