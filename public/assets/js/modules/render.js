@@ -41,12 +41,14 @@
      * @param {number} size
      * @param {number} ww 窗宽、wl 窗位（与 raw 同单位）
      * @param {boolean} invert
+     * @param {ImageData} [out] 可选复用的输出缓冲（避免每帧重新分配）
      * @return {ImageData}
      */
-    function window(raw, size, ww, wl, invert) {
+    function window(raw, size, ww, wl, invert, out) {
         ww = Math.max(1, ww);
         var lo = wl - ww / 2, k = 255 / ww;
-        var img = new ImageData(size, size), d = img.data;
+        var img = (out && out.width === size && out.height === size) ? out : new ImageData(size, size);
+        var d = img.data;
         for (var i = 0, n = size * size; i < n; i++) {
             var o = (raw[i] - lo) * k;
             o = o < 0 ? 0 : (o > 255 ? 255 : o);

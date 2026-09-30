@@ -226,10 +226,10 @@
         if (!im.complete) return { kind: 'loading' };
         return { kind: 'image', img: im };
     };
-    /** 显示值场 → 窗宽窗位画布 */
+    /** 显示值场 → 窗宽窗位画布（复用 ImageData 缓冲，减少分配与 GC） */
     PvPane.prototype.windowRaw = function (raw, ww, wl, invert) {
-        var img = PvRender.window(raw, BASE, ww, wl, invert);
-        if (this.work.width !== BASE || this.work.height !== BASE) { this.work.width = BASE; this.work.height = BASE; }
+        if (!this._winImg || this._winImg.width !== BASE) this._winImg = new ImageData(BASE, BASE);
+        var img = PvRender.window(raw, BASE, ww, wl, invert, this._winImg);
         this.wctx.putImageData(img, 0, 0);
         return this.work;
     };
