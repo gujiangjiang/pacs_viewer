@@ -23,9 +23,29 @@
         return PvUI.get(buildUrl(sub, params));
     }
 
+    // 检查数据短时缓存：同一会话内反复返回阅片器时避免重复拉取（60 秒有效）
+    var studyCache = {};
+    var STUDY_TTL = 60000;
+
+    /**
+     * 调阅检查数据。
+     * @param {string} uid
+     * @param {object} [opts] { fresh:true } 强制绕过缓存（打开新检查时使用）
+     */
+    function study(uid, opts) {
+        opts = opts || {};
+        var now = Date.now();
+        var c = studyCache[uid];
+        if (!opts.fresh && c && (now - c.at) < STUDY_TTL) return Promise.resolve(c.data);
+        return get('study', { uid: uid }).then(function (j) {
+            if (j && j.code === 200 && j.data) studyCache[uid] = { at: now, data: j };
+            return j;
+        });
+    }
+
     global.PvApi = {
         search: function (q) { return get('search', { q: q }); },
-        study:  function (uid) { return get('study', { uid: uid }); },
+        study:  study,
         ping:   function () { return get('ping', {}); },
         /** 记录操作日志（读片 / 下载 / 阅读 DICOM），失败静默 */
         log: function (action, detail) {

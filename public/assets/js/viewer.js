@@ -198,7 +198,7 @@
             return;
         }
         var p0 = this.activePane(); if (p0) p0.setStatus('正在加载影像数据…');
-        PvApi.study(uid).then(function (j) {
+        PvApi.study(uid, { fresh: true }).then(function (j) {
             if (!j || j.code !== 200 || !j.data) { if (p0) p0.setStatus((j && j.msg) || '数据加载失败'); return; }
             if (mode === 'replace') { self.ws.studies = []; self.panes.forEach(function (pp) { pp.st.uid = ''; pp.st.si = 0; pp.st.fi = 0; }); }
             self.ws.studies.push({ uid: uid, data: j.data, series: j.data.series || [], collapsed: false });
@@ -226,15 +226,17 @@
         var self = this;
         if (!saved || !saved.studies || !saved.studies.length) { if (cb) cb(); return; }
         if (saved.layout) this.setLayout(saved.layout, true);
-        var restored = [], chain = Promise.resolve();
-        saved.studies.forEach(function (item) {
-            chain = chain.then(function () {
-                return PvApi.study(item.uid).then(function (j) {
-                    if (j && j.code === 200 && j.data) restored.push({ uid: item.uid, data: j.data, series: j.data.series || [], collapsed: !!item.collapsed });
-                }).catch(function () {});
-            });
+        // 并行拉取各检查数据（Promise.all 保持原顺序），缩短恢复时间
+        var tasks = saved.studies.map(function (item) {
+            return PvApi.study(item.uid).then(function (j) {
+                if (j && j.code === 200 && j.data) {
+                    return { uid: item.uid, data: j.data, series: j.data.series || [], collapsed: !!item.collapsed };
+                }
+                return null;
+            }).catch(function () { return null; });
         });
-        chain.then(function () {
+        Promise.all(tasks).then(function (list) {
+            var restored = list.filter(function (x) { return x; });
             self.ws.studies = restored;
             // 恢复窗格内容
             if (saved.panes) {
