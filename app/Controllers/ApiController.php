@@ -10,25 +10,34 @@ class PvApiController {
         );
     }
 
-    /** 检索检查列表（响应短时缓存，减少高并发下的重复检索） */
+    /** 检索检查列表（支持分页；响应短时缓存，减少高并发下的重复检索） */
     public static function search() {
         PvAuth::requireLoginJson();
         $kw = (string)pvw_input('q');
-        $ck = 'search:' . self::sourceFingerprint() . ':' . $kw;
-        $list = PvCache::get($ck);
-        if ($list === null) {
+        $limit = (int)pvw_input('limit', 0);
+        $offset = (int)pvw_input('offset', 0);
+        if ($limit < 0) $limit = 0;
+        if ($limit > 200) $limit = 200;
+        if ($offset < 0) $offset = 0;
+
+        $ck = 'search:' . self::sourceFingerprint() . ':' . $limit . ':' . $offset . ':' . $kw;
+        $res = PvCache::get($ck);
+        if ($res === null) {
             try {
-                $list = PvStudyService::search($kw);
+                $res = PvStudyService::search($kw, $limit, $offset);
             } catch (Exception $e) {
                 pvw_json(500, $e->getMessage());
             }
-            PvCache::set($ck, $list, 20);
+            PvCache::set($ck, $res, 20);
         }
         $u = PvAuth::user();
-        PvQueryLogRepository::add($u['username'], $kw, count($list));
+        PvQueryLogRepository::add($u['username'], $kw, (int)$res['total']);
         pvw_json(200, 'success', array(
-            'list' => $list,
-            'total' => count($list),
+            'list' => $res['list'],
+            'total' => (int)$res['total'],
+            'has_more' => (bool)$res['has_more'],
+            'offset' => $offset,
+            'limit' => $limit,
             'mode' => PvPacsClient::mode(),
             'remote' => PvPacsClient::isRemote(),
             'source' => PvStudyService::sourceInfo(),

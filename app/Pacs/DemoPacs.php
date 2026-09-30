@@ -70,8 +70,12 @@ class PvDemoPacs {
         return $list;
     }
 
-    /** 关键词检索（姓名 / 患者号 / 检查号 / 门诊号 / 项目） */
-    public static function search($keyword) {
+    /**
+     * 关键词检索（姓名 / 患者号 / 检查号 / 门诊号 / 项目）。
+     * @param int $limit  返回上限（0 表示不限）
+     * @param int $offset 起始偏移
+     */
+    public static function search($keyword, $limit = 0, $offset = 0) {
         $kw = trim((string)$keyword);
         $out = array();
         foreach (self::studies() as $s) {
@@ -79,6 +83,8 @@ class PvDemoPacs {
             $hay = $s['name'] . ' ' . $s['patient_id'] . ' ' . $s['accession_no'] . ' ' . $s['outpatient_no'] . ' ' . $s['description'];
             if (mb_stripos($hay, $kw, 0, 'UTF-8') !== false) $out[] = $s;
         }
+        if ((int)$limit > 0) return array_slice($out, max(0, (int)$offset), (int)$limit);
+        if ((int)$offset > 0) return array_slice($out, (int)$offset);
         return $out;
     }
 

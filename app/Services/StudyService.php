@@ -34,10 +34,14 @@ class PvStudyService {
         return array('state' => $state, 'label' => $label, 'fhir' => self::isFhirEnabled());
     }
 
-    /** 检索：PACS 为基础，FHIR 可选补充 */
-    public static function search($keyword) {
+    /**
+     * 检索：PACS 为基础，FHIR 可选补充（支持分页）。
+     * @return array {list,total,has_more}
+     */
+    public static function search($keyword, $limit = 0, $offset = 0) {
         self::$lastFhirError = '';
-        $list = PvPacsClient::search($keyword);                 // DICOM / PACS 必选
+        $page = PvPacsClient::searchPage($keyword, $limit, $offset);   // DICOM / PACS 必选
+        $list = $page['list'];
         $site = pvw_hospital();
         foreach ($list as &$row) {
             if (empty($row['institution'])) $row['institution'] = $site;
@@ -47,7 +51,8 @@ class PvStudyService {
         }
         unset($row);
 
-        if (self::isFhirEnabled()) {
+        // FHIR 补充仅在首页合并（后续分页不重复）
+        if (self::isFhirEnabled() && (int)$offset === 0) {
             try {
                 $fhir = PvFhirClient::search($keyword);
                 $list = self::mergeFhir($list, $fhir);
@@ -55,7 +60,7 @@ class PvStudyService {
                 self::$lastFhirError = $e->getMessage();        // FHIR 异常不影响 PACS 检索结果
             }
         }
-        return $list;
+        return array('list' => $list, 'total' => $page['total'], 'has_more' => $page['has_more']);
     }
 
     /** 调阅：影像必来自 PACS，FHIR 仅补充患者主数据 */

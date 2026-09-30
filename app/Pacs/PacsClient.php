@@ -51,11 +51,32 @@ class PvPacsClient {
         }
     }
 
-    /** 检索检查列表 */
+    /** 检索检查列表（仅列表，兼容旧调用） */
     public static function search($keyword) {
-        $res = self::request('search', array('q' => (string)$keyword));
-        $list = isset($res['data']['list']) && is_array($res['data']['list']) ? $res['data']['list'] : array();
-        return $list;
+        $page = self::searchPage($keyword);
+        return $page['list'];
+    }
+
+    /**
+     * 分页检索：向接口传 limit/offset，返回结构化结果。
+     * 兼容两种远端返回：{list,total,has_more} 或直接数组。
+     * @return array {list, total, has_more}
+     */
+    public static function searchPage($keyword, $limit = 0, $offset = 0) {
+        $params = array('q' => (string)$keyword);
+        if ((int)$limit > 0) { $params['limit'] = (int)$limit; $params['offset'] = max(0, (int)$offset); }
+        $res = self::request('search', $params);
+        $data = isset($res['data']) && is_array($res['data']) ? $res['data'] : array();
+        if (isset($data['list']) && is_array($data['list'])) {
+            $list = $data['list'];
+            $total = isset($data['total']) ? (int)$data['total'] : count($list);
+            $hasMore = array_key_exists('has_more', $data) ? (bool)$data['has_more'] : ((int)$limit > 0 ? (count($list) >= (int)$limit) : false);
+        } else {
+            $list = $data;
+            $total = count($list);
+            $hasMore = false;
+        }
+        return array('list' => $list, 'total' => $total, 'has_more' => $hasMore);
     }
 
     /** 调阅单次检查（患者 + 检查 + 序列） */

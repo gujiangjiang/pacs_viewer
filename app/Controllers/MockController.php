@@ -101,8 +101,10 @@ class PvMockController {
         try {
             if ($action === 'wado') { self::emitWado(); }
             $r = PvMockServer::dispatch($action, array(
-                'q'   => (string)pvw_input('q'),
-                'uid' => (string)pvw_input('uid'),
+                'q'      => (string)pvw_input('q'),
+                'uid'    => (string)pvw_input('uid'),
+                'limit'  => (int)pvw_input('limit', 0),
+                'offset' => (int)pvw_input('offset', 0),
             ));
             pvw_json($r['code'], $r['msg'], $r['data']);
         } catch (Exception $e) {

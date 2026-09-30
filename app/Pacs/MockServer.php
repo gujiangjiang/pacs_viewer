@@ -106,7 +106,18 @@ class PvMockServer {
         }
         if ($action === 'search') {
             $q = isset($params['q']) ? (string)$params['q'] : '';
-            return array('code' => 200, 'msg' => 'success', 'data' => array('list' => self::search($q)));
+            $all = self::search($q);
+            $total = count($all);
+            $limit = isset($params['limit']) ? max(0, (int)$params['limit']) : 0;
+            $offset = isset($params['offset']) ? max(0, (int)$params['offset']) : 0;
+            $page = ($limit > 0) ? array_slice($all, $offset, $limit) : array_slice($all, $offset);
+            return array('code' => 200, 'msg' => 'success', 'data' => array(
+                'list'     => $page,
+                'total'    => $total,
+                'offset'   => $offset,
+                'limit'    => $limit,
+                'has_more' => ($limit > 0) ? ($offset + count($page) < $total) : false,
+            ));
         }
         if ($action === 'study') {
             $d = self::study(isset($params['uid']) ? (string)$params['uid'] : '');
