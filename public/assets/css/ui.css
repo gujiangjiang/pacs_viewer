@@ -27,6 +27,17 @@
 .pv-modal .pv-field input, .pv-modal .pv-field select { max-width: none; }
 .pv-modal-msg { margin: 0; color: var(--pv-txt); line-height: 1.7; }
 
+/* 键盘快捷键说明（模态框内） */
+.pv-keys-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pv-keys-table th, .pv-keys-table td { padding: 7px 10px; border-bottom: 1px solid var(--pv-line); text-align: left; vertical-align: middle; }
+.pv-keys-table th { width: 42%; white-space: nowrap; }
+.pv-keys-table tr:last-child th, .pv-keys-table tr:last-child td { border-bottom: 0; }
+.pv-keys-table kbd {
+    display: inline-block; min-width: 20px; text-align: center; padding: 2px 7px; margin-right: 4px;
+    border: 1px solid var(--pv-line2); border-bottom-width: 2px; border-radius: 6px;
+    background: #0b0f17; color: #e2e8f0; font-family: "SFMono-Regular", Consolas, monospace; font-size: 12px;
+}
+
 /* 轻提示 */
 #pvToastBox { position: fixed; top: 64px; right: 20px; z-index: 1100; display: flex; flex-direction: column; gap: 8px; }
 .pv-toast {

@@ -8,7 +8,12 @@
     'use strict';
 
     var PRESETS = global.PvPresets;
-    var PANE_ACTS = { 'rotate-cw': 1, 'rotate-ccw': 1, 'flip-h': 1, 'flip-v': 1, 'invert': 1, 'clear': 1, 'fit': 1, 'oneone': 1, 'prev': 1, 'next': 1 };
+    var PANE_ACTS = { 'rotate-cw': 1, 'rotate-ccw': 1, 'flip-h': 1, 'flip-v': 1, 'invert': 1, 'clear': 1, 'fit': 1, 'oneone': 1, 'prev': 1, 'next': 1, 'zoom-in': 1, 'zoom-out': 1 };
+
+    /* 键盘快捷键映射（不在界面展示，避免臃肿；按 ? 查看说明） */
+    var KEY_TOOLS = { w: 'wl', z: 'zoom', p: 'pan', l: 'length', a: 'angle', r: 'rect', e: 'ellipse' };
+    var KEY_ACTS = { f: 'fit', i: 'invert', h: 'flip-h', v: 'flip-v', c: 'clear', d: 'dicom-info', s: 'save-image' };
+    var KEY_LAYOUT = { '1': '1', '2': '2h', '3': '2v', '4': '4' };
 
     var clamp = PvRender.clamp;   // 复用通用钳位助手
     var esc = PvUI.esc;           // 复用通用转义助手
@@ -57,6 +62,7 @@
         this.restoreSidebarWidth();
         this._bindWindowResize();
         this._bindPersistFlush();
+        this._bindKeys();
         this.setLayout('1', true);
         this.boot();
     }
@@ -73,6 +79,54 @@
         var self = this;
         this._onUnload = function () { if (self._persistTimer) { clearTimeout(self._persistTimer); self._persistTimer = null; self.persistNow(); } };
         window.addEventListener('beforeunload', this._onUnload);
+    };
+
+    /** 键盘快捷键绑定（阅片器专属；输入框内不拦截） */
+    PvViewer.prototype._bindKeys = function () {
+        var self = this;
+        this._onKey = function (e) {
+            if (e.metaKey || e.ctrlKey || e.altKey) return;
+            var t = e.target;
+            if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+            var k = e.key;
+            if (k === '?') { e.preventDefault(); self.showShortcuts(); return; }
+            if (k === 'Escape') { self.closeCtxMenu(); if (window.PvModal) window.PvModal.close(); return; }
+            if (k === 'ArrowLeft' || k === 'ArrowUp') { e.preventDefault(); self.doAction('prev'); return; }
+            if (k === 'ArrowRight' || k === 'ArrowDown') { e.preventDefault(); self.doAction('next'); return; }
+            if (k === '=' || k === '+') { e.preventDefault(); self.doAction('zoom-in'); return; }
+            if (k === '-' || k === '_') { e.preventDefault(); self.doAction('zoom-out'); return; }
+            var lower = k.length === 1 ? k.toLowerCase() : k;
+            if (KEY_TOOLS[lower]) { e.preventDefault(); self.setTool(KEY_TOOLS[lower]); return; }
+            if (KEY_ACTS[lower]) { e.preventDefault(); self.doAction(KEY_ACTS[lower]); return; }
+            if (KEY_LAYOUT[k]) { e.preventDefault(); self.setLayoutByKey(KEY_LAYOUT[k]); return; }
+        };
+        document.addEventListener('keydown', this._onKey);
+    };
+
+    /** 键盘快捷键说明（仅模态框展示，界面不占位） */
+    PvViewer.prototype.showShortcuts = function () {
+        if (!window.PvModal) return;
+        var rows = [
+            ['?', '显示 / 关闭本快捷键说明'],
+            ['← → / ↑ ↓', '上一帧 / 下一帧'],
+            ['W / Z / P', '窗宽窗位 / 缩放 / 平移'],
+            ['L / A', '测距 / 测角'],
+            ['R / E', '矩形 ROI / 椭圆 ROI'],
+            ['F', '适应窗口'],
+            ['= / -', '放大 / 缩小'],
+            ['1 / 2 / 3 / 4', '单 / 左右双 / 上下双 / 四视图'],
+            ['I / H / V', '反色 / 水平镜像 / 垂直镜像'],
+            ['C', '清除标注'],
+            ['D / S', 'DICOM 详情 / 保存当前图像'],
+            ['Esc', '关闭右键菜单 / 模态框']
+        ];
+        var html = '<div class="pv-keys"><table class="pv-keys-table"><tbody>';
+        rows.forEach(function (r) {
+            var keys = r[0].split(/\s*\/\s*/).map(function (k) { return '<kbd>' + esc(k) + '</kbd>'; }).join('');
+            html += '<tr><th>' + keys + '</th><td>' + esc(r[1]) + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        window.PvModal.open({ title: '键盘快捷键', size: 'lg', body: html });
     };
 
     /* ---------- 布局 ---------- */
@@ -140,6 +194,7 @@
         if (a === 'dicom-info') { var p2 = this.activePane(); if (p2) p2.showDicomInfo(); return; }
         if (a === 'save-image') { var p3 = this.activePane(); if (p3) p3.saveImage(); return; }
         if (a === 'save-series') { var p4 = this.activePane(); if (p4) p4.saveSeries(); return; }
+        if (a === 'shortcuts') { this.showShortcuts(); return; }
     };
     PvViewer.prototype._paneAction = function (p, a) {
         var st = p.st;
@@ -151,6 +206,8 @@
         else if (a === 'clear') { p.clearAnnos(); this.syncToolbar(); return; }
         else if (a === 'fit') { p.fit(); this.syncToolbar(); return; }
         else if (a === 'oneone') { st.zoom = 1; st.panX = 0; st.panY = 0; }
+        else if (a === 'zoom-in') { st.zoom = clamp(st.zoom * 1.2, 0.12, 16); }
+        else if (a === 'zoom-out') { st.zoom = clamp(st.zoom / 1.2, 0.12, 16); }
         else if (a === 'prev') { p.setFrame(st.fi - 1); this.syncToolbar(); return; }
         else if (a === 'next') { p.setFrame(st.fi + 1); this.syncToolbar(); return; }
         this.syncToolbar(); p.render();
@@ -464,6 +521,7 @@
     PvViewer.prototype.destroy = function () {
         if (this._onWinResize) window.removeEventListener('resize', this._onWinResize);
         if (this._onUnload) window.removeEventListener('beforeunload', this._onUnload);
+        if (this._onKey) document.removeEventListener('keydown', this._onKey);
         if (this._persistTimer) { clearTimeout(this._persistTimer); this._persistTimer = null; }
         if (this.toolbar && this.toolbar.destroy) this.toolbar.destroy();
         if (this._ctxDoc) document.removeEventListener('pointerdown', this._ctxDoc, true);
