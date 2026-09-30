@@ -125,12 +125,30 @@
             });
         });
 
-        this.studies.forEach(function (st, gi) {
-            (st.series || []).forEach(function (se, si) {
-                var cv = self.el.querySelector('.pv-thumb[data-g="' + gi + '"][data-s="' + si + '"] canvas');
-                if (cv) self.drawThumb(cv, se);
+        // 缩略图懒加载：仅绘制进入视口的序列，减少首屏解码与请求
+        var thumbs = this.el.querySelectorAll('.pv-thumb');
+        if (global.IntersectionObserver) {
+            if (this._thumbIO) this._thumbIO.disconnect();
+            this._thumbIO = new global.IntersectionObserver(function (entries) {
+                entries.forEach(function (en) {
+                    if (!en.isIntersecting) return;
+                    var th = en.target;
+                    var gi = parseInt(th.getAttribute('data-g'), 10), si = parseInt(th.getAttribute('data-s'), 10);
+                    var st = self.studies[gi], se = st && st.series[si];
+                    var cv = th.querySelector('canvas');
+                    if (se && cv) self.drawThumb(cv, se);
+                    self._thumbIO.unobserve(th);
+                });
+            }, { root: this.el, rootMargin: '240px' });
+            Array.prototype.forEach.call(thumbs, function (th) { self._thumbIO.observe(th); });
+        } else {
+            this.studies.forEach(function (st, gi) {
+                (st.series || []).forEach(function (se, si) {
+                    var cv = self.el.querySelector('.pv-thumb[data-g="' + gi + '"][data-s="' + si + '"] canvas');
+                    if (cv) self.drawThumb(cv, se);
+                });
             });
-        });
+        }
     };
 
     /** 仅更新激活高亮（不重建 DOM，缩略图保持显示） */

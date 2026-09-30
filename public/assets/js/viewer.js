@@ -531,6 +531,7 @@
         if (this.toolbar && this.toolbar.destroy) this.toolbar.destroy();
         if (this._ctxDoc) document.removeEventListener('pointerdown', this._ctxDoc, true);
         if (this._ctxViewport) { window.removeEventListener('resize', this._ctxViewport); window.removeEventListener('scroll', this._ctxViewport, true); }
+        if (this.sidebar && this.sidebar._thumbIO) { try { this.sidebar._thumbIO.disconnect(); } catch (e) {} }
         this.panes.slice().forEach(function (p) { p.destroy(); });
         this.panes = [];
     };
