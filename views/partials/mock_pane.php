@@ -22,6 +22,7 @@
         <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
         <div class="pv-field">
             <label class="pv-switch">
+                <input type="hidden" name="mock_enabled" value="0">
                 <input type="checkbox" name="mock_enabled" value="1" <?php echo $v('mock_enabled', '1') === '1' ? 'checked' : ''; ?>>
                 <span class="pv-track"></span>
                 <span class="pv-switch-label">启用模拟服务器</span>

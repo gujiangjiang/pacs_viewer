@@ -57,11 +57,13 @@
                 });
             });
 
-            // 设置表单：保存后停留在当前页签，并实时刷新顶栏/图标
+            // 设置表单：保存后停留在当前页签（或表单声明的 data-ok-tab），并实时刷新顶栏/图标
             Array.prototype.forEach.call(document.querySelectorAll('form[data-ajax-form]'), function (form) {
                 form.__pvOnOk = function (j) {
                     applyChrome(j && j.data);
-                    goTab(form.querySelector('[name=tab]') ? form.querySelector('[name=tab]').value : 'basic');
+                    var hid = form.querySelector('[name=tab]');
+                    var tab = form.getAttribute('data-ok-tab') || (hid ? hid.value : curTab);
+                    goTab(tab);
                 };
             });
             PvUI.bindAjaxForms(document);
