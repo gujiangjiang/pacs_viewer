@@ -13,8 +13,7 @@ class PvStorageService {
         return array(
             'db'       => self::dbStats(),
             'uploads'  => self::dirStats(PV_DATA . '/uploads'),
-            'cache'    => PvMockCache::stats(),
-            'legacy'   => self::dirStats(PV_DATA . '/mock_cache'),
+            'cache'    => PvMockCache::stats(),   // 含内存层与磁盘层占用
             'session'  => self::dirStats(PV_DATA . '/session'),
         );
     }

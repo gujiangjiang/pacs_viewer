@@ -27,10 +27,10 @@
                 var rows = [
                     ['数据库', (d.db || {}).bytes, (d.db || {}).path || ''],
                     ['上传文件', (d.uploads || {}).bytes, ((d.uploads || {}).files || 0) + ' 个文件'],
-                    ['缓存区', (d.cache || {}).bytes, '后端：' + ((d.cache || {}).backend || '—') + ' · ' + ((d.cache || {}).count || 0) + ' 条目' + ((d.cache || {}).max_bytes ? ' · 上限 ' + human(d.cache.max_bytes) : '')],
+                    ['内存缓存', (d.cache || {}).bytes, '后端：' + ((d.cache || {}).backend || '—') + ' · ' + ((d.cache || {}).count || 0) + ' 条目' + ((d.cache || {}).max_bytes ? ' · 上限 ' + human(d.cache.max_bytes) : '')],
                     ['会话文件', (d.session || {}).bytes, ((d.session || {}).files || 0) + ' 个文件']
                 ];
-                if (d.legacy && d.legacy.bytes > 0) rows.push(['遗留磁盘缓存', d.legacy.bytes, (d.legacy.files || 0) + ' 个文件（可清空）']);
+                if (d.cache && d.cache.disk_bytes > 0) rows.push(['磁盘缓存', d.cache.disk_bytes, (d.cache.disk_files || 0) + ' 个影像文件（跨进程持久复用）']);
                 var html = '<table class="pv-table pv-storage-table"><thead><tr><th>项目</th><th>占用</th><th>说明</th></tr></thead><tbody>';
                 rows.forEach(function (r) {
                     html += '<tr><td>' + PvUI.esc(r[0]) + '</td><td class="pv-storage-size">' + human(r[1]) + '</td><td class="pv-dim">' + PvUI.esc(r[2] || '') + '</td></tr>';

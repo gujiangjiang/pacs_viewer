@@ -96,7 +96,7 @@
 │   ├── Controllers/          #   认证 / 安装 / 检索 / 阅片 / 管理 / 模拟服务器 / PWA / 上传 / JSON 接口
 │   └── Repositories/         #   账号 / 检索日志
 ├── views/                    # 页面模板（auth / install / search / viewer / admin / mock / error）
-├── tools/                    # 工具（serve.sh 服务器守护 / lint.php 语法检查 / mock_validate.php）
+├── tools/                    # 工具（serve.sh 守护 / lint.php / mock_validate.php / mock_warm.php 预生成）
 ├── docs/                     # 详细文档（CHANGELOG / HELP）
 └── data/                     # 运行时：pacs_viewer.db + session + uploads（自动生成，不提交）
 ```
