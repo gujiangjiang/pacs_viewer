@@ -124,10 +124,25 @@ class PvDicomWebClient {
             foreach ($instances as $it) {
                 $images[] = pvw_url('wadoprx', array('study' => $uid, 'series' => $seUid, 'instance' => $it['uid']));
             }
+            // 从首个实例的元数据解析像素 / 窗宽窗位参数（保证正确渲染，避免过曝）
+            $first = array();
+            foreach ((array)$instRes as $r0) { if (is_array($r0)) { $first = $r0; break; } }
             $series[] = array(
-                'series_id' => (string)$seNo, 'description' => $desc, 'orientation' => '',
+                'series_id' => (string)$seNo, 'description' => $desc,
+                'orientation' => self::orientation(self::val('00200037', $first)),
                 'slice_count' => $count, 'is_mock' => false, 'format' => 'dicom',
-                'is_hu' => ($mod === 'CT'), 'slice_thickness' => 0, 'pixel_spacing' => 0.7,
+                'is_hu' => ($mod === 'CT'),
+                'slice_thickness' => self::num('00180050', $first),
+                'pixel_spacing' => self::num('00280030', $first),
+                'rows' => (int)self::num('00280010', $first),
+                'columns' => (int)self::num('00280011', $first),
+                'bits_allocated' => (int)self::num('00280100', $first) ?: 16,
+                'bits_stored' => (int)self::num('00280101', $first) ?: 16,
+                'pixel_representation' => (int)self::num('00280103', $first),
+                'window_center' => self::num('00281050', $first),
+                'window_width' => self::num('00281051', $first),
+                'rescale_intercept' => self::num('00281052', $first),
+                'rescale_slope' => self::num('00281053', $first),
                 'seed' => '', 'images' => $images, 'frames_per_instance' => $fpi,
             );
         }
@@ -150,6 +165,27 @@ class PvDicomWebClient {
     }
 
     private static function firstArrayVal($tag, $res) { return self::val($tag, $res, 0); }
+
+    /** 取数值型标签（DS/IS），无值时返回 0 */
+    private static function num($tag, $res) {
+        $s = self::val($tag, $res);
+        if ($s === '') return 0;
+        $f = (float)$s;
+        return is_finite($f) ? $f : 0;
+    }
+
+    /** ImageOrientationPatient → AXIAL / SAGITTAL / CORONAL 方位名 */
+    private static function orientation($iop) {
+        $v = array_map('trim', explode('\\', (string)$iop));
+        if (count($v) < 6) return '';
+        $row = array((float)$v[0], (float)$v[1], (float)$v[2]);
+        $col = array((float)$v[3], (float)$v[4], (float)$v[5]);
+        $nz = abs($row[0] * $col[1] - $row[1] * $col[0]);   // Z 分量的法向大小
+        if ($nz > 0.7) return 'AXIAL';
+        if (abs($row[1]) > 0.7 || abs($col[1]) > 0.7) return 'CORONAL';
+        if (abs($row[0]) > 0.7 || abs($col[0]) > 0.7) return 'SAGITTAL';
+        return '';
+    }
 
     private static function mapStudyRow($res) {
         $sex = self::val('00100040', $res);

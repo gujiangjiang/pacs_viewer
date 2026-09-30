@@ -108,6 +108,19 @@ class PvDicomWebController {
                 '00200013' => array('vr' => 'IS', 'Value' => array((string)$i)),
                 '00280008' => array('vr' => 'IS', 'Value' => array((string)$nf)),
                 '00080060' => array('vr' => 'CS', 'Value' => array(strtoupper($row['modality']))),
+                // 像素与窗宽窗位参数（供前端正确渲染）
+                '00280010' => array('vr' => 'US', 'Value' => array((int)$s['rows'])),
+                '00280011' => array('vr' => 'US', 'Value' => array((int)$s['columns'])),
+                '00280100' => array('vr' => 'US', 'Value' => array((int)$s['bits_allocated'])),
+                '00280101' => array('vr' => 'US', 'Value' => array((int)$s['bits_stored'])),
+                '00280103' => array('vr' => 'US', 'Value' => array((int)$s['pixel_representation'])),
+                '00281050' => array('vr' => 'DS', 'Value' => array((string)$s['window_center'])),
+                '00281051' => array('vr' => 'DS', 'Value' => array((string)$s['window_width'])),
+                '00281052' => array('vr' => 'DS', 'Value' => array((string)$s['rescale_intercept'])),
+                '00281053' => array('vr' => 'DS', 'Value' => array((string)$s['rescale_slope'])),
+                '00280030' => array('vr' => 'DS', 'Value' => array((string)$s['pixel_spacing'])),
+                '00180050' => array('vr' => 'DS', 'Value' => array((string)$s['slice_thickness'])),
+                '00200037' => array('vr' => 'DS', 'Value' => array(self::iopFor($s['orientation']))),
             );
         }
         self::json($out);
@@ -186,6 +199,16 @@ class PvDicomWebController {
             '00081010' => array('vr' => 'SH', 'Value' => array(isset($row['station_name']) ? (string)$row['station_name'] : '')),
             '00201209' => array('vr' => 'IS', 'Value' => array((string)(isset($row['series_count']) ? $row['series_count'] : 1))),
         );
+    }
+
+    /** 方位名 → ImageOrientationPatient（DS，反斜杠分隔） */
+    private static function iopFor($orientation) {
+        switch (strtoupper((string)$orientation)) {
+            case 'AXIAL':    return '1\\0\\0\\0\\1\\0';
+            case 'SAGITTAL': return '0\\1\\0\\0\\0\\-1';
+            case 'CORONAL':  return '1\\0\\0\\0\\0\\-1';
+            default:         return '';
+        }
     }
 
     private static function toDa($s) {
