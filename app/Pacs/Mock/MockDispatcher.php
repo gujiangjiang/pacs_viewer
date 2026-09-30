@@ -150,9 +150,12 @@ class PvMockDispatcher {
         $count = (int)$gen->getFrameCount();
         $seriesNo = (int)$id;
 
+        /* 原生多帧：整条序列作为一个 DICOM 实例（NumberOfFrames = count） */
+        $perInstance = $count > 0 ? $count : 1;
+        $instances = max(1, (int)ceil($count / $perInstance));
         $images = array();
-        $ver = substr(md5(PV_VERSION . '|' . $modality . '|' . $body . '|' . $weight . '|' . $count), 0, 8);
-        for ($i = 1; $i <= $count; $i++) {
+        $ver = substr(md5(PV_VERSION . '|' . $modality . '|' . $body . '|' . $weight . '|' . $count . '|mf'), 0, 8);
+        for ($i = 1; $i <= $instances; $i++) {
             $images[] = pvw_url('dicom', array('uid' => $studyUid, 'series' => $seriesNo, 'instance' => $i, 'v' => $ver));
         }
         $thumb = pvw_url('thumb', array('uid' => $studyUid, 'series' => $seriesNo, 'v' => $ver));
@@ -184,6 +187,7 @@ class PvMockDispatcher {
             'primary' => true,
             'images' => $images,
             'thumbnail' => $thumb,
+            'frames_per_instance' => (int)$perInstance,   // 每实例帧数（原生多帧）
         );
     }
 

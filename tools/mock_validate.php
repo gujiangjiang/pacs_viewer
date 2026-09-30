@@ -78,8 +78,12 @@ foreach ($studies as $row) {
     if (isset($checked[$m])) continue;
     $checked[$m] = true;
     try {
+        $plan = PvMockDispatcher::seriesPlan($m, $row['description'], $row['study_uid']);
         $gen = PvMockDispatcher::generatorForSeries($m, $row['description'], $row['study_uid'], 0);
-        $maxInst = $gen ? min(3, $gen->getFrameCount()) : 1;
+        $total = $gen ? $gen->getFrameCount() : 1;
+        $fpi = isset($plan[0]['frames_per_instance']) ? max(1, (int)$plan[0]['frames_per_instance']) : 1;
+        $totalInst = max(1, (int)ceil($total / $fpi));
+        $maxInst = min(3, $totalInst);
         $lastLoc = null; $uids = array();
         for ($inst = 1; $inst <= $maxInst; $inst++) {
             $r = PvMockServer::wado(array('uid' => $row['study_uid'], 'series' => 1, 'instance' => $inst));
@@ -94,13 +98,19 @@ foreach ($studies as $row) {
             $sop = isset($tags['0008,0018']) ? trim($tags['0008,0018'][2], "\0 ") : '';
             if ($sop === '' || isset($uids[$sop])) vfail($fails, "$m 实例{$inst}：SOPInstanceUID 缺失或重复");
             $uids[$sop] = 1;
+
+            // 原生多帧：本实例帧数 = min(fpi, 剩余帧)
+            $expectedFrames = min($fpi, $total - ($inst - 1) * $fpi);
+            $nf = isset($tags['0028,0008']) ? (int)trim($tags['0028,0008'][2]) : 1;
+            if ($nf !== $expectedFrames) vfail($fails, "$m 实例{$inst}：NumberOfFrames={$nf} != {$expectedFrames}");
             $pxl = isset($tags['7FE0,0010']) ? $tags['7FE0,0010'][1] : 0;
             $rows = isset($tags['0028,0010']) ? unpack('v', $tags['0028,0010'][2])[1] : 0;
             $cols = isset($tags['0028,0011']) ? unpack('v', $tags['0028,0011'][2])[1] : 0;
             $bits = isset($tags['0028,0100']) ? unpack('v', $tags['0028,0100'][2])[1] : 0;
-            if ($pxl !== $rows * $cols * ($bits / 8)) vfail($fails, "$m 实例{$inst}：PixelData 长度 {$pxl} != " . ($rows * $cols * ($bits / 8)));
+            $exp = $rows * $cols * ($bits / 8) * $expectedFrames;
+            if ($pxl !== $exp) vfail($fails, "$m 实例{$inst}：PixelData 长度 {$pxl} != {$exp}");
         }
-        echo "  OK  {$m} · " . $row['description'] . "  (前 {$maxInst} 个实例)" . PHP_EOL;
+        echo "  OK  {$m} · " . $row['description'] . "  (前 {$maxInst} 个实例，每实例 {$fpi} 帧)" . PHP_EOL;
     } catch (Exception $e) {
         vfail($fails, "$m：WADO 输出异常 " . $e->getMessage());
     }

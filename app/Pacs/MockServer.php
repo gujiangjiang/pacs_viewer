@@ -152,6 +152,10 @@ class PvMockServer {
     public static function wado(array $p) {
         list($row, $series, $seriesIndex, $gen) = self::resolveSeries($p);
 
+        $totalFrames = $gen->getFrameCount();
+        $fpi = isset($series['frames_per_instance']) ? max(1, (int)$series['frames_per_instance']) : 1;
+        $totalInstances = max(1, (int)ceil($totalFrames / $fpi));
+
         $instance = 1;
         if (!empty($p['objectUID']) || !empty($p['object_uid'])) {
             $ouid = !empty($p['objectUID']) ? (string)$p['objectUID'] : (string)$p['object_uid'];
@@ -159,16 +163,19 @@ class PvMockServer {
         } elseif (isset($p['instance']) && $p['instance'] !== '') {
             $instance = (int)$p['instance'];
         }
-        $total = $gen->getFrameCount();
         if ($instance < 1) $instance = 1;
-        if ($instance > $total) $instance = $total;
+        if ($instance > $totalInstances) $instance = $totalInstances;
+
+        $start = ($instance - 1) * $fpi;
+        $frameCount = min($fpi, $totalFrames - $start);
+        if ($frameCount < 1) $frameCount = 1;
 
         $base = ($row['patient_id'] ? $row['patient_id'] : 'patient') . '_' . ($row['accession_no'] ? $row['accession_no'] : 'study')
             . '_s' . ($seriesIndex + 1) . '_i' . $instance . '.dcm';
 
-        /* 内存 / 磁盘缓存：同一实例仅逐像素生成一次，后续直接读取 */
+        /* 内存 / 磁盘缓存：同一实例仅生成一次，后续直接读取 */
         $key = md5(implode('|', array(
-            PV_VERSION, $row['study_uid'], $seriesIndex, $instance,
+            PV_VERSION, $row['study_uid'], $seriesIndex, $instance, $fpi,
             $gen->getFrameCount(), $gen->getBodyPartExamined(),
         )));
         $cached = PvMockCache::get($key);
@@ -176,8 +183,12 @@ class PvMockServer {
             return array('binary' => $cached, 'filename' => $base, 'content_type' => 'application/dicom');
         }
 
-        $pixels = $gen->generateFrame($instance - 1);
-        $binary = self::buildDicom($row, $series, $seriesIndex, $instance, $gen, $pixels);
+        // 多帧：把本实例包含的各帧像素拼接为一个 DICOM 实例
+        $pixels = '';
+        for ($f = 0; $f < $frameCount; $f++) {
+            $pixels .= $gen->generateFrame($start + $f);
+        }
+        $binary = self::buildDicom($row, $series, $seriesIndex, $instance, $gen, $pixels, $frameCount, $start);
         PvMockCache::set($key, $binary);
         return array('binary' => $binary, 'filename' => $base, 'content_type' => 'application/dicom');
     }
@@ -258,15 +269,15 @@ class PvMockServer {
         return $bin;
     }
 
-    /** 组装单实例标准 DICOM 数据集 */
-    private static function buildDicom($row, array $series, $seriesIndex, $instance, PvMockAbstractGenerator $gen, $pixels) {
+    /** 组装单实例标准 DICOM 数据集（支持原生多帧） */
+    private static function buildDicom($row, array $series, $seriesIndex, $instance, PvMockAbstractGenerator $gen, $pixels, $frameCount = 1, $startFrame = 0) {
         $modality = strtoupper($row['modality']);
         $studyUid = $row['study_uid'];
         $seriesNo = $seriesIndex + 1;
         $seriesUid = PvMockDicomTagBuilder::deriveUid($studyUid, array($seriesNo));
         $sopUid = PvMockDicomTagBuilder::deriveUid($seriesUid, array($instance));
 
-        list($ipp, $iop, $sliceLoc) = self::spatial($series['orientation'], $instance, $gen->getSliceThickness());
+        list($ipp, $iop, $sliceLoc) = self::spatial($series['orientation'], $startFrame + 1, $gen->getSliceThickness());
 
         $m = $gen->getModalitySpecificTags();
         $m['sop_class_uid'] = PvMockDicomTagBuilder::sopClassFor($modality);
@@ -276,7 +287,7 @@ class PvMockServer {
         $m['series_number'] = $seriesNo;
         $m['instance_number'] = $instance;
         $m['transfer_syntax'] = PvMockDicomTagBuilder::TS_EXPLICIT_LE;
-        $m['number_of_frames'] = 1;                       // 每实例单帧，前端按实例滚动
+        $m['number_of_frames'] = (int)$frameCount;        // 原生多帧：本实例帧数
         $m['slice_location'] = $sliceLoc;
         $m['image_position'] = $ipp;
         $m['image_orientation'] = $iop;
