@@ -287,7 +287,8 @@
         }
         this.restoreStudies(saved, function () {
             if (!self.ws.studies.length) { self.showEmpty(); return; }
-            self.renderAll(); self.renderSidebar(); self.refreshControlState();
+            // 窗格已由 restoreStudies→renderPanes 按痕迹渲染，勿再 renderAll（会重置缩放窗值）
+            self.renderSidebar(); self.refreshControlState();
         });
     };
     PvViewer.prototype.restoreStudies = function (saved, cb) {
@@ -316,25 +317,26 @@
                 });
             }
             if (typeof saved.active === 'number' && saved.active >= 0 && saved.active < self.panes.length) self.active = saved.active;
-            self.panes.forEach(function (p, i) {
-                p.el.classList.toggle('active', i === self.active);
-                if (p.st.uid && self.study(p.st.uid)) {
-                    var ser = p.curSeries();
-                    var stt = ser ? self.seriesState(p.st.uid, ser.series_id) : null;
-                    if (stt && stt.view) { p.st.annos = []; p.applyView(stt.view); }
-                    else { p.applyDefaults(); p.fit(); }
-                    p.updateTitle(); p.updateScrollbar(); p.render();
-                    if (ser) p.prefetch(ser);
-                } else { p.updateTitle(); p.updateScrollbar(); p.render(); }
-            });
+            self.renderPanes();
             if (cb) cb();
         });
     };
-    PvViewer.prototype.renderAll = function () {
-        this.panes.forEach(function (p, i) { p.el.classList.toggle('active', i === this.active); p.applyDefaults(); p.fit(); p.updateTitle(); p.render(); }, this);
-        this.renderSidebar();
-        this.syncToolbar();
-        this.refreshControlState();
+    /** 重绘所有窗格但保留各序列既有操作痕迹（用于恢复 / 关闭检查等，不重置缩放窗值） */
+    PvViewer.prototype.renderPanes = function () {
+        var self = this;
+        this.panes.forEach(function (p, i) {
+            p.el.classList.toggle('active', i === self.active);
+            if (p.st.uid && self.study(p.st.uid)) {
+                var ser = p.curSeries();
+                var stt = ser ? self.seriesState(p.st.uid, ser.series_id) : null;
+                if (stt && stt.view) { p.st.annos = []; p.applyView(stt.view); }
+                else { p.applyDefaults(); p.fit(); }
+                p.updateTitle(); p.updateScrollbar(); p.render();
+                if (ser) p.prefetch(ser);
+            } else {
+                p.updateTitle(); p.updateScrollbar(); p.render();
+            }
+        });
     };
     PvViewer.prototype.renderSidebar = function () {
         var self = this, p = this.activePane();
@@ -352,7 +354,10 @@
         // 窗格中若引用了被移除的检查则清空该窗格
         this.panes.forEach(function (p) { if (p.st.uid === removed.uid) { p.st.uid = ''; p.st.si = 0; p.st.fi = 0; } });
         if (!this.ws.studies.length) { this.showEmpty(); return; }
-        this.renderAll();
+        this.renderPanes();
+        this.renderSidebar();
+        this.syncToolbar();
+        this.refreshControlState();
         this.persist();
     };
     PvViewer.prototype.showEmpty = function () {
@@ -387,7 +392,6 @@
         var key = this._skey(pane.st.uid, ser.series_id);
         var rec = this.seriesMap[key] || {};
         rec.view = pane.captureView();
-        rec.layout = this.layout;
         this.seriesMap[key] = rec;
         this._persistSeriesMap();
     };
@@ -405,7 +409,10 @@
         try { sessionStorage.setItem(SERIES_LS, JSON.stringify(this.seriesMap)); } catch (e) {}
     };
 
-    /** 在激活窗格载入序列（fresh=true：重置该序列操作痕迹并回到单视图） */
+    /**
+     * 在「激活窗格」载入序列（不改动布局：多视图下点序列即载入到当前激活分栏，便于对比）。
+     * fresh=true 时重置该序列的操作痕迹（双击）。
+     */
     PvViewer.prototype.setSeriesOnActive = function (gi, si, fresh) {
         var st = this.ws.studies[gi], ser = st && st.series[si];
         if (!ser) return;
@@ -414,21 +421,9 @@
             delete this.seriesMap[this._skey(st.uid, ser.series_id)];
             this._persistSeriesMap();
             ap.setSeries(st.uid, si, { fresh: true });
-            if (this.layout !== '1') this.setLayout('1', false);
             return;
         }
         ap.setSeries(st.uid, si, {});
-        var saved = this.seriesState(st.uid, ser.series_id);
-        if (saved && saved.layout) this._restoreLayoutFor(ap, saved.layout);
-        else if (this.layout !== '1') this.setLayout('1', false);   // 未看过的序列：默认单视图
-    };
-
-    /** 恢复某序列关联的布局，并保持该窗格激活 */
-    PvViewer.prototype._restoreLayoutFor = function (pane, layout) {
-        if (['1', '2h', '2v', '4'].indexOf(layout) < 0 || this.layout === layout) return;
-        this.setLayout(layout, false);
-        var i = this.panes.indexOf(pane);
-        if (i >= 0) this.setActivePane(i);
     };
 
     /* ---------- 会话记忆 ---------- */
