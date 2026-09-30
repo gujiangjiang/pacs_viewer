@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.20.2-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.20.3-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -24,6 +24,8 @@
   安装管理员受保护，不可删除 / 停用，其余账号可在账号管理中管理。
 - **全站 AJAX 局部刷新**：站内导航不整页重载、**地址栏保持不变**；外部直接链接
   （如阅片器 `?r=viewer&uid=...`）仍可整页进入，阅片器可一键复制直链。
+  研究检索 / 影像查看的页面片段在**前端缓存**，标签切换为**纯前端操作**（零后端
+  请求、零等待），高负载下也不卡顿；影像数据仍由各页按需经接口获取。
 - **PWA / 离线**：可「安装到桌面 / 主屏幕」，Service Worker 静态资源缓存优先 +
   后台更新、页面离线回退缓存、接口实时直连；图标由**代码绘制**（无预置图片），
   管理员可上传自定义图标。

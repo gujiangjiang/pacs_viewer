@@ -1,10 +1,14 @@
 /* ============================================================
  * assets/js/spa.js — 站内 AJAX 局部刷新导航（地址栏保持不变）
  * ============================================================
- * · 拦截带 data-nav 的站内链接，通过 fetch 拉取 JSON 片段并替换 #pvMain；
- * · 地址栏始终不变（不做 history 跳转），外部/直接链接仍可整页进入；
- * · 按页加载所需 CSS / JS，并调用 PvPages.<page>.init(data) 初始化；
- * · 切换页面前调用上一页 PvPages.<page>.destroy() 释放资源。
+ * · 拦截带 data-nav 的站内链接，替换 #pvMain（地址栏不变）；
+ * · 「壳层静态」页面（研究检索 / 影像查看）的片段在**前端缓存**：命中缓存时
+ *   切换为纯前端操作，不发任何后端请求、不显示变灰遮罩，因此在高负载下也
+ *   绝不卡顿（影像数据仍由各页自身按需走接口获取）；
+ * · 首次进入某静态页前，于空闲时后台预取其片段与脚本，使首次点击也即时；
+ * · 其他页面（如管理设置）仍走 AJAX 拉取，但仅在超过 120ms 才显示忙碌遮罩，
+ *   避免快切换时的闪烁；
+ * · 切换页面前调用上一页 PvPages.<page>.destroy() 释放资源（含中止阅片器预取）。
  * ============================================================ */
 (function (global) {
     'use strict';
@@ -16,12 +20,19 @@
     var currentPage = boot.page || null;
     var busy = false;
 
+    // 壳层静态页：内容不随请求变化（数据由页面自身经接口获取），可长期缓存、零后端切换
+    var STATIC_PAGES = { search: 1, viewer: 1 };
+    var pageCache = {};   // page -> 片段数据（含 html/css/js/data）
+
+    // 资源去重：按「路径」归一化（忽略 ?v= 版本查询），避免同一文件被重复注入
+    function assetKey(url) { return String(url || '').replace(/[?#].*$/, ''); }
+
     // 记录首页已由服务端加载的资源，避免重复注入
     Array.prototype.forEach.call(document.querySelectorAll('script[src]'), function (s) {
-        loadedJs[s.getAttribute('src')] = true;
+        loadedJs[assetKey(s.getAttribute('src'))] = true;
     });
     Array.prototype.forEach.call(document.querySelectorAll('link[rel="stylesheet"]'), function (l) {
-        loadedCss[l.getAttribute('href')] = true;
+        loadedCss[assetKey(l.getAttribute('href'))] = true;
     });
 
     function route(page, params) {
@@ -35,21 +46,23 @@
     }
 
     function ensureCss(list) {
-        (list || []).forEach(function (name, i) {
+        (list || []).forEach(function (name) {
             var href = (boot.asset || (home.replace(/\/$/, '') + '/assets')) + '/css/' + name;
-            if (loadedCss[href]) return;
+            var key = assetKey(href);
+            if (loadedCss[key]) return;
+            loadedCss[key] = true;
             var link = document.createElement('link');
             link.rel = 'stylesheet'; link.href = href;
             document.head.appendChild(link);
-            loadedCss[href] = true;
         });
     }
     function ensureJs(list) {
         var chain = Promise.resolve();
         (list || []).forEach(function (name) {
             var src = (boot.asset || (home.replace(/\/$/, '') + '/assets')) + '/js/' + name;
-            if (loadedJs[src]) return;
-            loadedJs[src] = true;
+            var key = assetKey(src);
+            if (loadedJs[key]) return;
+            loadedJs[key] = true;
             chain = chain.then(function () {
                 return new Promise(function (resolve) {
                     var s = document.createElement('script');
@@ -83,6 +96,7 @@
         }
     }
 
+    /** 渲染一个页面片段（不发起后端请求） */
     function apply(res) {
         if (!main) return;
         ensureCss(res.css);
@@ -95,15 +109,56 @@
         Promise.resolve(ensureJs(res.js)).then(done).catch(done);
     }
 
+    function isStatic(page) { return !!STATIC_PAGES[page]; }
+
+    /** 静态度缓存副本：清空一次性 flash，避免每次切换重复弹出提示 */
+    function cacheCopy(data) {
+        var c = {};
+        for (var k in data) c[k] = data[k];
+        c.flash = '';
+        return c;
+    }
+
+    /** 空闲时后台预取静态页片段与脚本，使首次点击也即时（不改变当前页面） */
+    function prefetchShell(page) {
+        if (!isStatic(page) || pageCache[page]) return;
+        fetch(route(page), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            credentials: 'same-origin'
+        }).then(function (r) { return r.json(); }).then(function (res) {
+            if (res && res.code === 200 && res.data) {
+                pageCache[page] = cacheCopy(res.data);
+                ensureCss(res.data.css);
+                ensureJs(res.data.js);   // 顺便预载脚本，首次切换无需再等
+            }
+        }).catch(function () {});
+    }
+    function warmStaticShells() {
+        ['search', 'viewer'].forEach(prefetchShell);
+    }
+    if (global.requestIdleCallback) {
+        global.requestIdleCallback(function () { warmStaticShells(); }, { timeout: 2500 });
+    } else {
+        setTimeout(warmStaticShells, 1500);
+    }
+
     function go(page, params, opts) {
         if (busy) return;
         opts = opts || {};
+
+        // 已在当前静态页：重复点击同一标签直接忽略（避免无谓重渲染）
+        if (!opts.force && page === currentPage && isStatic(page)) return;
+
+        // 释放当前页面资源（含中止阅片器在途预取），避免占用连接
+        if (currentPage && currentPage !== page) { teardown(currentPage); currentPage = null; }
+
+        // 静态页命中缓存：纯前端切换，零后端请求、零遮罩、零延迟
+        if (isStatic(page) && pageCache[page]) { apply(pageCache[page]); return; }
+
         var url = route(page, params);
         busy = true;
-        document.body.classList.add('pv-nav-busy');
-        // 先释放当前页面资源：阅片器可能在后台预取整条序列，占用浏览器连接会拖慢
-        // 本次导航请求（表现为点标签后页面变暗数秒才切换）。提前销毁并中止其在途请求。
-        if (currentPage && currentPage !== page) { teardown(currentPage); currentPage = null; }
+        // 仅在请求超过 120ms 才显示忙碌遮罩，避免快切换闪烁
+        var busyTimer = setTimeout(function () { document.body.classList.add('pv-nav-busy'); }, 120);
         fetch(url, {
             headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
             credentials: 'same-origin'
@@ -111,19 +166,22 @@
             if (r.status === 401 || r.redirected) throw new Error('need-login');
             return r.json();
         }).then(function (res) {
-            busy = false; document.body.classList.remove('pv-nav-busy');
+            busy = false; clearTimeout(busyTimer); document.body.classList.remove('pv-nav-busy');
             if (!res || res.code !== 200 || !res.data) { global.location.href = url; return; }
+            if (isStatic(page)) pageCache[page] = cacheCopy(res.data);   // 缓存静态壳，后续零后端切换
             apply(res.data);
         }).catch(function () {
-            busy = false; document.body.classList.remove('pv-nav-busy');
+            busy = false; clearTimeout(busyTimer); document.body.classList.remove('pv-nav-busy');
             global.location.href = url;   // 回退为整页导航，保证可用
         });
     }
 
-    /** 重新加载当前页面（表单提交后刷新局部内容） */
+    /** 重新加载当前页面（表单提交后刷新局部内容；清缓存以取回最新数据） */
     function refresh() {
         var page = currentPage || boot.page;
-        if (page) go(page);
+        if (!page) return;
+        if (pageCache[page]) delete pageCache[page];
+        go(page, null, { force: true });
     }
 
     // 事件委托：拦截站内 data-nav 链接点击
