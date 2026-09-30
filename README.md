@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.27.1-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.28.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -14,8 +14,9 @@
 为便于联调，项目内置了一个**模拟 PACS 服务器**（见「模拟服务器」页）：它对外提供
 **标准 DICOMweb**（`/dicom-web/studies` 等 QIDO-RS / WADO-RS）与**标准 DICOM 文件**
 （WADO-URI），使用内置确定性仿真患者数据，可被本浏览器或任何标准客户端联调。
-其 DICOMweb 地址与密钥可**一键填入**【外部接口】。真实部署的影像接口为必填，
-FHIR R4 可选作患者信息补充。
+其 DICOMweb 地址与密钥可**一键填入**【外部接口】；模拟服务器的**患者数据来源**可选
+**内置仿真数据**或**门诊 FHIR R4**。真实部署的影像接口为必填，患者信息随接口返回
+（DICOM 已含患者信息，无需 FHIR）。
 
 部署形态为标准 PHP 网站：Web 根指向本仓库的 `public/`，入口为 `public/index.php`。
 
