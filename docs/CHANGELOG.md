@@ -14,6 +14,21 @@
 
 ---
 
+## [0.28.2] - 2026-09-30
+
+### 修复
+- **FHIR 连接成功却取不到患者**：门诊 FHIR 只提供 `Patient/{patient_no}` 与
+  `Encounter?patient=`（无 `Patient?name` 搜索、无 `ImagingStudy`），而原客户端请求了
+  后两者。现适配：患者优先 name/identifier 搜索 → `Patient/{patient_no}` 读取 →
+  `Encounter?patient=` 推导；检查优先 ImagingStudy，回退 **Encounter（就诊记录）** 映射。
+  并在患者预览 / 检索页**提示 FHIR 错误**（原先静默失败）。
+
+### 变更
+- **模拟服务器 Tab 改为左右两栏布局**：左侧导航（服务器状态 / 控制 / 数据来源 /
+  部位与切片 / 标准 API / 患者查询），右侧切换显示，页面不再冗长。
+
+---
+
 ## [0.28.1] - 2026-09-30
 
 ### 修复
