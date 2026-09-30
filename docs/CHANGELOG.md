@@ -14,6 +14,17 @@
 
 ---
 
+## [0.19.0] - 2026-09-30
+
+### 变更
+- **管理页拆分（大项 F 完成）**：`admin.js` 拆为 `admin-users.js`（账号管理面板）
+  与 `admin-storage.js`（存储情况面板），`admin.js` 只保留页签 / 基础设置 / 图标 /
+  日志 / 外部接口测试等装配；`views/admin.php` 的六个页签拆为
+  `views/partials/admin_*.php`（模拟服务器沿用 `mock_pane.php`）；同步更新
+  `admin.php` 脚本装配与 Service Worker 预缓存清单。
+
+---
+
 ## [0.18.0] - 2026-09-30
 
 ### 变更
