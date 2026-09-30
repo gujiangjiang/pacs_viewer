@@ -64,14 +64,14 @@ class PvMockController {
     public static function apply() {
         PvAuth::requireAdmin();
         pvw_csrf_check();
-        $url = PvMockServer::externalEndpoint();
+        $url = PvMockServer::dicomWebEndpoint();
         $key = PvMockServer::apiKey();
-        // 同时把协议复位为 gateway：模拟服务器对外为简化网关接口
-        PvSettings::saveMany(array('pacs_endpoint' => $url, 'pacs_api_key' => $key, 'pacs_protocol' => 'gateway'));
-        self::reply('已将模拟服务器填入 DICOM/PACS 接口', array(
+        // 协议设为 dicomweb：模拟服务器对外提供标准 DICOMweb（QIDO-RS / WADO-RS）
+        PvSettings::saveMany(array('pacs_endpoint' => $url, 'pacs_api_key' => $key, 'pacs_protocol' => 'dicomweb'));
+        self::reply('已将模拟服务器（标准 DICOMweb）填入影像接口', array(
             'endpoint' => $url,
             'key'      => $key,
-            'protocol' => 'gateway',
+            'protocol' => 'dicomweb',
         ));
     }
 

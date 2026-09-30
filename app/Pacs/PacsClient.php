@@ -29,9 +29,9 @@ class PvPacsClient {
         return self::isRemote() ? 'Remote' : 'Unset';
     }
 
-    /** 接口协议：gateway（简化网关）/ dicomweb（标准 DICOMweb） */
+    /** 接口协议：dicomweb（标准 DICOMweb，默认）/ gateway（本项目自定义 JSON 网关） */
     public static function protocol() {
-        return (string)PvSettings::get('pacs_protocol', 'gateway') === 'dicomweb' ? 'dicomweb' : 'gateway';
+        return (string)PvSettings::get('pacs_protocol', 'dicomweb') === 'gateway' ? 'gateway' : 'dicomweb';
     }
     public static function isDicomWeb() { return self::protocol() === 'dicomweb'; }
 

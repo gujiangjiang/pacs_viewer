@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.23.1-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.24.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -11,10 +11,11 @@
 调阅与影像展示链路。**本浏览器自身不含数据**：所有患者、检查、医院名称等数据
 均通过所配置的远程 PACS / DICOMWeb 接口获取。
 
-为便于联调，项目内置了一个**模拟 PACS 服务器**（见「模拟服务器」页）：它通过
-对外 API 提供标准 PACS 接口，使用内置确定性仿真患者数据；影像由内置模拟服务器按
-标准 DICOM（WADO-URI）生成，用于验证完整阅片链路。对外地址与密钥可**一键填入**
-【外部接口】。真实部署的 DICOM/PACS 网关为必填，FHIR R4 可选作患者信息补充。
+为便于联调，项目内置了一个**模拟 PACS 服务器**（见「模拟服务器」页）：它对外提供
+**标准 DICOMweb**（`/dicom-web/studies` 等 QIDO-RS / WADO-RS）与**标准 DICOM 文件**
+（WADO-URI），使用内置确定性仿真患者数据，可被本浏览器或任何标准客户端联调。
+其 DICOMweb 地址与密钥可**一键填入**【外部接口】。真实部署的影像接口为必填，
+FHIR R4 可选作患者信息补充。
 
 部署形态为标准 PHP 网站：Web 根指向本仓库的 `public/`，入口为 `public/index.php`。
 
@@ -57,12 +58,13 @@
   - **键盘快捷键**（按 `?` 查看说明：翻帧 / 工具 / 布局 / 变换 / 导出等）；
   - **Web Worker 后台解码**标准 DICOM（含重采样），大序列滚动主线程零阻塞；
   - **原生多帧 DICOM**（`NumberOfFrames > 1`）：一次取回整条序列、实例级缓存、按帧滚动。
-- **内置模拟 PACS 服务器**（【管理设置 → 模拟服务器】子 Tab）：对外 API
-  （`search` / `study` / `ping`）供本浏览器或门诊系统调用；使用内置仿真患者数据；
-  可预览患者、一键应用模拟数据、重新生成密钥、整体启停。
-- **影像接口协议**：支持 **DICOMweb**（DICOM 标准 HTTP：QIDO-RS / WADO-RS，含原生多帧）
-  与 **JSON 网关**（本项目自定义：`action/q/uid/key` 返回 JSON）；影像经服务端同源代理
-  下发。二者均非传统 DICOM（DIMSE）——若 PACS 仅有 DIMSE，需经网关转换。
+- **标准 DICOMweb（默认）**：以 DICOM 标准 HTTP 接口对接 PACS——**QIDO-RS** 检索、
+  **WADO-RS** 取像（含原生多帧），影像经服务端同源代理下发；另可切换 **JSON 网关**
+  （本项目自定义：`action/q/uid/key` 返回 JSON）以兼容旧网关。二者均非传统
+  DICOM（DIMSE）——若 PACS 仅有 DIMSE，需先经网关转换。
+- **内置模拟 PACS 服务器**（【管理设置 → 模拟服务器】子 Tab）：对外提供**标准
+  DICOMweb**（`/dicom-web/studies` QIDO-RS、WADO-RS 取像）与标准 DICOM 文件
+  （WADO-URI）；使用内置仿真患者数据；可预览患者、一键应用、重新生成密钥、整体启停。
 - **管理设置**：站点 / 医院信息、外部接口配置、接口连通性测试、
   账号管理（模态框）、检索日志、影像视图序列上限（3-10）、模拟服务器、存储情况。
 - **操作日志**：记录账号、操作（搜索 / 读片 / 下载 / 阅读 DICOM）、详情
@@ -141,16 +143,30 @@ tools/serve.sh status     # 查看 up / down
 
 本浏览器自身不含数据。若暂无真实 PACS，可在【模拟服务器】页：
 
-1. 查看 / 复制**对外 API 地址**与**接口密钥**（对外接口：`{地址}&action=search|study|ping&key=密钥`）；
-2. （内置模拟服务器固定使用内置仿真患者数据）
-3. 点击【一键应用模拟服务器数据】，自动把地址与密钥填入【外部接口】；
-4. 回到【研究检索】即可检索并阅片（影像由内置模拟服务器按标准 DICOM 生成）。
+1. 查看 / 复制 **DICOMweb 地址**与**接口密钥**；
+2. 点击【一键应用模拟服务器数据】，自动把 DICOMweb 地址 / 密钥 / 协议填入【外部接口】；
+3. 回到【研究检索】即可检索并阅片（影像按标准 DICOM / 原生多帧生成）。
 
-对外 API 也可提供给门诊系统等其他系统调用（需携带 `key`）。
+内置 DICOMweb 端点遵循标准语义，可被任何标准客户端调用（需携带密钥）：
+
+```
+GET {DICOMweb根}/studies?PatientName=&limit=&offset=&includefield=all   （QIDO-RS 检索）
+GET {DICOMweb根}/studies/{uid}/series                                   （序列）
+GET {DICOMweb根}/studies/{uid}/series/{se}/instances                     （实例，含 NumberOfFrames）
+GET {DICOMweb根}/studies/{uid}/series/{se}/instances/{i}                 （WADO-RS 实例字节流）
+```
 
 ## PACS 接口约定
 
-在【管理设置 → 外部接口】配置接口地址后，检索与调阅数据全部来自该地址：
+在【管理设置 → 外部接口】选择协议并配置地址后，检索与调阅数据全部来自该地址。
+
+**协议一：DICOMweb（默认，DICOM 标准）**
+
+- 检索：`GET {根}/studies?PatientName=关键词&limit=&offset=&includefield=all`（QIDO-RS）
+- 调阅：`GET {根}/studies/{uid}/series` 及 `/instances`（WADO-RS；实例含原生多帧）
+- 认证：可选 `Authorization: Bearer` / `X-API-Key` 请求头
+
+**协议二：JSON 网关（本项目自定义，兼容旧网关）**
 
 ```
 GET {endpoint}?action=search&q=关键词&key=APIKEY
@@ -165,7 +181,7 @@ GET {endpoint}?action=ping&key=APIKEY
     → {"code":200,"data":{name,version}}
 ```
 
-管理页【测试接口】按钮即调用 `ping`。可指向内置模拟服务器对外 API，或真实 PACS 网关。
+管理页【测试接口连通性】按钮按所选协议测试。两种协议均非传统 DICOM（DIMSE）。
 
 ## 通用上传与鉴权下载
 

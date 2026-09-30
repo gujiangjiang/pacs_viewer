@@ -131,9 +131,9 @@
                             };
                             setVal('pacs_endpoint', d.endpoint);
                             setVal('pacs_api_key', d.key);
-                            setVal('pacs_protocol', d.protocol || 'gateway');
+                            setVal('pacs_protocol', d.protocol || 'dicomweb');
                             PvUI.toast('已应用：' + (d.endpoint || ''), 'ok');
-                            PvUI.toast('协议已设为「本项目网关」，可回到「研究检索」使用模拟数据', 'ok');
+                            PvUI.toast('协议已设为「DICOMweb」，可回到「研究检索」使用模拟数据', 'ok');
                         } else PvUI.toast((j && j.msg) || '应用失败', 'err');
                     }).catch(function () { apply.disabled = false; PvUI.toast('网络请求失败', 'err'); });
                 });

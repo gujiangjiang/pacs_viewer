@@ -13,13 +13,19 @@
  * ============================================================ */
 class PvDicomWebController {
 
-    public static function handle() {
+    /**
+     * @param string|null $path DICOMweb 子路径（如 /studies/...）；为空时从 ?r=dicomweb... 解析
+     */
+    public static function handle($path = null) {
         if (!PvMockServer::enabled()) { self::jsonError(403, '内置模拟 PACS 服务器未启用'); }
         if (!PvAuth::check() && !PvMockServer::checkKey(self::requestKey())) {
             self::jsonError(403, '模拟服务器密钥校验失败');
         }
-        $r = isset($_GET['r']) ? (string)$_GET['r'] : '';
-        $path = trim(substr($r, strlen('dicomweb')), '/');
+        if ($path === null) {
+            $r = isset($_GET['r']) ? (string)$_GET['r'] : '';
+            $path = substr($r, strlen('dicomweb'));
+        }
+        $path = trim((string)$path, '/');
         $seg = $path === '' ? array() : explode('/', $path);
         if (!isset($seg[0]) || $seg[0] !== 'studies') { self::jsonError(404, '不支持的 DICOMweb 路径'); }
 

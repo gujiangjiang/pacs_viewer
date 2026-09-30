@@ -25,8 +25,14 @@ class PvMockServer {
     /** 内置模拟服务器固定使用内置仿真患者数据（FHIR 已独立为「数据来源」配置项） */
     public static function source()  { return 'builtin'; }
 
-    /** 对外 API 的绝对地址（供配置到 DICOM/PACS 接口或门诊系统） */
+    /** 对外 API 的绝对地址（旧：自定义 JSON 网关，保留兼容） */
     public static function externalEndpoint() { return pvw_abs_url('mock'); }
+
+    /** 标准 DICOMweb 根地址（QIDO-RS / WADO-RS，内置模拟服务器对外提供） */
+    public static function dicomWebEndpoint() {
+        $base = (PV_URL_SITE === '' ? '' : PV_URL_SITE) . '/dicom-web';
+        return pvw_abs_path($base);
+    }
 
     /** 校验对外接口密钥 */
     public static function checkKey($key) {
@@ -34,9 +40,12 @@ class PvMockServer {
         return $k !== '' && is_string($key) && hash_equals($k, $key);
     }
 
-    /** 判断给定接口地址是否指向本模拟服务器（用于内部直连、避免自请求） */
+    /** 判断给定接口地址是否指向本模拟服务器（JSON 网关 ?r=mock 或 DICOMweb /dicom-web） */
     public static function isSelfEndpoint($url) {
-        $q = parse_url((string)$url, PHP_URL_QUERY);
+        $url = (string)$url;
+        $path = parse_url($url, PHP_URL_PATH);
+        if (is_string($path) && $path !== '' && strpos($path, '/dicom-web') !== false) return true;
+        $q = parse_url($url, PHP_URL_QUERY);
         if (!$q) return false;
         $params = array();
         parse_str($q, $params);

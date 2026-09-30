@@ -70,7 +70,7 @@ class PvDatabase {
                 'site_title'       => 'PACS 影像浏览器',
                 'hospital_name'    => '',
                 'pacs_endpoint'    => '',                // 远程 PACS/DICOMWeb 接口地址
-                'pacs_protocol'    => 'gateway',         // gateway 简化网关 / dicomweb 标准 DICOMweb
+                'pacs_protocol'    => 'dicomweb',        // dicomweb 标准 DICOMweb（默认）/ gateway 自定义 JSON 网关
                 'pacs_api_key'     => '',
                 'pacs_ae_title'    => 'CLINIC_OPD',
                 'pacs_remote_ae'   => 'PACS_SERVER',

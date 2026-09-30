@@ -11,6 +11,15 @@ require dirname(__DIR__) . '/app/bootstrap.php';
 $r = isset($_GET['r']) ? trim((string)$_GET['r']) : '';
 $isPost = (isset($_SERVER['REQUEST_METHOD']) && strtoupper($_SERVER['REQUEST_METHOD']) === 'POST');
 
+/* 标准 DICOMweb 路径（如 /dicom-web/studies...）：直接交给内置 DICOMweb 端点，
+ * 使内置模拟服务器成为一个「标准 DICOMweb 服务」，供标准客户端联调。 */
+$pvPath = parse_url(isset($_SERVER['REQUEST_URI']) ? (string)$_SERVER['REQUEST_URI'] : '/', PHP_URL_PATH);
+$pvDwp = ($pvPath !== false && $pvPath !== null) ? strpos($pvPath, '/dicom-web') : false;
+if ($pvDwp !== false) {
+    PvDicomWebController::handle(substr($pvPath, $pvDwp + strlen('/dicom-web')));
+    exit;
+}
+
 $routes = array(
     ''                      => array('PvAuthController', null),
     'login'                 => array('PvAuthController', $isPost ? 'login' : 'showLogin'),

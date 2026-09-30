@@ -20,8 +20,8 @@
                     <h4 class="pv-ext-title">PACS 接口（必填）</h4>
                     <label class="pv-field"><span>接口协议</span>
                         <select name="pacs_protocol">
-                            <option value="dicomweb" <?php echo $v('pacs_protocol', 'gateway') === 'dicomweb' ? 'selected' : ''; ?>>DICOMweb（DICOM 标准：QIDO-RS 检索 / WADO-RS 取像）</option>
-                            <option value="gateway" <?php echo $v('pacs_protocol', 'gateway') === 'gateway' ? 'selected' : ''; ?>>JSON 网关（本项目自定义：action/q/uid/key 查询参数）</option>
+                            <option value="dicomweb" <?php echo $v('pacs_protocol', 'dicomweb') !== 'gateway' ? 'selected' : ''; ?>>DICOMweb（DICOM 标准：QIDO-RS 检索 / WADO-RS 取像）</option>
+                            <option value="gateway" <?php echo $v('pacs_protocol', 'dicomweb') === 'gateway' ? 'selected' : ''; ?>>JSON 网关（本项目自定义：action/q/uid/key 查询参数）</option>
                         </select>
                         <em class="pv-hint">DICOMweb 是 DICOM 标准 HTTP 接口，适配 dcm4chee、Orthanc(DICOMweb 插件) 等现代 PACS 网关；JSON 网关是本项目约定的轻量 JSON 接口，仅当对方按此约定实现时选用。两者都不是传统 DICOM（DIMSE）。</em></label>
                     <label class="pv-field"><span>接口地址（根地址）</span>

@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '0.23.1');
+define('PV_VERSION', '0.24.0');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -149,13 +149,18 @@ function pvw_is_ajax() {
     return isset($_GET['pv_ajax']) && (string)$_GET['pv_ajax'] === '1';
 }
 
-/** 站点内部链接的绝对地址（用于模拟服务器对外地址等） */
-function pvw_abs_url($r = '', array $params = array()) {
+/** 任意站点路径的绝对地址（保持路径原样，如 DICOMweb 的 /dicom-web） */
+function pvw_abs_path($path) {
     $https = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
         || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
     $scheme = $https ? 'https' : 'http';
     $host = isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== '' ? (string)$_SERVER['HTTP_HOST'] : 'localhost';
-    return $scheme . '://' . $host . pvw_url($r, $params);
+    return $scheme . '://' . $host . $path;
+}
+
+/** 站点内部链接的绝对地址（用于模拟服务器对外地址等） */
+function pvw_abs_url($r = '', array $params = array()) {
+    return pvw_abs_path(pvw_url($r, $params));
 }
 
 /** 302 跳转 */

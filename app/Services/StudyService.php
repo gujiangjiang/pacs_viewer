@@ -22,14 +22,15 @@ class PvStudyService {
     /** 检索来源展示信息（用于检索页顶部标签） */
     public static function sourceInfo() {
         $endpoint = trim((string)PvSettings::get('pacs_endpoint', ''));
+        $protoName = PvPacsClient::protocol() === 'dicomweb' ? 'DICOMweb' : 'JSON 网关';
         if ($endpoint === '') {
             $state = 'unset'; $label = '未配置 PACS 接口';
         } elseif (PvMockServer::isSelfEndpoint($endpoint)) {
-            $state = 'mock'; $label = '内置模拟 PACS 服务器';
+            $state = 'mock'; $label = '内置模拟 ' . $protoName . ' 服务器';
         } else {
             $state = 'remote';
             $host = parse_url($endpoint, PHP_URL_HOST);
-            $label = '远程 PACS 接口' . ($host ? ' · ' . $host : '');
+            $label = '远程 ' . $protoName . ' 接口' . ($host ? ' · ' . $host : '');
         }
         return array('state' => $state, 'label' => $label, 'fhir' => self::isFhirEnabled());
     }

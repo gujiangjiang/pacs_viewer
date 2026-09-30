@@ -33,7 +33,7 @@ class PvAdminController {
             'logs'     => PvQueryLogRepository::recent(30),
             'logCount' => PvQueryLogRepository::count(),
             'mockKey'  => PvMockServer::apiKey(),
-            'mockUrl'  => PvMockServer::externalEndpoint(),
+            'mockUrl'  => PvMockServer::dicomWebEndpoint(),
             'pacsEndpoint' => PvSettings::get('pacs_endpoint', ''),
         ));
     }

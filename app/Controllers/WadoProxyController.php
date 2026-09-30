@@ -11,6 +11,7 @@ class PvWadoProxyController {
 
     public static function instance() {
         PvAuth::requireLogin();
+        @set_time_limit(120);   // 大序列 / 首次生成可能较慢
         if (!PvPacsClient::isDicomWeb()) { self::fail(404, '当前接口协议不是 DICOMweb'); }
 
         $study = (string)pvw_input('study');
@@ -27,7 +28,9 @@ class PvWadoProxyController {
         $key = trim((string)PvSettings::get('pacs_api_key', ''));
         if ($key !== '') { $headers[] = 'Authorization: Bearer ' . $key; $headers[] = 'X-API-Key: ' . $key; }
 
-        $r = PvHttp::get($url, max(1, (int)PvSettings::get('pacs_timeout', '5')), $headers);
+        // 影像可能较大且远端生成较慢，超时取 max(60, 配置值)
+        $timeout = max(60, (int)PvSettings::get('pacs_timeout', '5'));
+        $r = PvHttp::get($url, $timeout, $headers);
         if ($r['body'] === false || $r['body'] === '') self::fail(502, '无法获取影像：' . $url);
 
         $body = self::extractDicom($r['body']);

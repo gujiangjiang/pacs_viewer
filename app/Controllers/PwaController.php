@@ -138,8 +138,8 @@ self.addEventListener('fetch', function (e) {
     // 接口 / 清单 / SW 本身：实时直连，不缓存
     if (r.indexOf('api') === 0 || r === 'mock' || r === 'manifest' || r === 'sw') return;
 
-    // 影像数据（缩略图 / DICOM 帧，内容不可变）：缓存优先，命中即秒开，可离线
-    if (r === 'dicom' || r === 'thumb') {
+    // 影像数据（缩略图 / DICOM 帧 / DICOMweb 代理，内容不可变）：缓存优先，命中即秒开，可离线
+    if (r === 'dicom' || r === 'thumb' || r === 'wadoprx') {
         e.respondWith(
             caches.open(IMG_CACHE).then(function (c) {
                 return c.match(req).then(function (cached) {
