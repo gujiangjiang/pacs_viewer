@@ -146,9 +146,9 @@
         ['search', 'viewer'].forEach(prefetchShell);
     }
     if (global.requestIdleCallback) {
-        global.requestIdleCallback(function () { warmStaticShells(); }, { timeout: 2500 });
+        global.requestIdleCallback(function () { warmStaticShells(); }, { timeout: 1500 });
     } else {
-        setTimeout(warmStaticShells, 1500);
+        setTimeout(warmStaticShells, 300);
     }
 
     function go(page, params, opts) {
