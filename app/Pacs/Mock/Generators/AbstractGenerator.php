@@ -81,6 +81,36 @@ abstract class PvMockAbstractGenerator implements PvMockSliceGeneratorInterface,
      */
     abstract protected function sample($nx, $ny, $p, $x, $y, $i);
 
+    /**
+     * 生成缩略图灰度字节（$size × $size，0..255），按推荐窗宽窗位映射。
+     * 直接以低分辨率采样，避免生成整幅像素（约 (Rows/size)² 倍加速）；取中间帧
+     * 作为代表，供侧栏缩略图端点使用。
+     *
+     * @param int $size 目标边长
+     * @return string 长度 size*size 的二进制字符串
+     */
+    public function generateThumbnailGray($size) {
+        $size = max(16, min(256, (int)$size));
+        $i = $this->frameCount > 0 ? (int)intdiv($this->frameCount - 1, 2) : 0;
+        $p = $this->frameCount > 1 ? $i / ($this->frameCount - 1) : 0.0;
+        $lo = $this->windowCenter - $this->windowWidth / 2;
+        $k = 255.0 / max(1.0, (float)$this->windowWidth);
+        $cols = (int)$this->cols; $rows = (int)$this->rows;
+        $out = '';
+        for ($yy = 0; $yy < $size; $yy++) {
+            $ny = ($yy + 0.5) / $size;
+            $py = (int)($ny * $rows);
+            for ($xx = 0; $xx < $size; $xx++) {
+                $nx = ($xx + 0.5) / $size;
+                $v = $this->sample($nx, $ny, $p, (int)($nx * $cols), $py, $i);
+                $o = (int)round(($v - $lo) * $k);
+                if ($o < 0) $o = 0; elseif ($o > 255) $o = 255;
+                $out .= chr($o);
+            }
+        }
+        return $out;
+    }
+
     /** 强度 → DICOM 存储值（默认按 RescaleIntercept 平移到无符号 16 位） */
     protected function encodePixel($value) {
         $stored = (int)round($value - $this->rescaleIntercept);

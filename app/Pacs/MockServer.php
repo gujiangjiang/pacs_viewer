@@ -139,6 +139,60 @@ class PvMockServer {
      * @throws RuntimeException 参数非法 / 未找到 / 序列不支持标准像素
      */
     public static function wado(array $p) {
+        list($row, $series, $seriesIndex, $gen) = self::resolveSeries($p);
+
+        $instance = 1;
+        if (!empty($p['objectUID']) || !empty($p['object_uid'])) {
+            $ouid = !empty($p['objectUID']) ? (string)$p['objectUID'] : (string)$p['object_uid'];
+            $instance = (int)self::lastUidSegment($ouid);
+        } elseif (isset($p['instance']) && $p['instance'] !== '') {
+            $instance = (int)$p['instance'];
+        }
+        $total = $gen->getFrameCount();
+        if ($instance < 1) $instance = 1;
+        if ($instance > $total) $instance = $total;
+
+        $base = ($row['patient_id'] ? $row['patient_id'] : 'patient') . '_' . ($row['accession_no'] ? $row['accession_no'] : 'study')
+            . '_s' . ($seriesIndex + 1) . '_i' . $instance . '.dcm';
+
+        /* 内存 / 磁盘缓存：同一实例仅逐像素生成一次，后续直接读取 */
+        $key = md5(implode('|', array(
+            PV_VERSION, $row['study_uid'], $seriesIndex, $instance,
+            $gen->getFrameCount(), $gen->getBodyPartExamined(),
+        )));
+        $cached = PvMockCache::get($key);
+        if (is_string($cached) && $cached !== '') {
+            return array('binary' => $cached, 'filename' => $base, 'content_type' => 'application/dicom');
+        }
+
+        $pixels = $gen->generateFrame($instance - 1);
+        $binary = self::buildDicom($row, $series, $seriesIndex, $instance, $gen, $pixels);
+        PvMockCache::set($key, $binary);
+        return array('binary' => $binary, 'filename' => $base, 'content_type' => 'application/dicom');
+    }
+
+    /**
+     * 生成序列缩略图（PNG）：以低分辨率直接采样，避免生成整幅像素，
+     * 供侧栏缩略图使用，首屏更快、流量更小。
+     */
+    public static function thumbnail(array $p) {
+        list($row, $series, $seriesIndex, $gen) = self::resolveSeries($p);
+        $size = 128;
+        $key = md5(implode('|', array(
+            'thumb', PV_VERSION, $row['study_uid'], $seriesIndex,
+            $gen->getFrameCount(), $gen->getBodyPartExamined(), $size,
+        )));
+        $cached = PvMockCache::get($key);
+        if (is_string($cached) && $cached !== '') {
+            return array('binary' => $cached, 'content_type' => 'image/png');
+        }
+        $png = self::grayToPng($gen->generateThumbnailGray($size), $size);
+        PvMockCache::set($key, $png);
+        return array('binary' => $png, 'content_type' => 'image/png');
+    }
+
+    /** 解析请求对应的检查 / 序列 / 生成器（wado 与 thumbnail 共用） */
+    private static function resolveSeries(array $p) {
         $studyUid = '';
         foreach (array('studyUID', 'study_uid', 'uid') as $k) {
             if (!empty($p[$k])) { $studyUid = (string)$p[$k]; break; }
@@ -169,35 +223,28 @@ class PvMockServer {
         $series = $plan[$seriesIndex];
         $gen = PvMockDispatcher::generatorForSeries($modality, $desc, $row['study_uid'], $seriesIndex);
         if (!$gen) throw new RuntimeException('该序列为重建序列，暂不支持标准 DICOM 像素输出');
+        return array($row, $series, $seriesIndex, $gen);
+    }
 
-        $instance = 1;
-        if (!empty($p['objectUID']) || !empty($p['object_uid'])) {
-            $ouid = !empty($p['objectUID']) ? (string)$p['objectUID'] : (string)$p['object_uid'];
-            $instance = (int)self::lastUidSegment($ouid);
-        } elseif (isset($p['instance']) && $p['instance'] !== '') {
-            $instance = (int)$p['instance'];
+    /** 8 位灰度字节（size×size）→ PNG 二进制（GD 不可用时返回 1×1 透明 PNG） */
+    private static function grayToPng($gray, $size) {
+        if (!function_exists('imagecreatetruecolor') || strlen($gray) < $size * $size) {
+            return base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
         }
-        $total = $gen->getFrameCount();
-        if ($instance < 1) $instance = 1;
-        if ($instance > $total) $instance = $total;
-
-        $base = ($row['patient_id'] ? $row['patient_id'] : 'patient') . '_' . ($row['accession_no'] ? $row['accession_no'] : 'study')
-            . '_s' . ($seriesIndex + 1) . '_i' . $instance . '.dcm';
-
-        /* 内存缓存（APCu）：同一实例仅逐像素生成一次，后续直接从共享内存读取 */
-        $key = md5(implode('|', array(
-            PV_VERSION, $row['study_uid'], $modality, $desc, $seriesIndex, $instance,
-            $gen->getFrameCount(), $gen->getBodyPartExamined(),
-        )));
-        $cached = PvMockCache::get($key);
-        if (is_string($cached) && $cached !== '') {
-            return array('binary' => $cached, 'filename' => $base, 'content_type' => 'application/dicom');
+        $im = imagecreatetruecolor($size, $size);
+        $cache = array();
+        for ($y = 0; $y < $size; $y++) {
+            for ($x = 0; $x < $size; $x++) {
+                $g = ord($gray[$y * $size + $x]);
+                if (!isset($cache[$g])) $cache[$g] = imagecolorallocate($im, $g, $g, $g);
+                imagesetpixel($im, $x, $y, $cache[$g]);
+            }
         }
-
-        $pixels = $gen->generateFrame($instance - 1);
-        $binary = self::buildDicom($row, $series, $seriesIndex, $instance, $gen, $pixels);
-        PvMockCache::set($key, $binary);
-        return array('binary' => $binary, 'filename' => $base, 'content_type' => 'application/dicom');
+        ob_start();
+        imagepng($im);
+        $bin = ob_get_clean();
+        if (PHP_VERSION_ID < 80500) imagedestroy($im);
+        return $bin;
     }
 
     /** 组装单实例标准 DICOM 数据集 */

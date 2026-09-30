@@ -169,8 +169,6 @@
         var ctx = cv.getContext('2d');
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
         if (series.format === 'dicom') {
-            var dsrc = series.images && series.images[0];
-            if (!dsrc) return;
             var key = this.thumbKey(series), hk = hashStr(key);
             if (THUMB_CACHE[key]) { this._paintThumb(cv, THUMB_CACHE[key]); return; }
             var stored = lsGet(hk);
@@ -182,6 +180,28 @@
             if (this._pending[key]) return;
             this._pending[key] = 1;
             var self = this;
+            // 优先使用服务端缩略图端点（小图，快且省流量）
+            if (series.thumbnail) {
+                var im = new Image();
+                im.onload = function () {
+                    var c2 = cv.getContext('2d');
+                    c2.fillStyle = '#000'; c2.fillRect(0, 0, cv.width, cv.height);
+                    var sc = Math.min(cv.width / im.width, cv.height / im.height);
+                    var dw = im.width * sc, dh = im.height * sc;
+                    c2.drawImage(im, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh);
+                    try {
+                        var id = c2.getImageData(0, 0, cv.width, cv.height);
+                        THUMB_CACHE[key] = id; lsSet(hk, encodeGray(id));
+                    } catch (e) {}
+                    delete self._pending[key];
+                };
+                im.onerror = function () { delete self._pending[key]; };
+                im.src = series.thumbnail;
+                return;
+            }
+            // 回退：无缩略图端点（如远程 PACS）时下载首帧并解码
+            var dsrc = series.images && series.images[0];
+            if (!dsrc) { delete self._pending[key]; return; }
             fetch(dsrc, { credentials: 'same-origin' }).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
                 var dec = window.PvDicom ? PvDicom.decode(buf) : null;
                 if (dec) {

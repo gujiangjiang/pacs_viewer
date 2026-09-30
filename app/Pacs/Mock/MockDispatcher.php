@@ -146,6 +146,7 @@ class PvMockDispatcher {
         for ($i = 1; $i <= $count; $i++) {
             $images[] = pvw_url('dicom', array('uid' => $studyUid, 'series' => $seriesNo, 'instance' => $i, 'v' => $ver));
         }
+        $thumb = pvw_url('thumb', array('uid' => $studyUid, 'series' => $seriesNo, 'v' => $ver));
 
         return array(
             'series_id' => (string)$id,
@@ -173,6 +174,7 @@ class PvMockDispatcher {
             'generator' => get_class($gen),
             'primary' => true,
             'images' => $images,
+            'thumbnail' => $thumb,
         );
     }
 

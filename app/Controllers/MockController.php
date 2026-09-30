@@ -121,6 +121,26 @@ class PvMockController {
         self::emitWado();
     }
 
+    /** 侧栏缩略图（PNG，小图）：登录或密钥二选一，输出 image/png */
+    public static function thumb() {
+        if (!PvMockServer::enabled()) { self::textError(403, '内置模拟 PACS 服务器未启用'); }
+        if (!PvAuth::check() && !PvMockServer::checkKey((string)pvw_input('key'))) {
+            self::textError(403, '模拟服务器密钥校验失败');
+        }
+        try {
+            $r = PvMockServer::thumbnail(self::wadoParams());
+        } catch (Exception $e) {
+            self::textError(404, $e->getMessage());
+        }
+        if (!headers_sent()) {
+            header('Content-Type: ' . $r['content_type']);
+            header('Content-Length: ' . strlen($r['binary']));
+            header('Cache-Control: private, max-age=86400');
+        }
+        echo $r['binary'];
+        exit;
+    }
+
     /** 输出 DICOM 字节流（不进入 JSON 封装，对通用前端完全透明） */
     private static function emitWado() {
         try {
