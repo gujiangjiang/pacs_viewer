@@ -17,6 +17,8 @@ class PvMockAnatomyConfig {
 
     const KEY = 'mock_anatomy';
 
+    private static $cache = null;
+
     /** 内置默认条目（与 MockDispatcher 的默认路由一致） */
     public static function defaults() {
         $rows = array(
@@ -43,18 +45,20 @@ class PvMockAnatomyConfig {
         return $out;
     }
 
-    /** 读取配置条目（空 / 非法时回退默认） */
+    /** 读取配置条目（空 / 非法时回退默认；同一请求内记忆化） */
     public static function entries() {
+        if (self::$cache !== null) return self::$cache;
         $raw = trim((string)PvSettings::get(self::KEY, ''));
-        if ($raw === '') return self::defaults();
+        if ($raw === '') { self::$cache = self::defaults(); return self::$cache; }
         $j = json_decode($raw, true);
-        if (!is_array($j)) return self::defaults();
+        if (!is_array($j)) { self::$cache = self::defaults(); return self::$cache; }
         $out = array();
         foreach ($j as $e) {
             if (!is_array($e)) continue;
             $out[] = self::normalize($e);
         }
-        return $out;
+        self::$cache = $out;
+        return self::$cache;
     }
 
     /** 保存配置（清空即恢复默认） */
@@ -67,9 +71,10 @@ class PvMockAnatomyConfig {
             $clean[] = $n;
         }
         PvSettings::set(self::KEY, json_encode($clean, JSON_UNESCAPED_UNICODE));
+        self::$cache = null;
     }
 
-    public static function reset() { PvSettings::set(self::KEY, ''); }
+    public static function reset() { PvSettings::set(self::KEY, ''); self::$cache = null; }
 
     /** 按 (模态, 部位) 查切片数量（未配置返回 0） */
     public static function framesFor($modality, $bodyKey) {

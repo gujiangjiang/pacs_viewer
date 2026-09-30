@@ -9,8 +9,16 @@
  * ============================================================ */
 class PvDemoPacs {
 
-    /** 模拟检查列表（确定性） */
+    private static $studiesCache = null;
+
+    /** 模拟检查列表（确定性；同一请求内记忆化，避免重复生成） */
     public static function studies() {
+        if (self::$studiesCache !== null) return self::$studiesCache;
+        self::$studiesCache = self::buildStudies();
+        return self::$studiesCache;
+    }
+
+    private static function buildStudies() {
         $surnames = array('张', '王', '李', '赵', '刘', '陈', '杨', '黄', '周', '吴', '徐', '孙', '马', '朱', '胡', '郭');
         $male   = array('伟', '强', '磊', '洋', '勇', '军', '杰', '涛', '明', '超', '浩', '鹏');
         $female = array('芳', '娜', '敏', '静', '艳', '丽', '娟', '燕', '霞', '婷', '雪', '梅');

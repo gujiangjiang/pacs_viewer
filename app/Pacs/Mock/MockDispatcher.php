@@ -13,6 +13,10 @@
  * ============================================================ */
 class PvMockDispatcher {
 
+    /** 请求级记忆化：同一请求内序列规划与生成器实例复用，避免重复构建噪声表 */
+    private static $planCache = array();
+    private static $genCache = array();
+
     /* ---------------- 解剖部位识别 ---------------- */
 
     /**
@@ -69,6 +73,9 @@ class PvMockDispatcher {
         $weight = isset($ctx['weight']) ? strtoupper($ctx['weight']) : 'T1';
         $orientation = isset($ctx['orientation']) ? $ctx['orientation'] : null;
 
+        $ck = $modality . '|' . $body . '|' . $seed . '|' . $weight . '|' . (string)$orientation;
+        if (isset(self::$genCache[$ck])) return self::$genCache[$ck];
+
         $class = self::resolveClass($modality, $body);
         $gen = new $class($seed, $weight);
         if ($orientation !== null && $orientation !== '') {
@@ -77,7 +84,7 @@ class PvMockDispatcher {
         /* 管理后台配置的切片数量优先 */
         $frames = PvMockAnatomyConfig::framesFor($modality, $body);
         if ($frames > 0) $gen->setFrameCount($frames);
-        return $gen;
+        return self::$genCache[$ck] = $gen;
     }
 
     /** 解析类名（模态 + 部位 → 生成器；未匹配则按模态回退） */
@@ -109,6 +116,8 @@ class PvMockDispatcher {
      */
     public static function seriesPlan($modality, $description, $studyUid, $bodyPart = '') {
         $modality = strtoupper((string)$modality);
+        $ck = $modality . '|' . (string)$description . '|' . (string)$studyUid . '|' . (string)$bodyPart;
+        if (isset(self::$planCache[$ck])) return self::$planCache[$ck];
         $body = self::bodyKey($description, $bodyPart, $modality);
         $out = array();
 
@@ -122,14 +131,14 @@ class PvMockDispatcher {
                 $gen = self::createGenerator($ctx);
                 $out[] = self::seriesMeta($w[0], $w[1], $gen, $body, $modality, $w[2], $seed, $studyUid);
             }
-            return $out;
+            return self::$planCache[$ck] = $out;
         }
 
         // DR / CR / US：单序列
         $seed = 'p|' . $studyUid . '|s1';
         $gen = self::createGenerator(array('modality' => $modality, 'body_key' => $body, 'seed' => $seed));
         $out[] = self::seriesMeta('1', $gen->getSeriesDescription(), $gen, $body, $modality, null, $seed, $studyUid);
-        return $out;
+        return self::$planCache[$ck] = $out;
     }
 
     /** 组装单条序列元数据（含标准 DICOM 帧地址与像素参数） */
