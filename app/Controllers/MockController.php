@@ -66,10 +66,12 @@ class PvMockController {
         pvw_csrf_check();
         $url = PvMockServer::externalEndpoint();
         $key = PvMockServer::apiKey();
-        PvSettings::saveMany(array('pacs_endpoint' => $url, 'pacs_api_key' => $key));
+        // 同时把协议复位为 gateway：模拟服务器对外为简化网关接口
+        PvSettings::saveMany(array('pacs_endpoint' => $url, 'pacs_api_key' => $key, 'pacs_protocol' => 'gateway'));
         self::reply('已将模拟服务器填入 DICOM/PACS 接口', array(
             'endpoint' => $url,
             'key'      => $key,
+            'protocol' => 'gateway',
         ));
     }
 

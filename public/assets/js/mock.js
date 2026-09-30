@@ -123,8 +123,17 @@
                     PvUI.post(PvNav.route('api/mock/apply'), {}).then(function (j) {
                         apply.disabled = false;
                         if (j && j.code === 200) {
-                            PvUI.toast('已应用：' + (j.data ? j.data.endpoint : ''), 'ok');
-                            PvUI.toast('可回到「研究检索」开始使用模拟数据', 'ok');
+                            var d = j.data || {};
+                            // 即时回显到「外部接口」表单（同页另一子 Tab）
+                            var setVal = function (name, val) {
+                                var el = document.querySelector('[name="' + name + '"]');
+                                if (el && val != null) el.value = val;
+                            };
+                            setVal('pacs_endpoint', d.endpoint);
+                            setVal('pacs_api_key', d.key);
+                            setVal('pacs_protocol', d.protocol || 'gateway');
+                            PvUI.toast('已应用：' + (d.endpoint || ''), 'ok');
+                            PvUI.toast('协议已设为「本项目网关」，可回到「研究检索」使用模拟数据', 'ok');
                         } else PvUI.toast((j && j.msg) || '应用失败', 'err');
                     }).catch(function () { apply.disabled = false; PvUI.toast('网络请求失败', 'err'); });
                 });
