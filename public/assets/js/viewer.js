@@ -71,7 +71,11 @@
     PvViewer.prototype.indexOf = function (uid) { for (var i = 0; i < this.ws.studies.length; i++) if (this.ws.studies[i].uid === uid) return i; return -1; };
     PvViewer.prototype._bindWindowResize = function () {
         var self = this;
-        this._onWinResize = function () { self.panes.forEach(function (p) { p.resize(); p.render(); }); };
+        var raf = window.requestAnimationFrame || function (fn) { return setTimeout(fn, 16); };
+        this._onWinResize = function () {
+            if (self._resizeRaf) return;
+            self._resizeRaf = raf(function () { self._resizeRaf = null; self.panes.forEach(function (p) { p.resize(); p.render(); }); });
+        };
         window.addEventListener('resize', this._onWinResize);
     };
     /** 页面卸载前立即落盘，避免防抖窗口内丢失最后的会话状态 */
@@ -522,6 +526,7 @@
         if (this._onWinResize) window.removeEventListener('resize', this._onWinResize);
         if (this._onUnload) window.removeEventListener('beforeunload', this._onUnload);
         if (this._onKey) document.removeEventListener('keydown', this._onKey);
+        if (this._resizeRaf) { try { (window.cancelAnimationFrame || clearTimeout)(this._resizeRaf); } catch (e) {} this._resizeRaf = null; }
         if (this._persistTimer) { clearTimeout(this._persistTimer); this._persistTimer = null; }
         if (this.toolbar && this.toolbar.destroy) this.toolbar.destroy();
         if (this._ctxDoc) document.removeEventListener('pointerdown', this._ctxDoc, true);

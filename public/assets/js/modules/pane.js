@@ -59,11 +59,12 @@
         this._bindScrollbar();
         this.resize();
         var self = this;
-        if (window.ResizeObserver) { this._ro = new ResizeObserver(function () { self.resize(); self.render(); }); this._ro.observe(this.stage); }
+        if (window.ResizeObserver) { this._ro = new ResizeObserver(function () { self.resize(); self._scheduleRender(); }); this._ro.observe(this.stage); }
     }
 
     PvPane.prototype.destroy = function () {
         this._abortFetches();      // 中止后台预取，释放浏览器连接
+        if (this._raf) { try { (window.cancelAnimationFrame || clearTimeout)(this._raf); } catch (e) {} this._raf = null; }
         try { if (this._ro) this._ro.disconnect(); } catch (e) {}
         if (this._upH) window.removeEventListener('pointerup', this._upH);
         if (this._sb && this._sb.hideTimer) clearTimeout(this._sb.hideTimer);
@@ -280,6 +281,15 @@
             });
         }
     };
+    /** 合并同一动画帧内的多次渲染请求（拖动 / 滚轮 / 缩放等高频场景） */
+    PvPane.prototype._scheduleRender = function () {
+        if (this._rafPending) return;
+        var self = this;
+        this._rafPending = true;
+        var raf = window.requestAnimationFrame || function (fn) { return setTimeout(fn, 16); };
+        this._raf = raf(function () { self._rafPending = false; self._raf = null; self.render(); });
+    };
+
     PvPane.prototype.placeholder = function (t, big) {
         if (!t) return;
         var ctx = this.ctx;
@@ -398,12 +408,12 @@
             if (st.drag.mode === 'pan') { st.panX = st.drag.px + (pt.x - st.drag.x); st.panY = st.drag.py + (pt.y - st.drag.y); }
             else if (st.drag.mode === 'wl') { var sc = st.isHU ? 4 : 2; st.ww = clamp(st.drag.ww + (pt.x - st.drag.x) * sc, 1, 6000); st.wl = clamp(st.drag.wl - (pt.y - st.drag.y) * sc, -1200, 3000); }
             else if (st.drag.mode === 'zoom') { this._zoomTo(st.drag.z * Math.exp((st.drag.y - pt.y) / 180), pt.x, pt.y); }
-            this.render(); return;
+            this._scheduleRender(); return;
         }
         if (st.draft) {
             var p = this.screenToImg(pt.x, pt.y);
             if (st.draft.type === 'rect' || st.draft.type === 'ellipse') st.draft.fixed[1] = p; else st.draft.hover = p;
-            this.render();
+            this._scheduleRender();
         }
     };
     PvPane.prototype.onUp = function () {
@@ -431,7 +441,7 @@
         e.preventDefault();
         this.viewer.setActivePane(this.viewer.panes.indexOf(this));
         var st = this.st, pt = this._rel(e);
-        if (this.viewer.tool === 'zoom' || e.ctrlKey || e.metaKey) { this._zoomTo(st.zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12), pt.x, pt.y); this.render(); return; }
+        if (this.viewer.tool === 'zoom' || e.ctrlKey || e.metaKey) { this._zoomTo(st.zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12), pt.x, pt.y); this._scheduleRender(); return; }
         var n = this.frameCount();
         if (n > 1) {
             var dy = e.deltaY;
@@ -443,7 +453,7 @@
             return;
         }
         this._zoomTo(st.zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12), pt.x, pt.y);
-        this.render();
+        this._scheduleRender();
     };
     PvPane.prototype._addPoint = function (type, p) {
         var st = this.st;
@@ -510,7 +520,7 @@
         if (n <= 1) return;
         i = clamp(i, 0, n - 1);
         this.st.fi = i;
-        this.render(); this.updateScrollbar();
+        this._scheduleRender(); this.updateScrollbar();
         this.setStatus('切片 ' + (i + 1) + ' / ' + n);
         this.viewer.persist();
     };
