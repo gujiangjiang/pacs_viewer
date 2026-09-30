@@ -22,13 +22,24 @@ class PvFhirClient {
 
     /** 临时配置覆盖（仅用于「测试当前输入」场景，请求结束后清空） */
     private static $override = null;
+    /** 最近一次检索的错误信息（便于界面提示） */
+    private static $lastError = '';
 
     public static function isConfigured() {
         return self::base() !== '';
     }
+    public static function lastError() { return self::$lastError; }
+    private static function note(Exception $e) { self::$lastError = $e->getMessage(); }
 
-    /** 检索已缴费已登记的患者检查（规范化为 PACS 检索行结构） */
+    /**
+     * 检索患者检查（规范化为 PACS 检索行结构）。
+     * 兼容不同 FHIR 服务的实现差异：
+     *   · 患者：优先标准搜索 Patient?name= / identifier=；否则按患者号读取 Patient/{id}；
+     *     再回退到列出 Encounter 推导患者。
+     *   · 检查：优先 ImagingStudy?patient=；否则用 Encounter?patient=（门诊就诊记录）。
+     */
     public static function search($keyword = '') {
+        self::$lastError = '';
         if (!self::isConfigured()) {
             throw new RuntimeException('未配置门诊系统 FHIR 接口地址');
         }
@@ -36,9 +47,10 @@ class PvFhirClient {
         $patients = self::queryPatients($kw);
         $rows = array();
         foreach ($patients as $p) {
-            $studies = self::queryImagingStudies('Patient/' . $p['id']);
-            foreach ($studies as $im) {
-                $rows[] = self::mapStudy($p, $im);
+            $pid = isset($p['id']) ? (string)$p['id'] : '';
+            if ($pid === '') continue;
+            foreach (self::queryStudies('Patient/' . $pid) as $res) {
+                $rows[] = self::mapStudy($p, $res);
             }
         }
         return $rows;
@@ -172,43 +184,113 @@ class PvFhirClient {
     /* ---------------- 查询 ---------------- */
 
     private static function queryPatients($keyword) {
-        $params = array('_count' => 20);
-        if ($keyword !== '') {
-            // 同时尝试姓名与患者标识；FHIR 服务端对不支持的参数通常忽略
-            $params['name'] = $keyword;
-        }
-        $bundle = self::getJson(self::base() . '/Patient?' . http_build_query($params));
+        $base = self::base();
+        $kw = trim((string)$keyword);
         $list = array();
-        foreach (self::entries($bundle) as $r) {
-            if (!isset($r['id'])) continue;
-            $list[] = $r;
+
+        // 1) 标准搜索：name / identifier
+        if ($kw !== '') {
+            foreach (array('name', 'identifier') as $param) {
+                try {
+                    $b = self::getJson($base . '/Patient?' . http_build_query(array($param => $kw, '_count' => 20)));
+                    foreach (self::entries($b) as $r) { if (self::isType($r, 'Patient')) $list[] = $r; }
+                } catch (Exception $e) { self::note($e); }
+                if ($list) return $list;
+            }
+            // 2) 按患者号直接读取：Patient/{patient_no}
+            try {
+                $p = self::getJson($base . '/Patient/' . rawurlencode($kw));
+                if (self::isType($p, 'Patient')) $list[] = $p;
+            } catch (Exception $e) { self::note($e); }
+            if ($list) return $list;
+            // 3) 通过 Encounter?patient= 校验并回读患者
+            try {
+                $b = self::getJson($base . '/Encounter?' . http_build_query(array('patient' => 'Patient/' . $kw, '_count' => 1)));
+                $enc = self::entries($b);
+                if ($enc) { $list[] = array('id' => $kw, 'resourceType' => 'Patient'); }
+            } catch (Exception $e) { self::note($e); }
+            return $list;
+        }
+
+        // 4) 列表：先 Patient?_count，再回退 Encounter?_count 推导患者
+        //    （部分服务不提供列表，失败属正常，不记为错误）
+        try {
+            $b = self::getJson($base . '/Patient?' . http_build_query(array('_count' => 20)));
+            foreach (self::entries($b) as $r) { if (self::isType($r, 'Patient')) $list[] = $r; }
+        } catch (Exception $e) {}
+        if (!$list) {
+            try {
+                $b = self::getJson($base . '/Encounter?' . http_build_query(array('_count' => 50)));
+                $seen = array();
+                foreach (self::entries($b) as $enc) {
+                    if (!self::isType($enc, 'Encounter')) continue;
+                    $ref = self::subjectRef($enc);
+                    if ($ref === '') continue;
+                    $id = self::refId($ref);
+                    if ($id === '' || isset($seen[$id])) continue;
+                    $seen[$id] = 1;
+                    try {
+                        $p = self::getJson($base . '/Patient/' . rawurlencode($id));
+                        $list[] = self::isType($p, 'Patient') ? $p : array('id' => $id, 'resourceType' => 'Patient');
+                    } catch (Exception $e) { $list[] = array('id' => $id, 'resourceType' => 'Patient'); }
+                }
+            } catch (Exception $e) {}
         }
         return $list;
     }
 
-    private static function queryImagingStudies($patientRef) {
-        $url = self::base() . '/ImagingStudy?' . http_build_query(array('patient' => $patientRef, '_count' => 50));
-        $bundle = self::getJson($url);
-        $list = array();
-        foreach (self::entries($bundle) as $r) {
-            if (isset($r['resourceType']) && $r['resourceType'] === 'ImagingStudy') $list[] = $r;
-        }
-        return $list;
+    /** 取某患者的检查资源：优先 ImagingStudy，回退 Encounter（门诊就诊） */
+    private static function queryStudies($patientRef) {
+        $base = self::base();
+        try {
+            $b = self::getJson($base . '/ImagingStudy?' . http_build_query(array('patient' => $patientRef, '_count' => 50)));
+            $out = array();
+            foreach (self::entries($b) as $r) { if (self::isType($r, 'ImagingStudy')) $out[] = $r; }
+            if ($out) return $out;
+        } catch (Exception $e) { self::note($e); }
+        try {
+            $b = self::getJson($base . '/Encounter?' . http_build_query(array('patient' => $patientRef, '_count' => 50)));
+            $out = array();
+            foreach (self::entries($b) as $r) { if (self::isType($r, 'Encounter')) $out[] = $r; }
+            return $out;
+        } catch (Exception $e) { self::note($e); }
+        return array();
+    }
+
+    /** 资源类型判断（容忍缺少 resourceType 的直接资源） */
+    private static function isType($r, $type) {
+        if (!is_array($r)) return false;
+        if (isset($r['resourceType'])) return $r['resourceType'] === $type;
+        if ($type === 'Patient') return isset($r['id']) && (isset($r['name']) || isset($r['gender']) || isset($r['birthDate']));
+        return false;
+    }
+
+    /** Encounter.subject.reference（如 Patient/123） */
+    private static function subjectRef($enc) {
+        return isset($enc['subject']['reference']) ? (string)$enc['subject']['reference'] : '';
+    }
+    private static function refId($ref) {
+        $ref = (string)$ref;
+        return strpos($ref, '/') !== false ? substr(strrchr($ref, '/'), 1) : $ref;
     }
 
     private static function entries($bundle) {
         if (!is_array($bundle)) return array();
-        if (isset($bundle['resourceType']) && $bundle['resourceType'] !== 'Bundle') return array($bundle);
-        $out = array();
-        foreach ((array)(isset($bundle['entry']) ? $bundle['entry'] : array()) as $e) {
-            if (isset($e['resource'])) $out[] = $e['resource'];
+        if (isset($bundle['entry'])) {
+            $out = array();
+            foreach ((array)$bundle['entry'] as $e) { if (isset($e['resource'])) $out[] = $e['resource']; }
+            return $out;
         }
-        return $out;
+        // 直接资源（无 Bundle 包装）
+        if (isset($bundle['resourceType']) && $bundle['resourceType'] !== 'Bundle') return array($bundle);
+        if (isset($bundle['id']) || isset($bundle['name']) || isset($bundle['gender']) || isset($bundle['period'])) return array($bundle);
+        return array();
     }
 
     /* ---------------- 资源映射 ---------------- */
 
     private static function mapStudy($patient, $im) {
+        if (self::isType($im, 'Encounter')) return self::mapEncounter($patient, $im);
         $pid = (string)$patient['id'];
         $name = self::patientName($patient);
         $gender = self::gender($patient);
@@ -242,6 +324,43 @@ class PvFhirClient {
             'status'        => 'completed',
             'series_count'  => $seriesCount,
         );
+    }
+
+    /** Encounter（门诊就诊记录）→ 检索行（无影像模态，标注 OT，影像由模拟器生成） */
+    private static function mapEncounter($patient, $enc) {
+        $pid = isset($patient['id']) ? (string)$patient['id'] : '';
+        $birth = isset($patient['birthDate']) ? (string)$patient['birthDate'] : '';
+        $id = isset($enc['id']) ? (string)$enc['id'] : 'enc';
+        $desc = self::encounterText($enc);
+        $started = isset($enc['period']['start']) ? (string)$enc['period']['start'] : '';
+        $acc = self::firstIdentifier($enc);
+        if ($acc === '') $acc = 'ENC' . preg_replace('/\D/', '', $id);
+        return array(
+            'study_uid'     => 'fhir-enc-' . $id,
+            'patient_id'    => $pid,
+            'name'          => self::patientName($patient),
+            'gender'        => self::gender($patient),
+            'age'           => self::ageText($birth),
+            'birth_date'    => $birth,
+            'outpatient_no' => self::outpatientNo($patient),
+            'accession_no'  => $acc,
+            'modality'      => 'OT',
+            'description'   => $desc !== '' ? $desc : '门诊就诊 · 影像检查',
+            'study_date'    => self::fmtDate($started),
+            'institution'   => pvw_hospital(),
+            'station_name'  => 'FHIR',
+            'apply_dept'    => '',
+            'apply_doctor'  => '',
+            'status'        => 'completed',
+            'series_count'  => 1,
+        );
+    }
+
+    private static function encounterText($enc) {
+        if (isset($enc['type'][0]['text']) && $enc['type'][0]['text'] !== '') return (string)$enc['type'][0]['text'];
+        if (isset($enc['type'][0]['coding'][0]['display'])) return (string)$enc['type'][0]['coding'][0]['display'];
+        if (isset($enc['serviceType']['text'])) return (string)$enc['serviceType']['text'];
+        return '';
     }
 
     private static function patientName($p) {

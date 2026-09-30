@@ -20,6 +20,11 @@ class PvMockServer {
         return (string)PvSettings::get('mock_patient_source', 'builtin') === 'fhir' ? 'fhir' : 'builtin';
     }
 
+    /** 最近一次 FHIR 取数错误（仅当来源为 fhir 时有意义） */
+    public static function fhirError() {
+        return self::source() === 'fhir' ? PvFhirClient::lastError() : '';
+    }
+
     /** 标准 DICOMweb 根地址（QIDO-RS / WADO-RS，内置模拟服务器对外提供） */
     public static function dicomWebEndpoint() {
         $base = (PV_URL_SITE === '' ? '' : PV_URL_SITE) . '/dicom-web';

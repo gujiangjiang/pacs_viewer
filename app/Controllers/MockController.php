@@ -83,9 +83,10 @@ class PvMockController {
         try {
             $list = PvMockServer::patients($kw);
             pvw_json(200, 'success', array(
-                'source'   => PvMockServer::source(),
-                'list'     => $list,
-                'total'    => count($list),
+                'source'     => PvMockServer::source(),
+                'list'       => $list,
+                'total'      => count($list),
+                'fhir_error' => PvMockServer::fhirError(),
             ));
         } catch (Exception $e) {
             pvw_json(500, $e->getMessage());

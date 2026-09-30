@@ -41,6 +41,7 @@ class PvApiController {
             'mode' => PvPacsClient::mode(),
             'remote' => PvPacsClient::isRemote(),
             'source' => PvStudyService::sourceInfo(),
+            'fhir_error' => PvMockServer::fhirError(),
         ));
     }
 
