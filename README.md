@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.20.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.20.1-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -94,16 +94,21 @@
 │   ├── Controllers/          #   认证 / 安装 / 检索 / 阅片 / 管理 / 模拟服务器 / PWA / 上传 / JSON 接口
 │   └── Repositories/         #   账号 / 检索日志
 ├── views/                    # 页面模板（auth / install / search / viewer / admin / mock / error）
-├── tools/                    # 工具（lint.php 语法检查）
+├── tools/                    # 工具（serve.sh 服务器守护 / lint.php 语法检查 / mock_validate.php）
 ├── docs/                     # 详细文档（CHANGELOG / HELP）
 └── data/                     # 运行时：pacs_viewer.db + session + uploads（自动生成，不提交）
 ```
 
 ## 启动
 
-本机无系统 PHP，统一使用 FrankenPHP。Web 根指向 `public/`：
+本机无系统 PHP，统一使用 FrankenPHP。Web 根指向 `public/`，推荐用守护脚本启动
+（开发服务器易因会话结束 / 端口冲突而断开，脚本会自动健康检查并重启）：
 
 ```bash
+tools/serve.sh ensure     # 启动 / 健康检查，挂了自动重启（最常用）
+tools/serve.sh status     # 查看 up / down
+
+# 等价手工前台启动（如需观察日志）：
 ~/.local/bin/frankenphp php-server --root public --listen 0.0.0.0:8090
 # 浏览器访问 http://localhost:8090/
 ```

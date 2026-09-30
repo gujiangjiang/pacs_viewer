@@ -11,10 +11,11 @@
 
 ## 常用命令（Commands）
 
-### 本地运行
+### 本地运行（开发服务器易断，统一用守护脚本）
 ```bash
-~/.local/bin/frankenphp php-server --root public --listen 0.0.0.0:8090
-# http://localhost:8090/   默认账号 admin / admin123
+tools/serve.sh ensure     # 启动 / 健康检查，挂了自动重启（任务收尾前必跑）
+tools/serve.sh status     # 查看 up / down
+# http://localhost:8090/   首次访问进入安装向导，创建管理员账号
 ```
 
 ### 语法检查（基于 tokenizer，扫描 app/public/views）

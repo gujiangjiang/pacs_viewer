@@ -14,6 +14,20 @@
 
 ---
 
+## [0.20.1] - 2026-09-30
+
+### 新增
+- 新增 `tools/serve.sh` 开发服务器守护脚本（`ensure` / `status` / `start` / `stop` /
+  `restart`），内部 `nohup + pid + 日志（data/.serve.log）` 脱离终端运行，支持健康
+  检查与「挂了即重启」。
+
+### 文档
+- `AGENTS.md` 增补「开发服务器守护」铁律：每次提交 / 任务收尾前必须执行
+  `tools/serve.sh ensure` 确认服务器存活；`README.md` / `CLAUDE.md` / `docs/HELP.md`
+  同步启动说明。
+
+---
+
 ## [0.20.0] - 2026-09-30
 
 ### 移除

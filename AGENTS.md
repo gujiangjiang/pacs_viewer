@@ -18,7 +18,15 @@
 
 ## 本地运行与检查（本机 macOS arm64，无系统 php）
 
-- 运行（Web 根指向 `public/`）：
+- 运行 / 守护（Web 根指向 `public/`，端口默认 8090）：
+
+  ```bash
+  tools/serve.sh ensure     # 挂了就自动重启（任务收尾前必跑）
+  tools/serve.sh status     # up / down
+  tools/serve.sh restart    # 强制重启
+  ```
+
+  等价于手工命令（如需前台观察日志）：
 
   ```bash
   ~/.local/bin/frankenphp php-server --root public --listen 0.0.0.0:8090
@@ -31,6 +39,23 @@
   ```
 
 - 首次访问自动建库 `data/pacs_viewer.db`（含默认账号与设置）。
+
+## 开发服务器守护（重要，AI 每次收尾前必做）
+
+- 该 frankenphp 开发服务器**非常容易因会话结束 / 端口冲突 / 误杀而断开**。
+  这不是代码缺陷：本地起服务器、跑测试后若未正确脱离终端，进程会随调用结束
+  被回收，表现为「PHP 服务器又挂了」。
+- **铁律**：每完成一个任务 / 每次 `git commit` 前，先执行
+
+  ```bash
+  tools/serve.sh ensure
+  ```
+
+  若输出 `up` 则继续；若 `down` 则脚本会自动重启并等待可用；只有确认服务器
+  可用后才算任务完成。
+- 启动一律走 `tools/serve.sh`（内部使用 `nohup + 日志 data/.serve.log + pid
+  data/.serve.pid`），**不要**再手工 `--listen` 起临时实例，避免端口 / 实例冲突。
+- 需要临时端口验证时可 `PV_PORT=8099 tools/serve.sh ensure`，用完 `stop`。
 
 ## 架构与目录约定
 
@@ -87,6 +112,7 @@
      标题下空一行，附逐条正文：
      `git commit -m "<标题>" -m "<正文>"`。
 3. **提交前自检**：`~/.local/bin/frankenphp php-cli tools/lint.php`；
+   `tools/serve.sh ensure`（**确认开发服务器存活，挂了自动重启**）；
    `git status` 确认未把 `data/` 运行时数据纳入提交。
 
 ## 其他约定

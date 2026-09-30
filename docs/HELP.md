@@ -4,10 +4,12 @@ Web PACS 影像浏览器 · 独立 PHP 网站
 
 ## 一、快速开始
 
-1. **启动服务**（本机使用 FrankenPHP，Web 根指向 `public/`）：
+1. **启动服务**（本机使用 FrankenPHP，Web 根指向 `public/`；推荐守护脚本）：
 
    ```bash
-   ~/.local/bin/frankenphp php-server --root public --listen 0.0.0.0:8090
+   tools/serve.sh ensure   # 启动 / 健康检查，挂了自动重启
+   # 等价手工前台启动（如需观察日志）：
+   # ~/.local/bin/frankenphp php-server --root public --listen 0.0.0.0:8090
    ```
 
 2. **打开首页**：`http://localhost:8090/`，会自动进入**首次运行安装向导**。
