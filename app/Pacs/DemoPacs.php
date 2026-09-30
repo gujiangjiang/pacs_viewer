@@ -88,36 +88,48 @@ class PvDemoPacs {
         return $out;
     }
 
-    /** 按 Study UID 取完整检查（患者 + 检查 + 序列元数据） */
-    public static function study($uid) {
-        $study = null;
-        foreach (self::studies() as $s) { if ($s['study_uid'] === $uid) { $study = $s; break; } }
-        if (!$study) {
-            // 亦支持按检查号调阅
-            foreach (self::studies() as $s) { if ($s['accession_no'] === $uid) { $study = $s; break; } }
-        }
-        if (!$study) return null;
+    /**
+     * 由检索行组装完整检查（患者 + 检查 + 序列元数据）。
+     * 供内置仿真数据与 FHIR 数据统一使用（字段缺失时安全降级）。
+     */
+    public static function assembleStudy(array $row) {
+        $g = function ($k, $d = '') use ($row) { return isset($row[$k]) ? $row[$k] : $d; };
+        $mod = strtoupper((string)$g('modality'));
         $patient = array(
-            'patient_id'    => $study['patient_id'],
-            'name'          => $study['name'],
-            'gender'        => $study['gender'],
-            'age'           => $study['age'],
-            'birth_date'    => $study['birth_date'],
-            'outpatient_no' => $study['outpatient_no'],
+            'patient_id'    => (string)$g('patient_id'),
+            'name'          => (string)$g('name'),
+            'gender'        => (string)$g('gender'),
+            'age'           => (string)$g('age'),
+            'birth_date'    => (string)$g('birth_date'),
+            'outpatient_no' => (string)$g('outpatient_no'),
         );
         $st = array(
-            'accession_no'    => $study['accession_no'],
-            'study_uid'       => $study['study_uid'],
-            'modality'        => $study['modality'],
-            'description'     => $study['description'],
-            'study_date'      => $study['study_date'],
-            'institution'     => $study['institution'],
-            'station_name'    => $study['station_name'],
-            'apply_dept'      => $study['apply_dept'],
-            'apply_doctor'    => $study['apply_doctor'],
-            'slice_thickness' => ($study['modality'] === 'CT' || $study['modality'] === 'MR') ? 5.0 : 0,
+            'accession_no'    => (string)$g('accession_no'),
+            'study_uid'       => (string)$g('study_uid'),
+            'modality'        => $mod,
+            'description'     => (string)$g('description'),
+            'study_date'      => (string)$g('study_date'),
+            'institution'     => (string)$g('institution'),
+            'station_name'    => (string)$g('station_name'),
+            'apply_dept'      => (string)$g('apply_dept'),
+            'apply_doctor'    => (string)$g('apply_doctor'),
+            'slice_thickness' => ($mod === 'CT' || $mod === 'MR') ? 5.0 : 0,
         );
-        return array('patient' => $patient, 'study' => $st, 'series' => self::seriesFor($study['modality'], $study['study_uid'], $study['description']));
+        return array(
+            'patient' => $patient,
+            'study'   => $st,
+            'series'  => self::seriesFor($mod, (string)$g('study_uid'), (string)$g('description')),
+        );
+    }
+
+    /** 按 Study UID 取完整检查（亦支持按检查号） */
+    public static function study($uid) {
+        $row = null;
+        foreach (self::studies() as $s) {
+            if ($s['study_uid'] === $uid || (isset($s['accession_no']) && $s['accession_no'] === $uid)) { $row = $s; break; }
+        }
+        if (!$row) return null;
+        return self::assembleStudy($row);
     }
 
     /** 序列元数据：委托模拟数据调度中心按检查部位 / 模态规划标准序列 */

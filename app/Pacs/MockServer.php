@@ -15,8 +15,10 @@ class PvMockServer {
     public static function enabled() { return (string)PvSettings::get('mock_enabled', '1') === '1'; }
     public static function apiKey()  { return trim((string)PvSettings::get('mock_api_key', '')); }
 
-    /** 内置模拟服务器固定使用内置仿真患者数据（FHIR 已独立为「数据来源」配置项） */
-    public static function source()  { return 'builtin'; }
+    /** 患者数据来源：builtin 内置仿真数据 / fhir 门诊 FHIR R4 获取 */
+    public static function source() {
+        return (string)PvSettings::get('mock_patient_source', 'builtin') === 'fhir' ? 'fhir' : 'builtin';
+    }
 
     /** 标准 DICOMweb 根地址（QIDO-RS / WADO-RS，内置模拟服务器对外提供） */
     public static function dicomWebEndpoint() {
@@ -38,8 +40,11 @@ class PvMockServer {
 
     /* ---------------- 数据来源 ---------------- */
 
-    /** 患者检查行（统一结构，复用内置仿真数据源的关键词检索） */
+    /** 患者检查行（统一结构）：按来源取内置仿真数据或 FHIR */
     public static function rows($keyword = '') {
+        if (self::source() === 'fhir') {
+            try { return PvFhirClient::search($keyword); } catch (Exception $e) { return array(); }
+        }
         return PvDemoPacs::search($keyword);
     }
 
@@ -83,9 +88,10 @@ class PvMockServer {
         return $rows;
     }
 
-    /** 调阅单次检查（复用内置仿真数据源的完整组装，含按检查号回退匹配） */
+    /** 调阅单次检查（按来源行组装，含按检查号回退匹配） */
     public static function study($uid) {
-        return PvDemoPacs::study($uid);
+        $row = self::findStudyRow($uid);
+        return $row ? PvDemoPacs::assembleStudy($row) : null;
     }
 
     /* ---------------- 标准 DICOM 输出（WADO-URI 二进制流） ---------------- */

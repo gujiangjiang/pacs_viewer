@@ -15,10 +15,12 @@ class PvMockController {
         PvAuth::requireAdmin();
         pvw_csrf_check();
         $pairs = array();
-        foreach (array('mock_enabled') as $k) {
+        foreach (array('mock_enabled', 'mock_patient_source', 'fhir_endpoint', 'fhir_api_key', 'fhir_timeout') as $k) {
             if (isset($_POST[$k])) $pairs[$k] = (string)$_POST[$k];
         }
         if (isset($pairs['mock_enabled'])) $pairs['mock_enabled'] = $pairs['mock_enabled'] === '1' ? '1' : '0';
+        if (isset($pairs['mock_patient_source'])) $pairs['mock_patient_source'] = $pairs['mock_patient_source'] === 'fhir' ? 'fhir' : 'builtin';
+        if (isset($pairs['fhir_timeout'])) $pairs['fhir_timeout'] = (string)max(1, min(60, (int)$pairs['fhir_timeout']));
         PvSettings::saveMany($pairs);
         self::reply('模拟服务器设置已保存');
     }

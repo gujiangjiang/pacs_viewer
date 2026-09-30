@@ -49,7 +49,7 @@ class PvDicomWebController {
         $limit = max(0, (int)pvw_input('limit', 0));
         $offset = max(0, (int)pvw_input('offset', 0));
 
-        $rows = PvDemoPacs::studies();
+        $rows = PvMockServer::rows('');
         $out = array();
         foreach ($rows as $row) {
             if ($suid !== '' && $row['study_uid'] !== $suid) continue;
@@ -180,8 +180,8 @@ class PvDicomWebController {
     }
 
     private static function findRow($uid) {
-        foreach (PvDemoPacs::studies() as $row) {
-            if ($row['study_uid'] === $uid || $row['accession_no'] === $uid) return $row;
+        foreach (PvMockServer::rows('') as $row) {
+            if ($row['study_uid'] === $uid || (isset($row['accession_no']) && $row['accession_no'] === $uid)) return $row;
         }
         return null;
     }

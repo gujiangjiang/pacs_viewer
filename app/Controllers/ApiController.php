@@ -6,7 +6,7 @@ class PvApiController {
     private static function sourceFingerprint() {
         return md5(
             PvPacsClient::mode() . '|' . PvSettings::get('pacs_endpoint', '') . '|'
-            . (PvStudyService::isFhirEnabled() ? '1' : '0') . '|' . (PvMockServer::enabled() ? '1' : '0')
+            . (PvMockServer::enabled() ? '1' : '0') . '|' . PvMockServer::source()
         );
     }
 
@@ -41,7 +41,6 @@ class PvApiController {
             'mode' => PvPacsClient::mode(),
             'remote' => PvPacsClient::isRemote(),
             'source' => PvStudyService::sourceInfo(),
-            'fhir_error' => PvStudyService::lastFhirError(),
         ));
     }
 

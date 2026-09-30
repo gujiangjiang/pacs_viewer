@@ -5,10 +5,8 @@ class PvAdminController {
     /** 允许保存的设置键（白名单） */
     private static $settingKeys = array(
         'site_title', 'hospital_name',
-        'fhir_enabled',
         'pacs_endpoint', 'pacs_api_key',
         'pacs_ae_title', 'pacs_remote_ae', 'pacs_server_host', 'pacs_server_port', 'pacs_timeout',
-        'fhir_endpoint', 'fhir_api_key', 'fhir_timeout',
         'viewer_default_ww', 'viewer_default_wl', 'viewer_study_limit',
     );
 
@@ -49,36 +47,18 @@ class PvAdminController {
         if (isset($pairs['viewer_study_limit'])) {
             $pairs['viewer_study_limit'] = (string)max(3, min(10, (int)$pairs['viewer_study_limit']));
         }
-        if (isset($pairs['fhir_enabled'])) {
-            $pairs['fhir_enabled'] = $pairs['fhir_enabled'] === '1' ? '1' : '0';
-        }
-        if (isset($pairs['fhir_timeout'])) {
-            $pairs['fhir_timeout'] = (string)max(1, min(60, (int)$pairs['fhir_timeout']));
-        }
         $tab = (string)pvw_input('tab', 'basic');
 
         /* 外部接口：保存前必须测试通过 */
         if ($tab === 'pacs') {
             $ep = isset($pairs['pacs_endpoint']) ? trim($pairs['pacs_endpoint']) : trim((string)PvSettings::get('pacs_endpoint', ''));
-            if ($ep === '') self::reply('请填写 DICOM / PACS 接口地址并测试通过后再保存', false, null, 'pacs');
+            if ($ep === '') self::reply('请填写 DICOMweb 接口地址并测试通过后再保存', false, null, 'pacs');
             $key = isset($pairs['pacs_api_key']) ? $pairs['pacs_api_key'] : PvSettings::get('pacs_api_key', '');
             $to = isset($pairs['pacs_timeout']) ? $pairs['pacs_timeout'] : PvSettings::get('pacs_timeout', '5');
             try {
                 PvPacsClient::pingWith($ep, $key, $to);
             } catch (Exception $e) {
-                self::reply('DICOM / PACS 接口测试失败，未保存：' . $e->getMessage(), false, null, 'pacs');
-            }
-            $fhirOn = isset($pairs['fhir_enabled']) ? ($pairs['fhir_enabled'] === '1') : ((string)PvSettings::get('fhir_enabled', '0') === '1');
-            if ($fhirOn) {
-                $fep = isset($pairs['fhir_endpoint']) ? trim($pairs['fhir_endpoint']) : trim((string)PvSettings::get('fhir_endpoint', ''));
-                if ($fep === '') self::reply('已启用 FHIR 补充，请填写 FHIR 接口地址', false, null, 'pacs');
-                $fk = isset($pairs['fhir_api_key']) ? $pairs['fhir_api_key'] : PvSettings::get('fhir_api_key', '');
-                $ft = isset($pairs['fhir_timeout']) ? $pairs['fhir_timeout'] : PvSettings::get('fhir_timeout', '5');
-                try {
-                    PvFhirClient::pingWith($fep, $fk, $ft);
-                } catch (Exception $e) {
-                    self::reply('FHIR 接口测试失败，未保存：' . $e->getMessage(), false, null, 'pacs');
-                }
+                self::reply('DICOMweb 接口测试失败，未保存：' . $e->getMessage(), false, null, 'pacs');
             }
         }
 
