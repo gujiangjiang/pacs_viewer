@@ -8,9 +8,70 @@
 
     var input, btn, box, empty, meta, onDocKey, clearChk;
 
+    /* 结果分块渲染 + 视口触发续载（近似虚拟滚动），避免一次性创建大量 DOM */
+    var CHUNK = 80;
+    var allItems = [], renderedCount = 0, sentinelEl = null, moreIO = null;
+
+    function makeCard(s) {
+        var hasImg = s.has_images !== false;
+        var el = document.createElement('div');
+        el.className = 'pv-study' + (hasImg ? '' : ' is-noimg');
+        el.innerHTML =
+            '<div class="pv-study-head"><span class="pv-study-name">' + esc(s.name) + '</span>' +
+            '<span class="pv-study-sex">' + esc(s.gender) + ' / ' + esc(s.age) + '</span>' +
+            (s.fhir ? '<span class="pv-src-tag" title="患者信息来自 FHIR R4 补充">FHIR</span>' : '') +
+            '<span class="pv-mod">' + esc(s.modality) + '</span></div>' +
+            '<div class="pv-study-desc">' + esc(s.description || '影像检查') + '</div>' +
+            '<div class="pv-study-rows">' +
+            '<div><b>患者号：</b>' + esc(s.patient_id) + '　<b>门诊号：</b>' + esc(s.outpatient_no || '—') + '</div>' +
+            '<div><b>检查号：</b>' + esc(s.accession_no || '—') + '</div>' +
+            '<div><b>检查时间：</b>' + esc(s.study_date || '—') + '　<b>设备：</b>' + esc(s.station_name || '—') + '</div>' +
+            '</div>' +
+            '<div class="pv-study-foot"><span class="pv-study-status">' + esc(s.status_name || '已完成') + '</span>' +
+            '<span class="pv-study-open">' + (hasImg ? '打开影像 →' : '暂无影像') + '</span></div>';
+        el.addEventListener('click', function () {
+            if (!hasImg) { PvUI.toast('该检查仅有登记信息，暂无影像数据', 'err'); return; }
+            var mode = (clearChk && clearChk.checked) ? 'replace' : 'append';
+            global.PvNav.go('viewer', { uid: s.study_uid || s.accession_no, mode: mode });
+        });
+        return el;
+    }
+
+    function clearMore() {
+        if (moreIO) { moreIO.disconnect(); moreIO = null; }
+        if (sentinelEl && sentinelEl.parentNode) sentinelEl.parentNode.removeChild(sentinelEl);
+        sentinelEl = null;
+    }
+
+    function appendChunk() {
+        var end = Math.min(allItems.length, renderedCount + CHUNK);
+        for (var i = renderedCount; i < end; i++) box.appendChild(makeCard(allItems[i]));
+        renderedCount = end;
+        if (renderedCount >= allItems.length) { clearMore(); return; }
+        if (!sentinelEl) {
+            sentinelEl = document.createElement('div');
+            sentinelEl.className = 'pv-more';
+            sentinelEl.textContent = '加载更多…';
+        }
+        box.appendChild(sentinelEl);
+        if (global.IntersectionObserver) {
+            if (!moreIO) {
+                moreIO = new global.IntersectionObserver(function (en) {
+                    if (en[0] && en[0].isIntersecting) appendChunk();
+                }, { rootMargin: '400px' });
+            }
+            moreIO.observe(sentinelEl);
+        } else {
+            appendChunk();   // 无 IntersectionObserver：直接续载
+        }
+    }
+
     function render(list) {
+        clearMore();
         box.innerHTML = '';
-        if (!list || !list.length) {
+        allItems = list || [];
+        renderedCount = 0;
+        if (!allItems.length) {
             empty.style.display = '';
             empty.querySelector('.pv-empty-title').textContent = '未找到匹配的检查记录';
             meta.style.display = 'none';
@@ -18,35 +79,12 @@
         }
         empty.style.display = 'none';
         meta.style.display = '';
-        var withImg = 0, fhirOnly = 0;
-        list.forEach(function (s) { if (s.has_images === false) fhirOnly++; else withImg++; });
-        meta.textContent = '共找到 ' + list.length + ' 条检查记录'
+        var fhirOnly = 0;
+        allItems.forEach(function (s) { if (s.has_images === false) fhirOnly++; });
+        meta.textContent = '共找到 ' + allItems.length + ' 条检查记录'
             + (fhirOnly ? '（含 ' + fhirOnly + ' 条仅登记·暂无影像）' : '')
             + '，点击卡片调阅影像';
-        list.forEach(function (s) {
-            var hasImg = s.has_images !== false;
-            var el = document.createElement('div');
-            el.className = 'pv-study' + (hasImg ? '' : ' is-noimg');
-            el.innerHTML =
-                '<div class="pv-study-head"><span class="pv-study-name">' + esc(s.name) + '</span>' +
-                '<span class="pv-study-sex">' + esc(s.gender) + ' / ' + esc(s.age) + '</span>' +
-                (s.fhir ? '<span class="pv-src-tag" title="患者信息来自 FHIR R4 补充">FHIR</span>' : '') +
-                '<span class="pv-mod">' + esc(s.modality) + '</span></div>' +
-                '<div class="pv-study-desc">' + esc(s.description || '影像检查') + '</div>' +
-                '<div class="pv-study-rows">' +
-                '<div><b>患者号：</b>' + esc(s.patient_id) + '　<b>门诊号：</b>' + esc(s.outpatient_no || '—') + '</div>' +
-                '<div><b>检查号：</b>' + esc(s.accession_no || '—') + '</div>' +
-                '<div><b>检查时间：</b>' + esc(s.study_date || '—') + '　<b>设备：</b>' + esc(s.station_name || '—') + '</div>' +
-                '</div>' +
-                '<div class="pv-study-foot"><span class="pv-study-status">' + esc(s.status_name || '已完成') + '</span>' +
-                '<span class="pv-study-open">' + (hasImg ? '打开影像 →' : '暂无影像') + '</span></div>';
-            el.addEventListener('click', function () {
-                if (!hasImg) { PvUI.toast('该检查仅有登记信息，暂无影像数据', 'err'); return; }
-                var mode = (clearChk && clearChk.checked) ? 'replace' : 'append';
-                global.PvNav.go('viewer', { uid: s.study_uid || s.accession_no, mode: mode });
-            });
-            box.appendChild(el);
-        });
+        appendChunk();
     }
 
     function saveState(kw, list) {
@@ -125,6 +163,8 @@
         },
         destroy: function () {
             if (input && onDocKey) input.removeEventListener('keydown', onDocKey);
+            clearMore();
+            allItems = []; renderedCount = 0;
             input = btn = box = empty = meta = onDocKey = null;
         }
     };

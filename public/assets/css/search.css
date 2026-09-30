@@ -8,7 +8,10 @@
 .pv-search-meta .is-demo { color: #fbbf24; }
 .pv-result-meta { font-size: 13px; color: var(--pv-txt2); margin: 4px 2px 10px; }
 .pv-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
-.pv-study { background: var(--pv-panel); border: 1px solid var(--pv-line); border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: all .13s; }
+.pv-study { background: var(--pv-panel); border: 1px solid var(--pv-line); border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: all .13s;
+    /* 原生虚拟滚动：跳过离屏卡片的渲染与绘制（近似 contain） */
+    content-visibility: auto; contain-intrinsic-size: 220px; }
+.pv-more { grid-column: 1 / -1; text-align: center; padding: 14px; color: var(--pv-txt2); font-size: 12px; }
 .pv-study:hover { border-color: var(--pv-acc2); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.35); }
 .pv-study-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .pv-study-name { font-size: 15px; font-weight: 700; color: #f1f5f9; }
