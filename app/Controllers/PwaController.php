@@ -65,6 +65,7 @@ class PvPwaController {
         $scope = self::scope();
         $home = PV_URL_SITE === '' ? '/' : PV_URL_SITE . '/';
         $cache = 'pacs-viewer-' . PV_VERSION;
+        $imgCache = 'pacs-viewer-img-' . PV_VERSION;
         $ver = '?v=' . PV_VERSION;
         $core = array(
             $asset . '/css/base.css' . $ver, $asset . '/css/ui.css' . $ver, $asset . '/css/search.css' . $ver,
@@ -81,10 +82,31 @@ class PvPwaController {
         ?>
 /* Service Worker — PACS 影像浏览器 */
 var CACHE = <?php echo json_encode($cache); ?>;
+var IMG_CACHE = <?php echo json_encode($imgCache); ?>;
+var IMG_MAX = 400;
 var ASSET = <?php echo json_encode($asset); ?>;
 var SCOPE = <?php echo json_encode($scope); ?>;
 var HOME  = <?php echo json_encode($home); ?>;
 var CORE = <?php echo json_encode($core, JSON_UNESCAPED_SLASHES); ?>;
+
+/* 影像数据（缩略图 / DICOM 帧）缓存：cache-first + 近似 LRU 容量控制 */
+var IMG_IDX = '/__pv_img_idx';
+function imgReadIdx(c) {
+    return c.match(IMG_IDX).then(function (r) { return r ? r.json() : []; }).catch(function () { return []; });
+}
+function imgWriteIdx(c, list) {
+    return c.put(IMG_IDX, new Response(JSON.stringify(list), { headers: { 'Content-Type': 'application/json' } }));
+}
+function imgTrim(c, url) {
+    imgReadIdx(c).then(function (list) {
+        var i = list.indexOf(url);
+        if (i >= 0) list.splice(i, 1);
+        list.push(url);
+        var drop = [];
+        while (list.length > IMG_MAX) drop.push(list.shift());
+        return Promise.all(drop.map(function (u) { return c.delete(u); })).then(function () { return imgWriteIdx(c, list); });
+    }).catch(function () {});
+}
 
 self.addEventListener('install', function (e) {
     e.waitUntil(
@@ -99,7 +121,7 @@ self.addEventListener('activate', function (e) {
     e.waitUntil(
         caches.keys().then(function (keys) {
             return Promise.all(keys.map(function (k) {
-                if (k !== CACHE && k.indexOf('pacs-viewer-') === 0) return caches.delete(k);
+                if (k !== CACHE && k !== IMG_CACHE && k.indexOf('pacs-viewer-') === 0) return caches.delete(k);
             }));
         }).then(function () { return self.clients.claim(); })
     );
@@ -114,6 +136,25 @@ self.addEventListener('fetch', function (e) {
     var r = url.searchParams.get('r') || '';
     // 接口 / 清单 / SW 本身：实时直连，不缓存
     if (r.indexOf('api') === 0 || r === 'mock' || r === 'manifest' || r === 'sw') return;
+
+    // 影像数据（缩略图 / DICOM 帧，内容不可变）：缓存优先，命中即秒开，可离线
+    if (r === 'dicom' || r === 'thumb') {
+        e.respondWith(
+            caches.open(IMG_CACHE).then(function (c) {
+                return c.match(req).then(function (cached) {
+                    if (cached) return cached;
+                    return fetch(req).then(function (res) {
+                        if (res && res.ok) {
+                            var copy = res.clone();
+                            c.put(req, copy).then(function () { imgTrim(c, req.url); });
+                        }
+                        return res;
+                    });
+                });
+            })
+        );
+        return;
+    }
 
     // 静态资源：缓存优先 + 后台更新（stale-while-revalidate）
     if (url.pathname.indexOf(ASSET + '/') === 0) {
