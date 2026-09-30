@@ -48,6 +48,8 @@
 
         this.imgCache = {};
         this._frames = {};
+        this._ctrls = [];          // 在途请求的 AbortController（离开/换序列时中止）
+        this._prefetchSeq = 0;     // 预取代次，用于中止后停止预取循环
         this.st = {
             uid: '', si: 0, fi: 0, ww: 400, wl: 40, isHU: true,
             zoom: 1, panX: 0, panY: 0, rot: 0, flipH: false, flipV: false, invert: false,
@@ -61,10 +63,31 @@
     }
 
     PvPane.prototype.destroy = function () {
+        this._abortFetches();      // 中止后台预取，释放浏览器连接
         try { if (this._ro) this._ro.disconnect(); } catch (e) {}
         if (this._upH) window.removeEventListener('pointerup', this._upH);
         if (this._sb && this._sb.hideTimer) clearTimeout(this._sb.hideTimer);
         if (this.el.parentNode) this.el.parentNode.removeChild(this.el);
+    };
+
+    /** 可中止的取字节请求：登记 AbortController，便于离开时立即释放连接 */
+    PvPane.prototype._fetchBuffer = function (url) {
+        var self = this;
+        var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        if (ctrl) this._ctrls.push(ctrl);
+        var opts = { credentials: 'same-origin' };
+        if (ctrl) opts.signal = ctrl.signal;
+        var cleanup = function () { if (ctrl) { var i = self._ctrls.indexOf(ctrl); if (i >= 0) self._ctrls.splice(i, 1); } };
+        return fetch(url, opts).then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.arrayBuffer();
+        }).then(function (buf) { cleanup(); return buf; }, function (err) { cleanup(); throw err; });
+    };
+    /** 中止当前窗格全部在途请求（切换序列 / 销毁时调用） */
+    PvPane.prototype._abortFetches = function () {
+        this._prefetchSeq++;
+        var list = this._ctrls; this._ctrls = [];
+        for (var i = 0; i < list.length; i++) { try { list[i].abort(); } catch (e) {} }
     };
 
     /* ---------- 数据 ---------- */
@@ -113,8 +136,7 @@
         if (!url) return null;
         this._frames[key] = { status: 'loading' };
         var self = this;
-        fetch(url, { credentials: 'same-origin' })
-            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+        this._fetchBuffer(url)
             .then(function (buf) {
                 var dec = window.PvDicom ? PvDicom.decode(buf) : null;
                 if (!dec) { delete self._frames[key]; self.setStatus('DICOM 解码失败'); self.render(); return; }
@@ -122,7 +144,10 @@
                 self._trimFrames();
                 self.render();
             })
-            .catch(function () { delete self._frames[key]; self.setStatus('影像加载失败'); self.render(); });
+            .catch(function (err) {
+                if (err && err.name === 'AbortError') return;   // 主动中止：不报错
+                delete self._frames[key]; self.setStatus('影像加载失败'); self.render();
+            });
         return null;
     };
     PvPane.prototype.currentFrame = function () {
@@ -142,10 +167,15 @@
         }
     };
 
-    /** 后台预取并解码整条序列（并发上限 4），使滚动翻帧基本即时 */
+    /**
+     * 后台预取并解码整条序列，使滚动翻帧基本即时。
+     * 并发刻意保持较低（2）：避免占满浏览器每主机连接数，导致切换页面 / 标签时
+     * 的站点请求被排队而出现明显卡顿；离开窗格或换序列时会被 _abortFetches 中止。
+     */
     PvPane.prototype.prefetch = function (series) {
         if (!series || series.format !== 'dicom' || !series.images || !series.images.length) return;
-        var self = this, n = series.images.length, MAX = 6, cursor = 0;
+        var self = this, n = series.images.length, MAX = 2, cursor = 0;
+        var seq = this._prefetchSeq;
         var order = [], seen = {}, cur = this.st.fi;
         var push = function (k) { if (k >= 0 && k < n && !seen[k]) { seen[k] = 1; order.push(k); } };
         push(cur);
@@ -153,13 +183,12 @@
         /* 真实大型序列仅预取离当前帧最近的有限窗口，其余按需加载 */
         if (order.length > 120) order = order.slice(0, 120);
         function next() {
-            if (cursor >= order.length) return;
+            if (seq !== self._prefetchSeq || cursor >= order.length) return;
             var idx = order[cursor++];
             var key = self._frameKey(series, idx);
             if (self._frames[key]) { next(); return; }
             self._frames[key] = { status: 'loading' };
-            fetch(series.images[idx], { credentials: 'same-origin' })
-                .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+            self._fetchBuffer(series.images[idx])
                 .then(function (buf) {
                     var dec = window.PvDicom ? PvDicom.decode(buf) : null;
                     if (dec) self._frames[key] = { status: 'ok', dec: dec, raw: PvRender.resample(dec, BASE) };
@@ -167,10 +196,12 @@
                     self._trimFrames();
                     if (self.curSeries() === series && self.st.fi === idx) self.render();
                 })
-                .catch(function () { delete self._frames[key]; })
+                .catch(function (err) { if (!(err && err.name === 'AbortError')) delete self._frames[key]; })
                 .then(function () { next(); });
         }
-        for (var k = 0; k < MAX; k++) next();
+        /* 稍作延迟再启动预取：给首帧渲染与即时交互让路；若其间切换序列/离开，
+         * _abortFetches 会递增 seq，使本次预取循环自动失效。 */
+        setTimeout(function () { for (var k = 0; k < MAX; k++) next(); }, 200);
     };
 
     PvPane.prototype.getRealImage = function (src, cb) {
@@ -465,6 +496,7 @@
     PvPane.prototype.setSeries = function (uid, si) {
         var d = this.viewer.study(uid);
         if (!d || !d.series[si]) return;
+        this._abortFetches();      // 中止上一条序列仍在进行的预取
         this.st.uid = uid; this.st.si = si; this.st.fi = 0;
         this._wheelAcc = 0; this.st.annos = []; this.st.draft = null; this._frames = {};
         this.applyDefaults(); this.fit();

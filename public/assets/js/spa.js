@@ -76,11 +76,15 @@
         }
     }
 
+    /** 销毁指定页面（释放其资源，如阅片器仍在后台预取的帧请求） */
+    function teardown(page) {
+        if (page && global.PvPages && global.PvPages[page] && typeof global.PvPages[page].destroy === 'function') {
+            try { global.PvPages[page].destroy(); } catch (e) { if (global.console) console.error(e); }
+        }
+    }
+
     function apply(res) {
         if (!main) return;
-        if (currentPage && currentPage !== res.page && global.PvPages && global.PvPages[currentPage] && typeof global.PvPages[currentPage].destroy === 'function') {
-            try { global.PvPages[currentPage].destroy(); } catch (e) { if (global.console) console.error(e); }
-        }
         ensureCss(res.css);
         main.innerHTML = res.html;
         if (res.title) document.title = res.title;
@@ -97,6 +101,9 @@
         var url = route(page, params);
         busy = true;
         document.body.classList.add('pv-nav-busy');
+        // 先释放当前页面资源：阅片器可能在后台预取整条序列，占用浏览器连接会拖慢
+        // 本次导航请求（表现为点标签后页面变暗数秒才切换）。提前销毁并中止其在途请求。
+        if (currentPage && currentPage !== page) { teardown(currentPage); currentPage = null; }
         fetch(url, {
             headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
             credentials: 'same-origin'
