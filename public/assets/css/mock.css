@@ -3,6 +3,19 @@
 .pv-alert-info b { color: #e0f2fe; }
 .pv-copy-row { display: flex; gap: 8px; align-items: center; max-width: 760px; }
 .pv-copy-row input { flex: 1 1 auto; }
+
+/* ---------- 服务器控制：分组布局与统一宽度 ---------- */
+.pv-mock-switch { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pv-mock-switch .pv-hint { margin: 0; }
+.pv-mock-params { margin-top: 18px; }
+.pv-mock-params .pv-field input,
+.pv-mock-params .pv-copy-row,
+.pv-mock-params .pv-grid2 { max-width: 760px; }
+.pv-field-group { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--pv-line); }
+.pv-field-group:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+.pv-group-title { margin: 0 0 14px; font-size: 13px; font-weight: 600; color: #cbd5e1; letter-spacing: .02em; }
+.pv-apply-bar { margin-top: 18px; padding: 12px 14px; border: 1px solid rgba(14,165,233,.28); border-radius: 10px; background: rgba(14,165,233,.06); flex-wrap: wrap; }
+.pv-form-actions-bar { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--pv-line); flex-wrap: wrap; }
 .pv-inline-field { display: flex; flex-direction: column; }
 .pv-inline-field input[type=checkbox] { width: auto; max-width: none; margin: 2px 0 0; }
 .pv-btn-accent { background: #0ea5e9; border-color: #0ea5e9; color: #04121f; font-weight: 600; }

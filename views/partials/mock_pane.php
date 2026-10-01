@@ -61,52 +61,62 @@ $pvPartText = $pvPartList ? implode('、', $pvPartList) : '未启用任何部位
             <!-- 服务器控制 -->
             <div class="pv-card pv-hidden" data-mp-pane="control">
                 <h3 class="pv-form-title">服务器控制</h3>
-                <div class="pv-field">
+
+                <div class="pv-mock-switch">
                     <label class="pv-switch">
                         <input type="hidden" name="mock_enabled" value="0">
                         <input type="checkbox" name="mock_enabled" value="1" id="pvMockEnabled" <?php echo $pvEnabled ? 'checked' : ''; ?>>
                         <span class="pv-track"></span>
                         <span class="pv-switch-label">启用模拟服务器</span>
                     </label>
-                    <em class="pv-hint">关闭后对外 API 返回 403，本浏览器也无法通过模拟地址检索</em>
+                    <em class="pv-hint">关闭后对外 API 返回 403，本浏览器也无法通过模拟地址检索。</em>
                 </div>
 
-                <div id="pvMockParams" class="<?php echo $pvEnabled ? '' : 'pv-hidden'; ?>">
-                    <label class="pv-field"><span>DICOMweb 地址（标准接口根地址）</span>
-                        <input type="text" id="pvMockUrl" class="pv-copy" data-copy="#pvMockUrl" readonly title="点击复制" value="<?php echo pvw_e($mockUrl); ?>">
-                    </label>
-                    <div class="pv-grid2">
-                        <label class="pv-field"><span>DICOM AE Title</span>
-                            <input type="text" id="pvMockAe" class="pv-copy" data-copy="#pvMockAe" readonly title="点击复制" value="<?php echo pvw_e($pvMockAe); ?>">
+                <div id="pvMockParams" class="pv-mock-params <?php echo $pvEnabled ? '' : 'pv-hidden'; ?>">
+
+                    <section class="pv-field-group">
+                        <h4 class="pv-group-title">对外接口地址（供外部客户端对接，点击输入框即可复制）</h4>
+                        <label class="pv-field"><span>DICOMweb 根地址 · QIDO-RS 检索 / WADO-RS 取像</span>
+                            <input type="text" id="pvMockUrl" class="pv-copy" data-copy="#pvMockUrl" readonly title="点击复制" value="<?php echo pvw_e($mockUrl); ?>">
+                            <em class="pv-hint">以 <code>/dicom-web</code> 结尾；检索（<code>/studies</code>）与取像均基于它拼接。</em>
                         </label>
-                        <label class="pv-field"><span>DICOM 端口</span>
-                            <input type="text" id="pvMockPort" class="pv-copy" data-copy="#pvMockPort" readonly title="点击复制" value="104">
+                        <label class="pv-field"><span>接口密钥 · 请求头 <code>X-API-Key</code> 或 <code>Authorization: Bearer</code></span>
+                            <span class="pv-copy-row">
+                                <input type="text" id="pvMockKey" class="pv-copy" data-copy="#pvMockKey" readonly title="点击复制" value="<?php echo pvw_e($mockKey); ?>">
+                                <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm" id="pvRegenKey">重新生成</button>
+                            </span>
                         </label>
-                    </div>
-                    <label class="pv-field"><span>主机</span>
-                        <input type="text" id="pvMockHost" class="pv-copy" data-copy="#pvMockHost" readonly title="点击复制" value="<?php echo pvw_e($pvHost); ?>">
-                    </label>
-                    <p class="pv-hint">AE Title / 主机 / 端口为传统 DICOM（DIMSE）网络身份，仅供参考；本项目经 DICOMweb(HTTP) 取数，不使用、也无需与对端匹配。</p>
-                    <label class="pv-field"><span>接口密钥（请求头 X-API-Key / Authorization: Bearer）</span>
-                        <span class="pv-copy-row">
-                            <input type="text" id="pvMockKey" class="pv-copy" data-copy="#pvMockKey" readonly title="点击复制" value="<?php echo pvw_e($mockKey); ?>">
-                            <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm" id="pvRegenKey">重新生成</button>
-                        </span>
-                    </label>
-                    <label class="pv-field"><span>Web 阅片器 URL 模板</span>
-                        <input type="text" id="pvMockViewerUrl" class="pv-copy" data-copy="#pvMockViewerUrl" readonly title="点击复制" value="<?php echo pvw_e($mockViewerUrl); ?>">
-                    </label>
-                    <p class="pv-hint">外部系统打开当前检查的直链模板：把 <code>{study_uid}</code> 替换为本次检查的
-                        StudyInstanceUID 后即可直接打开本浏览器阅片（如
-                        <code>?r=viewer&amp;uid={study_uid}</code>）。它指向本浏览器本身，与上方 DICOMweb 取像接口相互独立。</p>
-                    <div class="pv-form-actions">
-                        <button type="button" class="pv-btn pv-btn-accent" id="pvApplyMock">⇩ 一键应用模拟服务器数据（标准 DICOMweb）</button>
-                        <span class="pv-hint">将 DICOMweb 地址与密钥自动填入【外部接口】</span>
+                        <label class="pv-field"><span>Web 阅片器 URL 模板</span>
+                            <input type="text" id="pvMockViewerUrl" class="pv-copy" data-copy="#pvMockViewerUrl" readonly title="点击复制" value="<?php echo pvw_e($mockViewerUrl); ?>">
+                            <em class="pv-hint">把 <code>{study_uid}</code> 替换为当前检查的 StudyInstanceUID，即可直接打开本浏览器阅片；它指向浏览器本身，与上方 DICOMweb 取像接口相互独立。</em>
+                        </label>
+                    </section>
+
+                    <section class="pv-field-group">
+                        <h4 class="pv-group-title">DICOM 网络身份（传统 DIMSE，仅供参考）</h4>
+                        <div class="pv-grid2">
+                            <label class="pv-field"><span>AE Title</span>
+                                <input type="text" id="pvMockAe" class="pv-copy" data-copy="#pvMockAe" readonly title="点击复制" value="<?php echo pvw_e($pvMockAe); ?>">
+                            </label>
+                            <label class="pv-field"><span>DICOM 端口</span>
+                                <input type="text" id="pvMockPort" class="pv-copy" data-copy="#pvMockPort" readonly title="点击复制" value="104">
+                            </label>
+                        </div>
+                        <label class="pv-field"><span>主机</span>
+                            <input type="text" id="pvMockHost" class="pv-copy" data-copy="#pvMockHost" readonly title="点击复制" value="<?php echo pvw_e($pvHost); ?>">
+                        </label>
+                        <p class="pv-hint">AE Title / 主机 / 端口为传统 DICOM（DIMSE）网络身份，仅供参考；本项目经 DICOMweb(HTTP) 取数，不使用、也无需与对端匹配。</p>
+                    </section>
+
+                    <div class="pv-form-actions pv-apply-bar">
+                        <button type="button" class="pv-btn pv-btn-accent" id="pvApplyMock">⇩ 一键应用模拟服务器数据</button>
+                        <span class="pv-hint">将 DICOMweb 地址与密钥自动填入【外部接口】。</span>
                     </div>
                 </div>
 
-                <div class="pv-form-actions">
+                <div class="pv-form-actions pv-form-actions-bar">
                     <button type="submit" class="pv-btn pv-btn-primary">保存服务器控制</button>
+                    <span class="pv-hint">地址 / 密钥为只读，由系统生成；此处保存启停状态。</span>
                 </div>
             </div>
 
