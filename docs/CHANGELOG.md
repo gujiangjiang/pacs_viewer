@@ -14,6 +14,24 @@
 
 ---
 
+## [0.28.7] - 2026-10-01
+
+### 修复
+- **FHIR 患者/检查字段错位**（对接门诊 FHIR 时尤为明显）：
+  - **模态**：`ImagingStudy.modality` 兼容 R4 单 CodeableConcept 与部分实现的
+    数组写法，此前误读为 `modality[0].code`，导致一律回退为 `OT`（现正确显示 MR/CT 等）。
+  - **检查号**：优先取 `ACSN`（报告号/检查号）→ `PLAC`（申请单号）→ `VN`（就诊号），
+    不再误取 `urn:dicom:uid`（StudyInstanceUID）。
+  - **患者号**：优先取 `OP/MR`（门诊号/病案号）标识，回退去掉 `patient-` 前缀的内部 id。
+  - **序列模态**：同样修正 CodeableConcept 取值。
+- **列表混入未登记影像（未缴费）患者**：无关键字列表现改为以 `ImagingStudy` 为准，
+  仅列出「已登记影像」的检查；`ImagingStudy` 返回空即排除该患者，仅当服务**不支持**
+  `ImagingStudy` 时才回退 `Encounter`（就诊）推导，且不再掩盖 401/403 鉴权错误。
+- 模拟服务器 DICOMweb 增加 `OtherPatientIDs(0010,1000)` 承载门诊号，
+  本浏览器 DICOMweb 客户端据此回填「门诊号」（此前恒为空）。
+
+---
+
 ## [0.28.6] - 2026-10-01
 
 ### 修复

@@ -206,6 +206,8 @@ class PvDicomWebController {
             '0020000D' => array('vr' => 'UI', 'Value' => array((string)$row['study_uid'])),
             '00100010' => array('vr' => 'PN', 'Value' => array(array('Alphabetic' => (string)$row['name']))),
             '00100020' => array('vr' => 'LO', 'Value' => array((string)$row['patient_id'])),
+            // 门诊号：DICOM 无专用标签，用 OtherPatientIDs 承载（本模拟服务约定）
+            '00101000' => array('vr' => 'LO', 'Value' => array(isset($row['outpatient_no']) ? (string)$row['outpatient_no'] : '')),
             '00100030' => array('vr' => 'DA', 'Value' => array(self::toDa($row['birth_date']))),
             '00100040' => array('vr' => 'CS', 'Value' => array(self::toSex($row['gender']))),
             '00080050' => array('vr' => 'SH', 'Value' => array((string)$row['accession_no'])),

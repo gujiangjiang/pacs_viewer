@@ -206,7 +206,7 @@ class PvDicomWebClient {
             'gender' => $gender,
             'age' => '',
             'birth_date' => $birth,
-            'outpatient_no' => '',
+            'outpatient_no' => self::val('00101000', $res),
             'accession_no' => self::val('00080050', $res),
             'modality' => strtoupper($mod),
             'description' => self::val('00081030', $res),
