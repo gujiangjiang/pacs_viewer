@@ -2,7 +2,7 @@
 /**
  * views/partials/mock_pane.php — 模拟服务器面板（管理设置子 Tab）
  * 左栏导航：服务器状态（指标预览）/ 控制 / 数据来源 / 部位与切片 / 标准 API / 患者查询。
- * 变量：$v($k,$d)、$mockUrl、$mockKey、$mockAeTitle、$anatomy
+ * 变量：$v($k,$d)、$mockUrl、$mockKey、$mockViewerUrl、$mockAeTitle、$anatomy
  */
 $pvMockAe = isset($mockAeTitle) ? $mockAeTitle : 'PACSVIEWMOCK';
 $pvHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
@@ -93,6 +93,12 @@ $pvPartText = $pvPartList ? implode('、', $pvPartList) : '未启用任何部位
                             <button type="button" class="pv-btn pv-btn-ghost pv-btn-sm" id="pvRegenKey">重新生成</button>
                         </span>
                     </label>
+                    <label class="pv-field"><span>Web 阅片器 URL 模板</span>
+                        <input type="text" id="pvMockViewerUrl" class="pv-copy" data-copy="#pvMockViewerUrl" readonly title="点击复制" value="<?php echo pvw_e($mockViewerUrl); ?>">
+                    </label>
+                    <p class="pv-hint">外部系统打开当前检查的直链模板：把 <code>{study_uid}</code> 替换为本次检查的
+                        StudyInstanceUID 后即可直接打开本浏览器阅片（如
+                        <code>?r=viewer&amp;uid={study_uid}</code>）。它指向本浏览器本身，与上方 DICOMweb 取像接口相互独立。</p>
                     <div class="pv-form-actions">
                         <button type="button" class="pv-btn pv-btn-accent" id="pvApplyMock">⇩ 一键应用模拟服务器数据（标准 DICOMweb）</button>
                         <span class="pv-hint">将 DICOMweb 地址与密钥自动填入【外部接口】</span>

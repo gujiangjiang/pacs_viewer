@@ -32,6 +32,7 @@ class PvAdminController {
             'logCount' => PvQueryLogRepository::count(),
             'mockKey'  => PvMockServer::apiKey(),
             'mockUrl'  => PvMockServer::dicomWebEndpoint(),
+            'mockViewerUrl' => PvMockServer::viewerUrlTemplate(),
             'mockAeTitle' => PvSettings::get('mock_ae_title', 'PACSVIEWMOCK'),
             'pacsEndpoint' => PvSettings::get('pacs_endpoint', ''),
         ));

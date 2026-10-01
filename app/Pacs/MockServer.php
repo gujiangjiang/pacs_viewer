@@ -31,6 +31,14 @@ class PvMockServer {
         return pvw_abs_path($base);
     }
 
+    /**
+     * Web 阅片器 URL 模板（供外部系统直接打开当前检查）：
+     * {study_uid} 为检查 UID 占位符，外部系统按检查自动替换后打开本浏览器直链。
+     */
+    public static function viewerUrlTemplate() {
+        return pvw_abs_path(pvw_url('viewer')) . '&uid={study_uid}';
+    }
+
     /** 校验对外接口密钥 */
     public static function checkKey($key) {
         $k = self::apiKey();
