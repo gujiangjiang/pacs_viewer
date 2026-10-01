@@ -24,6 +24,8 @@ class PvFhirClient {
     private static $override = null;
     /** 最近一次检索的错误信息（便于界面提示） */
     private static $lastError = '';
+    /** 最近一次 HTTP 请求的响应状态码（0 表示未收到响应） */
+    private static $lastStatus = 0;
 
     public static function isConfigured() {
         return self::base() !== '';
@@ -75,6 +77,10 @@ class PvFhirClient {
             $name = 'FHIR R4 服务';
             if (isset($meta['name'])) $name = (string)$meta['name'];
             elseif (isset($meta['software']['name'])) $name = (string)$meta['software']['name'];
+            /* metadata（CapabilityStatement）通常可匿名访问，无法校验密钥；
+             * 再对一个真实数据端点（Patient 检索）发一次带鉴权的请求，
+             * 使错误密钥返回 401/403 时能够被识别为失败。 */
+            self::getJson($base . '/Patient?' . http_build_query(array('_count' => 1)));
             return array('name' => $name, 'endpoint' => $base, 'source' => 'fhir');
         } finally {
             self::$override = null;
@@ -429,9 +435,21 @@ class PvFhirClient {
         $headers = array('Accept: application/fhir+json');
         if ($key !== '') { $headers[] = 'Authorization: Bearer ' . $key; $headers[] = 'X-API-Key: ' . $key; }
         $raw = self::httpGet($url, $timeout, $headers);
-        if ($raw === false || $raw === '') throw new RuntimeException('无法连接门诊系统 FHIR 接口：' . $url);
+        $status = self::$lastStatus;
+        if ($status === 401 || $status === 403) {
+            throw new RuntimeException('鉴权失败：密钥无效或无访问权限（HTTP ' . $status . '）');
+        }
+        if ($raw === false || $raw === '') {
+            throw new RuntimeException($status >= 400
+                ? 'FHIR 接口请求失败（HTTP ' . $status . '）'
+                : '无法连接门诊系统 FHIR 接口：' . $url);
+        }
         $j = json_decode($raw, true);
-        if (!is_array($j)) throw new RuntimeException('FHIR 接口返回非 JSON 数据');
+        if (!is_array($j)) {
+            throw new RuntimeException($status >= 400
+                ? 'FHIR 接口请求失败（HTTP ' . $status . '）'
+                : 'FHIR 接口返回非 JSON 数据');
+        }
         if (isset($j['resourceType']) && $j['resourceType'] === 'OperationOutcome') {
             $msg = isset($j['issue'][0]['diagnostics']) ? $j['issue'][0]['diagnostics'] : '操作失败';
             throw new RuntimeException('FHIR 接口返回错误：' . $msg);
@@ -440,6 +458,7 @@ class PvFhirClient {
     }
 
     private static function httpGet($url, $timeout, array $headers) {
+        self::$lastStatus = 0;
         if (function_exists('curl_init')) {
             $ch = curl_init($url);
             curl_setopt_array($ch, array(
@@ -450,6 +469,7 @@ class PvFhirClient {
                 CURLOPT_HTTPHEADER => $headers,
             ));
             $raw = curl_exec($ch);
+            self::$lastStatus = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
             if (PHP_VERSION_ID < 80500) curl_close($ch);   // 8.5 起 curl_close 已弃用
             return $raw;
         }
@@ -457,6 +477,15 @@ class PvFhirClient {
             'method' => 'GET', 'timeout' => $timeout, 'ignore_errors' => true,
             'header' => implode("\r\n", $headers) . "\r\n",
         )));
-        return @file_get_contents($url, false, $ctx);
+        $raw = @file_get_contents($url, false, $ctx);
+        /* PHP 8.5 起用新函数读取响应头，避免访问已弃用的 $http_response_header；
+         * 更早版本无此函数，状态码保持 0（此时仍可由 FHIR OperationOutcome 识别鉴权错误）。 */
+        if (function_exists('http_get_last_response_headers')) {
+            $headers = http_get_last_response_headers();
+            if (isset($headers[0]) && preg_match('#\s(\d{3})\s#', $headers[0], $m)) {
+                self::$lastStatus = (int)$m[1];
+            }
+        }
+        return $raw;
     }
 }
