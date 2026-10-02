@@ -224,7 +224,10 @@ class PvDicomWebClient {
         $age = self::ageOf($birth, self::val('00101010', $res));   // 优先 PatientAge(0010,1010)，否则由出生日期推算
         $mod = self::firstArrayVal('00080061', $res);            // ModalitiesInStudy
         if ($mod === '') $mod = self::val('00080060', $res);     // Modality
-        return array(
+        $seriesCnt = self::val('00201206', $res);                // NumberOfStudyRelatedSeries
+        if ($seriesCnt === '') $seriesCnt = self::val('00201209', $res);
+        $instCnt = self::val('00201208', $res);                  // NumberOfStudyRelatedInstances
+        $row = array(
             'study_uid' => self::val('0020000D', $res),
             'patient_id' => self::val('00100020', $res),
             'name' => self::val('00100010', $res),
@@ -241,8 +244,11 @@ class PvDicomWebClient {
             'apply_dept' => '',
             'apply_doctor' => '',
             'status' => 'completed',
-            'series_count' => (int)self::val('00201209', $res),
+            'series_count' => (int)$seriesCnt,
         );
+        // 远端显式告知实例数为 0 → 仅登记无影像（前端列表标注，点击给出提示而非空白）
+        if ($instCnt !== '') $row['has_images'] = ((int)$instCnt > 0);
+        return $row;
     }
 
     /** 年龄：优先 DICOM PatientAge(0010,1010，如 062Y)；否则由出生日期推算（xx岁） */
