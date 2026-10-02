@@ -182,7 +182,7 @@ class PvMockServer {
         // 多帧：把本实例包含的各帧像素拼接为一个 DICOM 实例
         $pixels = '';
         for ($f = 0; $f < $frameCount; $f++) {
-            $pixels .= $gen->generateFrame($start + $f);
+            $pixels .= $gen->generateFrame($start + $f, $totalFrames);
         }
         $binary = self::buildDicom($row, $series, $seriesIndex, $instance, $gen, $pixels, $frameCount, $start);
         PvMockCache::set($key, $binary);
@@ -209,17 +209,24 @@ class PvMockServer {
         $instNo = self::lastUidInt($instanceUid, 1);
         $gen = PvMockDispatcher::generatorForSeriesIndex($modality, $desc, $studyUid, $seriesNo - 1);
         $series = array('description' => 'Series ' . $seriesNo, 'orientation' => $gen->getOrientation());
+        $totalFrames = 0;
         if (!empty($row['series']) && is_array($row['series'])) {
             foreach ($row['series'] as $s) {
                 $sid = isset($s['series_id']) ? (string)$s['series_id'] : '';
                 if ($sid === (string)$seriesUid || self::lastUidInt($sid, 0) === $seriesNo) {
                     if (isset($s['description'])) $series['description'] = (string)$s['description'];
                     if (!empty($s['orientation'])) $series['orientation'] = (string)$s['orientation'];
+                    if (isset($s['slice_count'])) $totalFrames = (int)$s['slice_count'];
                     break;
                 }
             }
         }
-        $pixels = $gen->generateFrame(max(0, $instNo - 1));
+        if ($totalFrames <= 0) {   // 真实序列无张数时回退内置序列规划张数
+            $plan = PvMockDispatcher::seriesPlan($modality, $desc, $studyUid);
+            if (isset($plan[$seriesNo - 1]['slice_count'])) $totalFrames = (int)$plan[$seriesNo - 1]['slice_count'];
+        }
+        if ($totalFrames > 0 && $instNo > $totalFrames) $instNo = $totalFrames;
+        $pixels = $gen->generateFrame(max(0, $instNo - 1), $totalFrames > 0 ? $totalFrames : null);
         $binary = self::buildDicom($row, $series, $seriesNo - 1, $instNo, $gen, $pixels, 1, $instNo - 1, $seriesUid, $instanceUid);
         $base = ($row['patient_id'] ? $row['patient_id'] : 'patient') . '_s' . $seriesNo . '_i' . $instNo . '.dcm';
         return array('binary' => $binary, 'content_type' => 'application/dicom', 'filename' => $base);

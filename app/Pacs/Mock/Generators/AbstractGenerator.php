@@ -54,11 +54,14 @@ abstract class PvMockAbstractGenerator implements PvMockSliceGeneratorInterface,
     /* ---------------- 核心：逐帧像素生成 ---------------- */
 
     public function generateFrame($frameIndex, $totalFrames = null) {
-        $last = $this->frameCount > 0 ? $this->frameCount - 1 : 0;
+        // 帧相位按「调用方给定的实际帧总数」归一化：序列实例数可与内置解剖帧数不同，
+        // 若按内置帧数截断会导致超过该数量的帧全部相同（序列后段影像无变化）。
+        $total = ($totalFrames !== null && (int)$totalFrames > 0) ? (int)$totalFrames : $this->frameCount;
+        $last = $total > 0 ? $total - 1 : 0;
         $i = (int)$frameIndex;
         if ($i < 0) $i = 0;
         if ($i > $last) $i = $last;
-        $p = $this->frameCount > 1 ? $i / ($this->frameCount - 1) : 0.0;
+        $p = $total > 1 ? $i / ($total - 1) : 0.0;
 
         $rows = (int)$this->rows;
         $cols = (int)$this->cols;
