@@ -14,6 +14,19 @@
 
 ---
 
+## [0.28.20] - 2026-10-01
+
+### 变更
+- **模拟器改用真实 DICOM UID**：FHIR 来源的检查，其 **StudyInstanceUID** 取
+  `ImagingStudy.identifier` 的 `urn:dicom:uid`（真实 DICOM UID），不再用
+  `fhir-imagingstudy-N` 合成号；序列/实例 UID、描述与张数也改用 FHIR `series` 的真实数据，
+  与门诊 / 区域 PACS 完全一致。因此门诊 DICOMweb 的「实例取像 / 渲染图」代理链路可正确回源
+  （实测门诊代理取像返回 `200 application/dicom`）。
+- **阅片器窗宽窗位**：当序列元数据未提供窗宽窗位时，采用解码得到的 **DICOM 文件自身窗值**
+  （适配仅返回元数据、像素经代理回源的 PACS，如门诊 DICOMweb）。
+
+---
+
 ## [0.28.19] - 2026-10-01
 
 ### 变更
