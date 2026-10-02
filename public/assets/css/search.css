@@ -6,7 +6,8 @@
 .pv-search-wrap { flex: 1 1 auto; display: flex; gap: 14px; align-items: stretch; min-height: 0; }
 
 /* ---------- 左侧栏 ---------- */
-.pv-search-side { width: 300px; flex: 0 0 300px; padding: 16px; overflow: auto; }
+.pv-search-side { width: 300px; flex: 0 0 300px; padding: 16px; overflow: auto; display: flex; flex-direction: column; }
+.pv-page-search .pv-search-side { margin-bottom: 0; }   /* 与右侧内容区底边齐平 */
 .pv-search-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: #e2e8f0; margin-bottom: 14px; }
 .pv-search-title svg { width: 18px; height: 18px; }
 .pv-search-inputrow { display: flex; gap: 8px; }
@@ -23,7 +24,7 @@
 .pv-daterange input:disabled { opacity: .7; cursor: not-allowed; background: #0e1524; }
 .pv-daterange-sep { color: var(--pv-txt2); font-size: 12px; flex: 0 0 auto; }
 .pv-filter-err { margin-top: 6px; font-size: 12px; color: #fca5a5; }
-.pv-side-foot { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--pv-line); display: flex; flex-direction: column; gap: 10px; }
+.pv-side-foot { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--pv-line); display: flex; flex-direction: column; gap: 10px; }
 .pv-source { font-size: 12px; color: var(--pv-txt2); }
 .pv-source .is-remote { color: #7dd3fc; }
 .pv-source .is-demo { color: #fbbf24; }
@@ -64,6 +65,7 @@
 .pv-study-rows b { color: #94a3b8; font-weight: 500; }
 .pv-study-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
 .pv-study-status { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(16,185,129,.16); color: #34d399; }
+.pv-study-status.is-noimg { background: rgba(148,163,184,.16); color: #94a3b8; }
 .pv-study-open { font-size: 12px; color: var(--pv-acc2); }
 
 /* 列表形态：更紧凑、信息同行 */
@@ -74,7 +76,6 @@
 .pv-results-list .pv-study-rows > div { white-space: nowrap; }
 .pv-results-list .pv-study-foot { margin-top: 6px; }
 
-.pv-more { text-align: center; padding: 14px; color: var(--pv-txt2); font-size: 12px; }
 .pv-results-card .pv-more { grid-column: 1 / -1; }
 
 .pv-check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--pv-txt2); cursor: pointer; user-select: none; }
@@ -105,8 +106,6 @@
 .pv-result-table .pv-study-status { font-size: 11px; }
 .pv-results-table .pv-more { text-align: center; padding: 14px; color: var(--pv-txt2); font-size: 12px; }
 
-/* 空态：填满右侧内容区并垂直居中（避免被空的结果容器挤到下方） */
-.pv-page-search .pv-empty { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 /* 空态图标 */
 .pv-empty-ico svg { width: 44px; height: 44px; opacity: .5; }
 

@@ -246,8 +246,11 @@ class PvDicomWebClient {
             'status' => 'completed',
             'series_count' => (int)$seriesCnt,
         );
-        // 远端显式告知实例数为 0 → 仅登记无影像（前端列表标注，点击给出提示而非空白）
-        if ($instCnt !== '') $row['has_images'] = ((int)$instCnt > 0);
+        // 远端显式告知实例数为 0 → 仅登记无影像（前端列表以状态标记，点击给出提示而非空白）
+        if ($instCnt !== '') {
+            $row['has_images'] = ((int)$instCnt > 0);
+            if (!$row['has_images']) { $row['status'] = 'registered'; $row['status_name'] = '仅登记'; }
+        }
         return $row;
     }
 

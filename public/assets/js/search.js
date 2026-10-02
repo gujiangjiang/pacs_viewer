@@ -8,14 +8,14 @@
 
     var esc = PvUI.esc;
 
-    var input, btn, box, empty, meta, onDocKey, clearChk;
+    var input, btn, box, meta, onDocKey, clearChk, loader = null;
     var sideFilters = { gender: '', modality: '', dateMode: 'all' };
     var viewMode = 'table';
     var sortState = { key: 'study_date', dir: 'desc' };
     var selectedKey = null;
 
     var PAGE = 30;
-    var allItems = [], total = 0, hasMore = false, loading = false, query = '', sentinelEl = null, moreIO = null;
+    var allItems = [], total = 0, hasMore = false, loading = false, query = '';
 
     // 列顺序：重要信息靠前
     var COLUMNS = [
@@ -71,7 +71,7 @@
             '<span class="pv-study-sex">' + esc(s.gender) + ' / ' + esc(s.age) + '</span>' +
             (s.fhir ? '<span class="pv-src-tag" title="患者信息来自 FHIR R4 补充">FHIR</span>' : '') +
             '</div>' +
-            '<span class="pv-study-status">' + esc(s.status_name || '已完成') + '</span>' +
+            '<span class="pv-study-status' + (hasImg ? '' : ' is-noimg') + '">' + esc(s.status_name || '已完成') + '</span>' +
             '</div>' +
             '<div class="pv-study-desc"><span>' + esc(s.description || '影像检查') + '</span>' +
             '<span class="pv-mod">' + esc(s.modality) + '</span></div>' +
@@ -88,7 +88,7 @@
     /* ---------- 纯列表（表格） ---------- */
     function attr(key) { return key.replace(/[^a-z0-9_]/gi, ''); }
     function cellHtml(s, c) {
-        if (c.key === 'status_name') return '<span class="pv-study-status">' + esc(s.status_name || '已完成') + '</span>';
+        if (c.key === 'status_name') return '<span class="pv-study-status' + (s.has_images === false ? ' is-noimg' : '') + '">' + esc(s.status_name || '已完成') + '</span>';
         var v = s[c.key];
         if (c.key === 'summary' || v === undefined || v === null || v === '') v = '—';
         return esc(v);
@@ -140,54 +140,61 @@
     function setMeta() {
         if (!meta) return;
         meta.style.display = '';
-        var fhirOnly = 0;
-        allItems.forEach(function (s) { if (s.has_images === false) fhirOnly++; });
         meta.textContent = (total > 0 ? '已加载 ' + allItems.length + ' / 共 ' + total + ' 条检查记录' : '已加载 ' + allItems.length + ' 条检查记录')
-            + (fhirOnly ? '（含 ' + fhirOnly + ' 条仅登记·暂无影像）' : '')
             + (hasMore ? '，向下滚动加载更多' : '');
     }
 
-    function clearMore() {
-        if (moreIO) { moreIO.disconnect(); moreIO = null; }
-        if (sentinelEl && sentinelEl.parentNode) sentinelEl.parentNode.removeChild(sentinelEl);
-        sentinelEl = null;
-    }
-
-    function placeSentinel() {
-        if (!hasMore) { clearMore(); return; }
-        if (!sentinelEl) { sentinelEl = document.createElement('div'); sentinelEl.className = 'pv-more'; }
-        sentinelEl.textContent = '加载更多…';
-        box.appendChild(sentinelEl);
-        if (global.IntersectionObserver) {
-            if (!moreIO) {
-                moreIO = new global.IntersectionObserver(function (en) {
-                    if (en[0] && en[0].isIntersecting) loadMore();
-                }, { rootMargin: '400px' });
+    /** 首次加载 / 重新检索后，重置通用滚动加载器（患者列表） */
+    function resetLoader() {
+        if (loader) loader.destroy();
+        if (!global.PvInfiniteScroll) { loader = null; return; }
+        loader = global.PvInfiniteScroll.create({
+            container: box, list: box,
+            offset: allItems.length, hasMore: hasMore, pageSize: PAGE,
+            sentinelClass: 'pv-more', moreText: '加载更多…', endText: '',
+            load: function (offset) {
+                var opts = { limit: PAGE, offset: offset };
+                var f = currentFilters();
+                for (var k in f) if (f[k]) opts[k] = f[k];
+                return PvApi.search(query, opts).then(function (j) {
+                    if (!j || j.code !== 200) throw new Error((j && j.msg) || '加载失败');
+                    var d = j.data || {};
+                    return { list: d.list || [], has_more: !!d.has_more, total: d.total };
+                }).catch(function (e) {
+                    PvUI.toast(e && e.message ? e.message : '加载失败', 'err');
+                    throw e;
+                });
+            },
+            append: function (list) {
+                list.forEach(function (s) { allItems.push(s); });
+                renderAll();
+            },
+            onState: function (ld) {
+                hasMore = ld.hasMore;
+                if (typeof ld.total === 'number') total = ld.total;
+                setMeta();
+                saveState();
             }
-            moreIO.observe(sentinelEl);
-        }
+        });
     }
 
     function renderAll() {
-        clearMore();
         box.className = 'pv-results ' + (viewMode === 'table' ? 'pv-results-table' : (viewMode === 'card' ? 'pv-results-card' : 'pv-results-list'));
         box.innerHTML = '';
         if (!allItems.length) {
             box.style.display = 'none';
-            empty.style.display = '';
-            empty.querySelector('.pv-empty-title').textContent = '未找到匹配的检查记录';
-            meta.style.display = 'none';
+            meta.textContent = '未找到匹配的检查记录';
+            meta.style.display = '';
             return;
         }
         box.style.display = '';
-        empty.style.display = 'none';
         if (viewMode === 'table') {
             box.appendChild(buildTable(allItems));
         } else {
             allItems.forEach(function (s) { box.appendChild(makeItem(s)); });
         }
         setMeta();
-        placeSentinel();
+        if (loader) loader.reattach();   // 重建列表 DOM 后重新挂载哨兵
     }
 
     function currentFilters() {
@@ -199,29 +206,6 @@
             sort: sortState.key || '',
             dir: sortState.dir || 'desc'
         };
-    }
-
-    function loadMore() {
-        if (loading || !hasMore) return;
-        loading = true;
-        if (sentinelEl) sentinelEl.textContent = '加载中…';
-        var opts = { limit: PAGE, offset: allItems.length };
-        var f = currentFilters();
-        for (var k in f) if (f[k]) opts[k] = f[k];
-        PvApi.search(query, opts).then(function (j) {
-            loading = false;
-            if (!j || j.code !== 200) { PvUI.toast((j && j.msg) || '加载失败', 'err'); if (sentinelEl) sentinelEl.textContent = '加载更多…'; return; }
-            var d = j.data || {}, list = d.list || [];
-            total = (typeof d.total === 'number') ? d.total : (allItems.length + list.length);
-            hasMore = !!d.has_more;
-            list.forEach(function (s) { allItems.push(s); });
-            renderAll();
-            saveState();
-        }).catch(function () {
-            loading = false;
-            PvUI.toast('网络请求失败', 'err');
-            if (sentinelEl) sentinelEl.textContent = '加载更多…';
-        });
     }
 
     function saveState() {
@@ -337,21 +321,21 @@
         btn.disabled = true;
         btn.classList.add('is-loading');
         box.style.display = '';
-        empty.style.display = 'none';
         query = input.value;
         allItems = []; total = 0; hasMore = false;
+        if (loader) { loader.destroy(); loader = null; }
+        meta.textContent = '';
         var opts = { limit: PAGE, offset: 0 };
         var f = currentFilters();
         for (var k in f) if (f[k]) opts[k] = f[k];
         PvApi.search(query, opts).then(function (j) {
             btn.disabled = false; btn.classList.remove('is-loading');
             if (!j || j.code !== 200) {
-                box.innerHTML = ''; clearMore();
+                box.innerHTML = '';
                 box.style.display = 'none';
-                empty.style.display = '';
                 var em = (j && j.msg) || '检索失败';
-                empty.querySelector('.pv-empty-title').textContent = em;
-                meta.style.display = 'none';
+                meta.textContent = em;
+                meta.style.display = '';
                 PvUI.toast(em, 'err');
                 return;
             }
@@ -360,6 +344,7 @@
             total = (typeof d.total === 'number') ? d.total : allItems.length;
             hasMore = !!d.has_more;
             renderAll();
+            resetLoader();
             saveState();
             var modeEl = document.getElementById('pvMode');
             if (modeEl && d.source) {
@@ -369,11 +354,10 @@
             if (d.fhir_error) PvUI.toast('FHIR 补充失败：' + d.fhir_error, 'err');
         }).catch(function () {
             btn.disabled = false; btn.classList.remove('is-loading');
-            box.innerHTML = ''; clearMore();
+            box.innerHTML = '';
             box.style.display = 'none';
-            empty.style.display = '';
-            empty.querySelector('.pv-empty-title').textContent = '网络请求失败';
-            meta.style.display = 'none';
+            meta.textContent = '网络请求失败';
+            meta.style.display = '';
             PvUI.toast('网络请求失败', 'err');
         });
     }
@@ -385,7 +369,6 @@
             input = document.getElementById('pvKeyword');
             btn = document.getElementById('pvSearchBtn');
             box = document.getElementById('pvResults');
-            empty = document.getElementById('pvEmpty');
             meta = document.getElementById('pvResultMeta');
             if (!input || !btn || !box) return;
             if (data.flash) PvUI.toast(data.flash, 'ok');
@@ -436,6 +419,7 @@
                 total = (typeof saved.total === 'number') ? saved.total : allItems.length;
                 hasMore = !!saved.has_more;
                 renderAll();
+                resetLoader();
             } else {
                 renderAll();
                 doSearch();
@@ -444,9 +428,9 @@
         },
         destroy: function () {
             if (input && onDocKey) input.removeEventListener('keydown', onDocKey);
-            clearMore();
+            if (loader) { loader.destroy(); loader = null; }
             allItems = []; total = 0; hasMore = false; loading = false;
-            input = btn = box = empty = meta = onDocKey = null;
+            input = btn = box = meta = onDocKey = null;
         }
     };
 })(window);
