@@ -274,7 +274,7 @@
         if (this.active >= this.panes.length) this.active = 0;
         this.panes.forEach(function (p, i) { p.el.classList.toggle('active', i === this.active); }, this);
         this.syncLayoutMenu();
-        if (!initial) { this.renderSidebar(); this.refreshControlState(); this.persist(); }
+        if (!initial) { this.renderSidebar(); this.updatePresetMenu(); this.refreshControlState(); this.persist(); }
     };
     PvViewer.prototype.syncLayoutMenu = function () {
         if (!this.toolbarEl) return;
@@ -289,6 +289,7 @@
         this.panes.forEach(function (p, k) { p.el.classList.toggle('active', k === i); });
         this.renderSidebar();
         this.syncToolbar();
+        this.updatePresetMenu();
         this.refreshControlState();
         this.persist();
     };
