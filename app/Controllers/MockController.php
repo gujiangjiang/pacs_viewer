@@ -15,7 +15,7 @@ class PvMockController {
         PvAuth::requireAdmin();
         pvw_csrf_check();
         $pairs = array();
-        foreach (array('mock_enabled', 'mock_patient_source', 'fhir_endpoint', 'fhir_api_key', 'fhir_timeout') as $k) {
+        foreach (array('mock_enabled', 'mock_patient_source', 'mock_hospital_name', 'fhir_endpoint', 'fhir_api_key', 'fhir_timeout') as $k) {
             if (isset($_POST[$k])) $pairs[$k] = (string)$_POST[$k];
         }
         if (isset($pairs['mock_enabled'])) $pairs['mock_enabled'] = $pairs['mock_enabled'] === '1' ? '1' : '0';

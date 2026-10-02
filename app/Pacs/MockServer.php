@@ -15,6 +15,12 @@ class PvMockServer {
     public static function enabled() { return (string)PvSettings::get('mock_enabled', '1') === '1'; }
     public static function apiKey()  { return trim((string)PvSettings::get('mock_api_key', '')); }
 
+    /** 内置模拟数据的机构名称（对外 DICOMweb InstitutionName）：未配置回退「默认医院」 */
+    public static function builtinInstitution() {
+        $n = trim((string)PvSettings::get('mock_hospital_name', ''));
+        return $n !== '' ? $n : '默认医院';
+    }
+
     /** 患者数据来源：builtin 内置仿真数据 / fhir 门诊 FHIR R4 获取 */
     public static function source() {
         return (string)PvSettings::get('mock_patient_source', 'builtin') === 'fhir' ? 'fhir' : 'builtin';
@@ -97,10 +103,11 @@ class PvMockServer {
 
     public static function search($keyword = '') {
         $rows = self::rows($keyword);
-        $site = pvw_hospital_source();     // 机构名回退：接口返回 > 项目名称 > 默认医院
-        if (self::source() === 'fhir') {   // 机构名优先取 FHIR Organization（取到会记录 pacs_hospital_name）
+        if (self::source() === 'fhir') {   // FHIR：优先 Organization.name
             $h = PvFhirClient::hospitalName();
-            if ($h !== '') $site = $h;
+            $site = $h !== '' ? $h : self::builtinInstitution();
+        } else {                           // 内置模拟数据：机构名称取「模拟数据机构名称」
+            $site = self::builtinInstitution();
         }
         foreach ($rows as &$r) {
             if (empty($r['institution'])) $r['institution'] = $site;

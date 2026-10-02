@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '0.28.13');
+define('PV_VERSION', '0.28.14');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -117,6 +117,13 @@ PvDatabase::init();   // 首次访问自动建库 / 建表 / 播种管理员
 
 /** 接口返回的机构名称（DICOMweb InstitutionName / FHIR Organization，自动记录） */
 function pvw_hospital_api() {
+    // 内置模拟数据来源：机构名取「模拟数据机构名称」，避免沿用既往 FHIR 机构名
+    if (PvMockServer::enabled() && PvMockServer::source() !== 'fhir') {
+        $ep = (string)PvSettings::get('pacs_endpoint', '');
+        if ($ep === '' || PvMockServer::isSelfEndpoint($ep)) {
+            return PvMockServer::builtinInstitution();
+        }
+    }
     return trim((string)PvSettings::get('pacs_hospital_name', ''));
 }
 

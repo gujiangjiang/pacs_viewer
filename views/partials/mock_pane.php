@@ -131,6 +131,9 @@ $pvPartText = $pvPartList ? implode('、', $pvPartList) : '未启用任何部位
                     <div class="pv-split-body">
                         <div data-src-pane="builtin">
                             <p class="pv-hint">使用内置<b>确定性仿真患者数据</b>（开箱即用）。</p>
+                            <label class="pv-field"><span>模拟数据机构名称</span>
+                                <input type="text" name="mock_hospital_name" value="<?php echo pvw_e($v('mock_hospital_name')); ?>" placeholder="默认医院">
+                                <em class="pv-hint">对外提供 DICOMweb 时的机构名称（InstitutionName）；留空显示「默认医院」。</em></label>
                         </div>
                         <div data-src-pane="fhir" class="pv-hidden">
                             <p class="pv-hint">由 <b>FHIR R4</b> 接口获取患者与就诊记录（如 `Patient/{patient_no}`、

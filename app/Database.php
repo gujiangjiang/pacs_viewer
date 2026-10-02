@@ -84,6 +84,7 @@ class PvDatabase {
                 'mock_api_key'        => bin2hex(random_bytes(8)),
                 'mock_ae_title'       => 'PACSVIEWMOCK',   // 模拟服务器 DICOM AE Title
                 'mock_patient_source' => 'builtin',        // builtin 内置仿真 / fhir 门诊 FHIR R4
+                'mock_hospital_name'  => '',               // 内置模拟数据机构名称（对外 DICOMweb 提供）
                 'fhir_endpoint'       => '',               // FHIR 接口（模拟服务器患者数据来源）
                 'fhir_api_key'        => '',
                 'fhir_timeout'        => '5',
