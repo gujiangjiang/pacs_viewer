@@ -116,8 +116,10 @@
         if (d.command === 'fit') { p.fit(); return; }
         if (d.command === 'oneone') { this._paneAction(p, 'oneone'); return; }
         if (d.command === 'reset') {
-            p.applyDefaults(); p.fit(); p.st.annos = []; p.st.draft = null; p.render();
-            p.setStatus('已重置视图'); return;
+            // 等价双击左侧序列缩略图：重置为该视图默认状态（重载 + 默认窗 + 适应窗口）
+            var gi = this.indexOf(p.st.uid), si = p.st.si;
+            if (gi >= 0) this.setSeriesOnActive(gi, si, true);
+            p.setStatus('已重置为该视图默认状态'); return;
         }
         if (d.command === 'rotate') { this._paneAction(p, 'rotate-cw'); return; }
         if (d.command === 'flip') { this._paneAction(p, 'flip-h'); return; }
@@ -257,7 +259,6 @@
     /* ---------- 布局 ---------- */
     PvViewer.prototype.setLayoutByKey = function (key) { this.setLayout(key, false); };
     PvViewer.prototype.setLayout = function (layout, initial) {
-        if (this.guest) layout = '1';   // 访客仅单视图 / 单序列
         if (['1', '2h', '2v', '4'].indexOf(layout) < 0) layout = '1';
         this.layout = layout;
         var cols = '1fr', rows = '1fr';
@@ -306,10 +307,32 @@
     };
     PvViewer.prototype.setPreset = function (k) {
         var p = this.activePane(); if (!p || !p.hasImage()) return;
+        // 「默认窗」是每个序列各自的默认状态：等价于双击左侧序列缩略图重置（重载 + 默认窗 + 适应窗口）
+        if (k === 'full') {
+            var gi = this.indexOf(p.st.uid), si = p.st.si;
+            if (gi >= 0) this.setSeriesOnActive(gi, si, true);
+            var w = p.defaultWindow();
+            p.setStatus('默认窗 · WW ' + Math.round(w.ww) + ' / WL ' + Math.round(w.wl));
+            this.updatePresetMenu();
+            return;
+        }
         var pr = PRESETS[k]; if (!pr) return;
         p.st.ww = pr.ww; p.st.wl = pr.wl; p.render();
         p.setStatus(pr.label + ' · WW ' + pr.ww + ' / WL ' + pr.wl);
         Array.prototype.forEach.call(this.toolbarEl.querySelectorAll('[data-pv-preset]'), function (el) { el.classList.toggle('active', el.getAttribute('data-pv-preset') === k); });
+    };
+    /** 动态刷新「默认窗」预设文案为当前序列的默认窗值 */
+    PvViewer.prototype.updatePresetMenu = function () {
+        if (!this.toolbarEl) return;
+        var lab = this.toolbarEl.querySelector('[data-preset-label="full"]');
+        if (!lab) return;
+        var p = this.activePane();
+        if (p && p.hasImage() && p.defaultWindow) {
+            var w = p.defaultWindow();
+            lab.textContent = '默认窗 (' + Math.round(w.ww) + ' / ' + Math.round(w.wl) + ')';
+        } else {
+            lab.textContent = '默认窗';
+        }
     };
     PvViewer.prototype.doAction = function (a) {
         if (PANE_ACTS[a]) { var p = this.activePane(); if (!p) return; this._paneAction(p, a); return; }
@@ -367,6 +390,7 @@
     PvViewer.prototype.afterPaneLoad = function (p) {
         this.renderSidebar();
         this.syncToolbar();
+        this.updatePresetMenu();
         this.refreshControlState();
         this.persist();
     };

@@ -223,4 +223,3 @@
 /* ---------- 链接访客阅片：隐藏关闭相关与多视图入口 ---------- */
 .pv-guest .pv-sg-close { display: none; }
 .pv-guest .pv-closeall { display: none; }
-.pv-guest .pv-vw-toolbar [data-pv-layout]:not([data-pv-layout="1"]) { display: none; }

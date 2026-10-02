@@ -37,7 +37,7 @@ $pageData = array(
                 <button type="button" data-pv-preset="soft"><span class="ic">🟫</span> 软组织窗 (400 / 40)</button>
                 <button type="button" data-pv-preset="lung"><span class="ic">🫁</span> 肺窗 (1500 / -600)</button>
                 <button type="button" data-pv-preset="bone"><span class="ic">🦴</span> 骨窗 (2000 / 350)</button>
-                <button type="button" data-pv-preset="full"><span class="ic">🖼</span> 默认窗 (2500 / 250)</button>
+                <button type="button" data-pv-preset="full"><span class="ic">🖼</span> <span data-preset-label="full">默认窗</span></button>
             </div>
         </div>
         <span class="pv-tsep"></span>

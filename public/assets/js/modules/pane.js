@@ -182,6 +182,7 @@
                     self._winFromDicom = true;
                     self.st.ww = parseFloat(res.dec.windowWidth) || self.st.ww;
                     self.st.wl = parseFloat(res.dec.windowCenter) || self.st.wl;
+                    if (self.viewer && self.viewer.updatePresetMenu) self.viewer.updatePresetMenu();
                 }
                 self.render();
             })
@@ -328,9 +329,14 @@
         } else {
             var isActive = this === this.viewer.activePane();
             var emptyWs = !this.viewer.ws.studies.length;
-            this.placeholder((emptyWs && isActive)
-                ? '请在「患者查询」中选择检查\n或点击顶部「影像查看」查看已打开的检查'
-                : '空视图\n从左侧序列载入', emptyWs && isActive);
+            if (this.viewer.guest) {
+                // 访客阅片：无患者查询/影像查看入口，用临时阅片语义的占位提示
+                this.placeholder(emptyWs ? '暂无影像\n请稍后再试' : '空视图\n请选择左侧检查项目', emptyWs && isActive);
+            } else {
+                this.placeholder((emptyWs && isActive)
+                    ? '请在「患者查询」中选择检查\n或点击顶部「影像查看」查看已打开的检查'
+                    : '空视图\n从左侧序列载入', emptyWs && isActive);
+            }
         }
         if (winCanvas) {
             ctx.save();
@@ -556,23 +562,30 @@
     PvPane.prototype.clearAnnos = function () { this.st.annos = []; this.st.draft = null; this.render(); };
 
     /* ---------- 帧 / 序列 ---------- */
-    PvPane.prototype.applyDefaults = function () {
+    /** 当前序列的默认窗（与 applyDefaults 口径一致；已解码实例优先用 DICOM 自带窗） */
+    PvPane.prototype.defaultWindow = function () {
         var s = (this.data() && this.data().data && this.data().data.study) || {};
         var ser = this.curSeries();
-        if (ser && ser.window_width) {
-            this.st.ww = parseFloat(ser.window_width) || 400;
-            this.st.wl = parseFloat(ser.window_center) || 40;
-        } else if (ser && ser.is_hu) {
-            if (s.default_ww) {
-                // 序列未提供窗宽窗位时，采用管理员配置的默认窗
-                this.st.ww = parseFloat(s.default_ww) || PRESETS.soft.ww;
-                this.st.wl = parseFloat(s.default_wl) || PRESETS.soft.wl;
-            } else {
-                var m = (s.modality || '').toUpperCase();
-                var pre = (m === 'DR' || m === 'MG') ? PRESETS.full : PRESETS.soft;
-                this.st.ww = pre.ww; this.st.wl = pre.wl;
+        if (ser && ser.window_width) return { ww: parseFloat(ser.window_width) || 400, wl: parseFloat(ser.window_center) || 40 };
+        // 序列未带窗值：优先采用已解码的 DICOM 自带窗（与重载后实际显示一致）
+        var keys = Object.keys(this._instances || {});
+        for (var i = 0; i < keys.length; i++) {
+            var inst = this._instances[keys[i]];
+            if (inst && inst.status === 'ok' && inst.dec && inst.dec.windowWidth) {
+                return { ww: parseFloat(inst.dec.windowWidth) || 0, wl: parseFloat(inst.dec.windowCenter) || 0 };
             }
-        } else { this.st.ww = 256; this.st.wl = 128; }
+        }
+        if (ser && ser.is_hu) {
+            if (s.default_ww) return { ww: parseFloat(s.default_ww) || PRESETS.soft.ww, wl: parseFloat(s.default_wl) || PRESETS.soft.wl };
+            var m = (s.modality || '').toUpperCase();
+            var pre = (m === 'DR' || m === 'MG') ? PRESETS.full : PRESETS.soft;
+            return { ww: pre.ww, wl: pre.wl };
+        }
+        return { ww: 256, wl: 128 };
+    };
+    PvPane.prototype.applyDefaults = function () {
+        var w = this.defaultWindow();
+        this.st.ww = w.ww; this.st.wl = w.wl;
         this.st.isHU = this.frameIsHU();
         this._winFromDicom = false;   // 序列未带窗值时，允许采用解码得到的 DICOM 窗（首次）
     };
