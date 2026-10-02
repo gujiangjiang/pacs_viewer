@@ -106,6 +106,8 @@
 .pv-result-table .pv-study-status { font-size: 11px; }
 .pv-results-table .pv-more { text-align: center; padding: 14px; color: var(--pv-txt2); font-size: 12px; }
 
+/* 空态卡片：填满右侧内容区并垂直居中，且与左栏底边齐平（去除卡片默认下外边距） */
+.pv-page-search .pv-empty { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 0; }
 /* 空态图标 */
 .pv-empty-ico svg { width: 44px; height: 44px; opacity: .5; }
 

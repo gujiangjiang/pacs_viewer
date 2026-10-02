@@ -8,7 +8,7 @@
 
     var esc = PvUI.esc;
 
-    var input, btn, box, meta, onDocKey, clearChk, loader = null;
+    var input, btn, box, empty, meta, onDocKey, clearChk, loader = null;
     var sideFilters = { gender: '', modality: '', dateMode: 'all' };
     var viewMode = 'table';
     var sortState = { key: 'study_date', dir: 'desc' };
@@ -183,11 +183,16 @@
         box.innerHTML = '';
         if (!allItems.length) {
             box.style.display = 'none';
+            if (empty) {
+                empty.style.display = '';
+                empty.querySelector('.pv-empty-title').textContent = '未找到匹配的检查记录';
+            }
             meta.textContent = '未找到匹配的检查记录';
             meta.style.display = '';
             return;
         }
         box.style.display = '';
+        if (empty) empty.style.display = 'none';
         if (viewMode === 'table') {
             box.appendChild(buildTable(allItems));
         } else {
@@ -321,6 +326,7 @@
         btn.disabled = true;
         btn.classList.add('is-loading');
         box.style.display = '';
+        if (empty) empty.style.display = 'none';
         query = input.value;
         allItems = []; total = 0; hasMore = false;
         if (loader) { loader.destroy(); loader = null; }
@@ -334,6 +340,7 @@
                 box.innerHTML = '';
                 box.style.display = 'none';
                 var em = (j && j.msg) || '检索失败';
+                if (empty) { empty.style.display = ''; empty.querySelector('.pv-empty-title').textContent = em; }
                 meta.textContent = em;
                 meta.style.display = '';
                 PvUI.toast(em, 'err');
@@ -356,6 +363,7 @@
             btn.disabled = false; btn.classList.remove('is-loading');
             box.innerHTML = '';
             box.style.display = 'none';
+            if (empty) { empty.style.display = ''; empty.querySelector('.pv-empty-title').textContent = '网络请求失败'; }
             meta.textContent = '网络请求失败';
             meta.style.display = '';
             PvUI.toast('网络请求失败', 'err');
@@ -369,6 +377,7 @@
             input = document.getElementById('pvKeyword');
             btn = document.getElementById('pvSearchBtn');
             box = document.getElementById('pvResults');
+            empty = document.getElementById('pvEmpty');
             meta = document.getElementById('pvResultMeta');
             if (!input || !btn || !box) return;
             if (data.flash) PvUI.toast(data.flash, 'ok');
@@ -430,7 +439,7 @@
             if (input && onDocKey) input.removeEventListener('keydown', onDocKey);
             if (loader) { loader.destroy(); loader = null; }
             allItems = []; total = 0; hasMore = false; loading = false;
-            input = btn = box = meta = onDocKey = null;
+            input = btn = box = empty = meta = onDocKey = null;
         }
     };
 })(window);

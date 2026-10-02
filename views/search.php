@@ -77,5 +77,10 @@ $pvSrc = isset($source) ? $source : array('label' => '未配置 PACS 接口', 's
             </div>
         </div>
         <div id="pvResults" class="pv-results pv-results-list"></div>
+        <div id="pvEmpty" class="pv-card pv-empty" style="display:none">
+            <div class="pv-empty-ico"><?php echo pvw_icon('search'); ?></div>
+            <div class="pv-empty-title">输入关键词或选择条件开始检索</div>
+            <div class="pv-empty-sub">支持姓名、患者号、检查号、门诊号与检查项目模糊匹配</div>
+        </div>
     </main>
 </div>
