@@ -33,6 +33,8 @@ class PvWadoProxyController {
         if ($r['body'] === false || $r['body'] === '') self::fail(502, '无法获取影像：' . $url);
 
         $body = self::extractDicom($r['body']);
+        // 远端可能返回 text/plain 错误或空内容：校验 DICM 魔数，避免把错误文本当作影像下发给前端
+        if (substr($body, 128, 4) !== 'DICM') self::fail(502, '远端未返回有效 DICOM 影像（请检查 DICOMweb 接口与鉴权）');
         if (!headers_sent()) {
             header('Content-Type: application/dicom');
             header('Content-Length: ' . strlen($body));

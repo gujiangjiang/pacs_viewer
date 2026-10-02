@@ -165,6 +165,7 @@
             return this._frames[fkey];
         }
         if (inst && inst.status === 'loading') return null;
+        if (inst && inst.status === 'error') return null;   // 已失败：不自动重试，避免渲染-失败死循环
         var url = series.images && series.images[ii];
         if (!url) return null;
         this._instances[ikey] = { status: 'loading' };
@@ -186,7 +187,9 @@
             })
             .catch(function (err) {
                 if (err && err.name === 'AbortError') return;   // 主动中止：不报错
-                delete self._instances[ikey]; delete self._frames[fkey];
+                // 标记为失败并保留，使 getFrame 不再重复发起请求（否则 render→getFrame→失败 会形成请求风暴）
+                self._instances[ikey] = { status: 'error' };
+                delete self._frames[fkey];
                 self.setStatus('影像加载失败'); self.render();
             });
         return null;
@@ -276,6 +279,9 @@
     PvPane.prototype.currentSource = function () {
         var s = this.curSeries(); if (!s) return null;
         if (s.format === 'dicom') {
+            var loc = this._frameLoc(s, this.st.fi);
+            var failed = this._instances[this._instKey(s, loc.ii)];
+            if (failed && failed.status === 'error') return { kind: 'error' };
             var f = this.getFrame(s, this.st.fi);
             if (f && f.status === 'ok') return { kind: 'raw', raw: f.raw, dec: f.dec };
             return { kind: 'loading' };
@@ -317,6 +323,8 @@
             winCanvas = this.windowRaw(raw, st.ww, st.wl, st.invert);
         } else if (src && src.kind === 'loading') {
             this.placeholder('正在解码图像…');
+        } else if (src && src.kind === 'error') {
+            this.placeholder('影像加载失败\n请检查 PACS 接口配置或稍后重试');
         } else {
             var isActive = this === this.viewer.activePane();
             var emptyWs = !this.viewer.ws.studies.length;
