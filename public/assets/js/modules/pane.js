@@ -810,6 +810,48 @@
             }).catch(function () { self.setStatus('序列导出失败'); });
     };
 
+    /** 导出当前序列的原始 DICOM 文档（完整 Part-10 字节流，打包为 ZIP） */
+    PvPane.prototype.saveDicom = function () {
+        var ser = this.curSeries();
+        if (!ser || ser.format !== 'dicom' || !ser.images || !ser.images.length) { this.setStatus('当前序列无 DICOM 影像可导出'); return; }
+        var self = this, urls = ser.images, n = urls.length, base = this.fileBase();
+        var nameFor = function (url, i) {
+            var m = /[?&]instance=([^&]+)/.exec(url);
+            return base + '_' + (m ? decodeURIComponent(m[1]) : ('im' + (i + 1))) + '.dcm';
+        };
+        var fetchOne = function (i) {
+            return fetch(urls[i], { credentials: 'same-origin' })
+                .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+                .then(function (buf) { return { name: nameFor(urls[i], i), data: new Uint8Array(buf) }; });
+        };
+        this.setStatus('正在导出 DICOM（0/' + n + '）…');
+        var files = [], chain = Promise.resolve();
+        for (var i = 0; i < n; i++) {
+            (function (idx) {
+                chain = chain.then(function () {
+                    return fetchOne(idx).then(function (f) {
+                        files.push(f);
+                        self.setStatus('正在导出 DICOM（' + (idx + 1) + '/' + n + '）…');
+                    });
+                });
+            })(i);
+        }
+        chain.then(function () {
+            self.setStatus('正在打包 ZIP…');
+            return (window.PvZip && files.length) ? window.PvZip.create(files) : null;
+        }).then(function (zip) {
+            if (zip) {
+                self._triggerDownload(URL.createObjectURL(zip), base + '.dcm.zip');
+                self.setStatus('已导出 DICOM：' + base + '.dcm.zip（' + n + ' 个实例）');
+                self.viewer.logEvent('download', 'DICOM ZIP ' + base + '（' + n + ' 个实例）');
+            } else if (files.length) {
+                self._triggerDownload(URL.createObjectURL(new Blob([files[0].data], { type: 'application/dicom' })), files[0].name);
+                self.setStatus('已导出当前 DICOM：' + files[0].name);
+                self.viewer.logEvent('download', 'DICOM ' + files[0].name);
+            }
+        }).catch(function () { self.setStatus('DICOM 导出失败'); });
+    };
+
     /* ---------- DICOM 详情 ---------- */
     PvPane.prototype.showDicomInfo = function () {
         if (!window.PvModal || !this.hasImage()) return;

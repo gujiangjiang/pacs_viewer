@@ -94,6 +94,7 @@ $pageData = array(
                 <button type="button" data-pv-act="copy-link"><span class="ic"><?php echo pvw_icon('link'); ?></span> 复制阅片直链</button>
                 <button type="button" data-pv-act="save-image"><span class="ic"><?php echo pvw_icon('save-image'); ?></span> 保存当前图像</button>
                 <button type="button" data-pv-act="save-series"><span class="ic"><?php echo pvw_icon('save-series'); ?></span> 保存序列（ZIP）</button>
+                <button type="button" data-pv-act="save-dicom"><span class="ic"><?php echo pvw_icon('dicom'); ?></span> 导出 DICOM（原始文件）</button>
                 <div class="pv-menu-sep"></div>
                 <button type="button" data-pv-act="shortcuts"><span class="ic">⌘</span> 键盘快捷键</button>
             </div>

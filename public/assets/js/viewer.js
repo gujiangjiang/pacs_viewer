@@ -286,6 +286,7 @@
         if (a === 'dicom-info') { var p2 = this.activePane(); if (p2) p2.showDicomInfo(); return; }
         if (a === 'save-image') { var p3 = this.activePane(); if (p3) p3.saveImage(); return; }
         if (a === 'save-series') { var p4 = this.activePane(); if (p4) p4.saveSeries(); return; }
+        if (a === 'save-dicom') { var p5 = this.activePane(); if (p5) p5.saveDicom(); return; }
         if (a === 'shortcuts') { this.showShortcuts(); return; }
     };
     PvViewer.prototype._paneAction = function (p, a) {
