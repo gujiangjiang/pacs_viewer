@@ -112,7 +112,7 @@
                     return '<tr data-row="1"><td class="pv-dim">' + esc(l.created_at) + '</td>'
                         + '<td>' + esc(l.username) + '</td>'
                         + '<td><span class="pv-badge op-' + esc(l.action) + '">' + esc(l.action_name) + '</span></td>'
-                        + '<td>' + esc(l.detail) + '</td>'
+                        + '<td><span class="pv-log-detail" title="' + esc(l.detail) + '">' + esc(l.detail) + '</span></td>'
                         + '<td>' + esc(l.keyword) + '</td>'
                         + '<td>' + esc(rc) + '</td>'
                         + '<td class="pv-dim">' + esc(l.ip) + '</td></tr>';

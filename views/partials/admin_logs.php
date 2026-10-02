@@ -18,7 +18,7 @@
                 <tr data-row="1"><td class="pv-dim"><?php echo pvw_e($l['created_at']); ?></td>
                     <td><?php echo pvw_e($l['username']); ?></td>
                     <td><span class="pv-badge op-<?php echo pvw_e($act); ?>"><?php echo pvw_e(PvQueryLogRepository::actionName($act)); ?></span></td>
-                    <td><?php echo pvw_e(isset($l['detail']) ? $l['detail'] : ''); ?></td>
+                    <td><span class="pv-log-detail" title="<?php echo pvw_e(isset($l['detail']) ? $l['detail'] : ''); ?>"><?php echo pvw_e(isset($l['detail']) ? $l['detail'] : ''); ?></span></td>
                     <td><?php echo pvw_e($l['keyword']); ?></td>
                     <td><?php echo $act === 'search' ? (int)$l['result_count'] : '—'; ?></td>
                     <td class="pv-dim"><?php echo pvw_e($l['ip']); ?></td></tr>

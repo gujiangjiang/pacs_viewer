@@ -27,6 +27,8 @@
 .pv-logscroll { max-height: 62vh; overflow: auto; border: 1px solid var(--pv-line); border-radius: 10px; }
 .pv-logscroll .pv-table { min-width: 100%; }
 .pv-logscroll .pv-table thead th { position: sticky; top: 0; z-index: 2; background: #0b0f17; }
+/* 详情列超长省略，悬浮 title 显示完整内容，避免撑坏表格布局 */
+.pv-log-detail { display: inline-block; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 
 /* 解剖部位配置表 */
 .pv-table-wrap { overflow-x: auto; border: 1px solid var(--pv-line); border-radius: 10px; }
