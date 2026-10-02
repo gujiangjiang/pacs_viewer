@@ -197,6 +197,7 @@ class PvDicomWebClient {
         $sex = self::val('00100040', $res);
         $gender = ($sex === 'M') ? '男' : (($sex === 'F') ? '女' : ($sex !== '' ? $sex : '未知'));
         $birth = self::fmtDate(self::val('00100030', $res));
+        $age = self::ageOf($birth, self::val('00101010', $res));   // 优先 PatientAge(0010,1010)，否则由出生日期推算
         $mod = self::firstArrayVal('00080061', $res);            // ModalitiesInStudy
         if ($mod === '') $mod = self::val('00080060', $res);     // Modality
         return array(
@@ -204,7 +205,7 @@ class PvDicomWebClient {
             'patient_id' => self::val('00100020', $res),
             'name' => self::val('00100010', $res),
             'gender' => $gender,
-            'age' => '',
+            'age' => $age,
             'birth_date' => $birth,
             'outpatient_no' => self::val('00101000', $res),
             'accession_no' => self::val('00080050', $res),
@@ -218,6 +219,20 @@ class PvDicomWebClient {
             'status' => 'completed',
             'series_count' => (int)self::val('00201209', $res),
         );
+    }
+
+    /** 年龄：优先 DICOM PatientAge(0010,1010，如 062Y)；否则由出生日期推算（xx岁） */
+    private static function ageOf($birth, $ageTag) {
+        $ageTag = strtoupper(trim((string)$ageTag));
+        if ($ageTag !== '' && preg_match('/^(\d+)([YMWD])$/', $ageTag, $m)) {
+            if ($m[2] === 'Y') return (int)$m[1] . '岁';
+        }
+        $d = preg_replace('/\D/', '', (string)$birth);
+        if (strlen($d) < 8) return '';
+        $t = strtotime(substr($d, 0, 4) . '-' . substr($d, 4, 2) . '-' . substr($d, 6, 2));
+        if (!$t) return '';
+        $y = (int)floor((time() - $t) / (365.25 * 86400));
+        return ($y > 0 && $y < 130) ? ($y . '岁') : '';
     }
 
     private static function fmtDate($d) {

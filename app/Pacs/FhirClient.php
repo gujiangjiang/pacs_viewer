@@ -392,7 +392,7 @@ class PvFhirClient {
             'gender'        => $gender,
             'age'           => $age,
             'birth_date'    => $birth,
-            'outpatient_no' => self::outpatientNo($patient),
+            'outpatient_no' => self::visitNo($im),
             'accession_no'  => $acc,
             'modality'      => $modality !== '' ? $modality : 'OT',
             'description'   => $desc !== '' ? $desc : '影像检查',
@@ -422,7 +422,7 @@ class PvFhirClient {
             'gender'        => self::gender($patient),
             'age'           => self::ageText($birth),
             'birth_date'    => $birth,
-            'outpatient_no' => self::outpatientNo($patient),
+            'outpatient_no' => self::visitNo($enc),
             'accession_no'  => $acc,
             'modality'      => 'OT',
             'description'   => $desc !== '' ? $desc : '门诊就诊 · 影像检查',
@@ -469,12 +469,17 @@ class PvFhirClient {
         return preg_replace('/^patient-/', '', $id);
     }
 
+    /** 门诊号：就诊流水号（ImagingStudy/Encounter 的 VN 标识，与患者号不同） */
+    private static function visitNo($res) {
+        return self::identifierValue($res, array('VN'), array('identifier:visit'));
+    }
+
     /**
-     * 检查号 / 报告号：按标准标识优先级挑选，绝不使用 urn:dicom:uid（StudyInstanceUID）。
-     * 依次：ACSN（Accession ID）→ PLAC/FILL（申请单号）→ VN（就诊号）。
+     * 检查号（AccessionNumber）：申请单号。按标准标识优先级挑选，绝不使用 DICOM UID 或报告号。
+     * 依次：ACSN（Accession ID）→ PLAC/FILL（申请单号）→ VN（就诊号，兜底）。
      */
     private static function accessionOf($res) {
-        $v = self::identifierValue($res, array('ACSN'), array('identifier:report'));
+        $v = self::identifierValue($res, array('ACSN'), array('identifier:order'));
         if ($v === '') $v = self::identifierValue($res, array('PLAC', 'FILL'), array('identifier:order'));
         if ($v === '') $v = self::identifierValue($res, array('VN'), array('identifier:visit'));
         return $v;
