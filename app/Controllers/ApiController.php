@@ -63,6 +63,33 @@ class PvApiController {
         pvw_json(200, 'success', $data);
     }
 
+    /**
+     * 调阅影像报告（FHIR DiagnosticReport）。
+     * 仅当本项目配置了 FHIR（模拟服务器患者来源=FHIR，或直连 FHIR）时可用；
+     * 无报告时返回 { available:false }，前端显示占位。
+     */
+    public static function report() {
+        PvAuth::requireLoginJson();
+        $uid = (string)pvw_input('uid');
+        $patient = (string)pvw_input('patient');
+        if ($uid === '' && $patient === '') pvw_json(400, '缺少检查标识');
+        $ck = 'report:' . self::sourceFingerprint() . ':' . $uid . ':' . $patient;
+        $data = PvCache::get($ck);
+        if ($data === null) {
+            $data = array('available' => false);
+            if (PvFhirClient::isConfigured()) {
+                try {
+                    $r = PvFhirClient::diagnosticReport($uid);
+                    if (is_array($r)) $data = $r;
+                } catch (Exception $e) {
+                    /* 报告获取失败按「暂无报告」处理 */
+                }
+            }
+            PvCache::set($ck, $data, 30);
+        }
+        pvw_json(200, 'success', $data);
+    }
+
     /** 接口连通性测试（管理端） */
     public static function ping() {
         PvAuth::requireAdmin();

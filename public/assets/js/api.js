@@ -50,6 +50,8 @@
             return get('search', p);
         },
         study:  study,
+        /** 调阅影像报告（FHIR DiagnosticReport）；无报告返回 { available:false } */
+        report: function (uid, patient) { return get('report', { uid: uid, patient: patient || '' }); },
         ping:   function () { return get('ping', {}); },
         /** 记录操作日志（读片 / 下载 / 阅读 DICOM），失败静默 */
         log: function (action, detail) {

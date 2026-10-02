@@ -54,6 +54,7 @@ $routes = array(
     'api/mock/patients'     => array('PvMockController', 'patients'),
     'api/search'            => array('PvApiController', 'search'),
     'api/study'             => array('PvApiController', 'study'),
+    'api/report'            => array('PvApiController', 'report'),
     'api/ping'              => array('PvApiController', 'ping'),
     'api/log'               => array('PvApiController', 'log'),
     'api/pref'              => array('PvApiController', 'pref'),

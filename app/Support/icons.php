@@ -39,6 +39,7 @@ function pvw_icons() {
         'invert'     => '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M6 4H4v16h2z" fill="currentColor" stroke="none"/><path d="M5 5h13a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5z" fill="none" stroke="none"/><path d="M4 6v12a2 2 0 0 0 2 2h10z" fill="currentColor" stroke="none"/>',
         // 工具
         'dicom'      => '<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="9" r="2.2"/><path d="M6 18l4-4 3 3 2-2 3 3"/>',
+        'report'     => '<rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/>',
         'link'       => '<path d="M9 15l6-6"/><path d="M8.5 12 6.5 14a3 3 0 0 0 4 4l2-2"/><path d="M15.5 12l2-2a3 3 0 0 0-4-4l-2 2"/>',
         'save-image' => '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M4 17l5-5 3 3 3-3 5 5"/>',
         'save-series'=> '<path d="M12 3v10M8.5 9.5 12 13l3.5-3.5"/><path d="M5 16v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',

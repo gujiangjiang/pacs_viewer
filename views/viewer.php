@@ -88,6 +88,7 @@ $pageData = array(
             <button type="button" class="pv-bigbtn" data-pv-menu="tools" title="更多工具">
                 <span class="pv-bi"><?php echo pvw_icon('tools'); ?></span><span class="pv-bl">工具 ▾</span></button>
             <div class="pv-menu" data-pv-menu-panel="tools">
+                <button type="button" data-pv-act="report"><span class="ic"><?php echo pvw_icon('report'); ?></span> 查看影像报告</button>
                 <button type="button" data-pv-act="dicom-info"><span class="ic"><?php echo pvw_icon('dicom'); ?></span> DICOM 详情</button>
                 <button type="button" data-pv-act="copy-link"><span class="ic"><?php echo pvw_icon('link'); ?></span> 复制阅片直链</button>
                 <button type="button" data-pv-act="save-image"><span class="ic"><?php echo pvw_icon('save-image'); ?></span> 保存当前图像</button>

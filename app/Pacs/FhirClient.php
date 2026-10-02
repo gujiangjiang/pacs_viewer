@@ -208,6 +208,95 @@ class PvFhirClient {
         return array('patient' => $patientArr, 'study' => $studyArr, 'series' => self::seriesFromImagingStudy($im));
     }
 
+    /**
+     * 调阅影像报告（FHIR R4 DiagnosticReport）。
+     * @param string $imagingStudyUid 检查标识（可为 fhir-imagingstudy-N、imagingstudy-N 或裸 N）
+     * @return array|null 归一化报告结构；未配置 FHIR 或无报告返回 null
+     */
+    public static function diagnosticReport($imagingStudyUid) {
+        self::$lastError = '';
+        if (!self::isConfigured()) return null;
+        $ref = self::imagingStudyRef($imagingStudyUid);
+        if ($ref === '') return null;
+        try {
+            $b = self::getJson(self::base() . '/DiagnosticReport?' . http_build_query(array('imagingStudy' => $ref, '_count' => 1)));
+        } catch (Exception $e) {
+            self::note($e);
+            return null;
+        }
+        if (!is_array($b) || empty($b['entry'])) return null;
+        $r = isset($b['entry'][0]['resource']) ? $b['entry'][0]['resource'] : null;
+        if (!is_array($r)) return null;
+        if (isset($r['resourceType']) && $r['resourceType'] !== 'DiagnosticReport') return null;
+        return self::mapReport($r);
+    }
+
+    /** 检查标识 → ImagingStudy 引用（ImagingStudy/imagingstudy-N） */
+    private static function imagingStudyRef($uid) {
+        $uid = trim((string)$uid);
+        if ($uid === '') return '';
+        if (strpos($uid, 'ImagingStudy/') === 0) return $uid;
+        if (strpos($uid, 'fhir-') === 0) $uid = substr($uid, 5);
+        if (strpos($uid, 'imagingstudy-') !== 0) {
+            if (ctype_digit($uid)) $uid = 'imagingstudy-' . $uid;
+            else return '';
+        }
+        return 'ImagingStudy/' . $uid;
+    }
+
+    /** DiagnosticReport → 前端归一化结构 */
+    private static function mapReport($r) {
+        $status = isset($r['status']) ? (string)$r['status'] : '';
+        $statusText = array(
+            'final' => '已出具', 'amended' => '已修订', 'corrected' => '已更正',
+            'preliminary' => '初步报告', 'registered' => '已登记 · 待出报告', 'cancelled' => '已作废',
+        );
+        $reportNo = ''; $orderNo = '';
+        foreach ((array)(isset($r['identifier']) ? $r['identifier'] : array()) as $id) {
+            $sys = isset($id['system']) ? (string)$id['system'] : '';
+            $val = isset($id['value']) ? (string)$id['value'] : '';
+            if ($val === '') continue;
+            if (stripos($sys, 'identifier:report') !== false) $reportNo = $val;
+            elseif (stripos($sys, 'identifier:order') !== false) $orderNo = $val;
+        }
+        $doctor = '';
+        if (!empty($r['performer'][0]['display'])) $doctor = (string)$r['performer'][0]['display'];
+        elseif (!empty($r['resultsInterpreter'][0]['display'])) $doctor = (string)$r['resultsInterpreter'][0]['display'];
+        $item = !empty($r['code']['text']) ? (string)$r['code']['text'] : '';
+        $issued = isset($r['issued']) ? (string)$r['issued'] : '';
+        $pdf = !empty($r['presentedForm'][0]['url']) ? (string)$r['presentedForm'][0]['url'] : '';
+        $findings = trim((string)self::extString($r, 'urn:clinic:extension:imaging-findings'));
+        $conclusion = trim((string)(isset($r['conclusion']) ? $r['conclusion'] : ''));
+        $clin = trim((string)self::extString($r, 'urn:clinic:extension:clinical-diagnosis'));
+        return array(
+            'available'          => true,
+            'status'             => $status,
+            'status_text'        => isset($statusText[$status]) ? $statusText[$status] : $status,
+            'report_no'          => $reportNo,
+            'order_no'           => $orderNo,
+            'item_name'          => $item,
+            'findings'           => $findings,
+            'conclusion'         => $conclusion,
+            'clinical_diagnosis' => $clin,
+            'apply_doctor'       => trim((string)self::extString($r, 'urn:clinic:extension:ordering-physician')),
+            'apply_dept'         => trim((string)self::extString($r, 'urn:clinic:extension:ordering-department')),
+            'report_doctor'      => $doctor,
+            'issued'             => $issued !== '' ? self::fmtDate($issued) : '',
+            'pdf_url'            => $pdf,
+            'has_body'           => ($findings !== '' || $conclusion !== '' || $clin !== ''),
+        );
+    }
+
+    /** 读取扩展 valueString */
+    private static function extString($res, $url) {
+        foreach ((array)(isset($res['extension']) ? $res['extension'] : array()) as $e) {
+            if (isset($e['url']) && $e['url'] === $url && isset($e['valueString'])) {
+                return (string)$e['valueString'];
+            }
+        }
+        return '';
+    }
+
     /** 从 ImagingStudy.subject 提取患者 ID */
     private static function patientRef($im) {
         $ref = isset($im['subject']['reference']) ? (string)$im['subject']['reference'] : '';
