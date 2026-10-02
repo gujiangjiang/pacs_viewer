@@ -173,11 +173,13 @@
         box.className = 'pv-results ' + (viewMode === 'table' ? 'pv-results-table' : (viewMode === 'card' ? 'pv-results-card' : 'pv-results-list'));
         box.innerHTML = '';
         if (!allItems.length) {
+            box.style.display = 'none';
             empty.style.display = '';
             empty.querySelector('.pv-empty-title').textContent = '未找到匹配的检查记录';
             meta.style.display = 'none';
             return;
         }
+        box.style.display = '';
         empty.style.display = 'none';
         if (viewMode === 'table') {
             box.appendChild(buildTable(allItems));
@@ -334,6 +336,7 @@
         if (!validateDates()) return;
         btn.disabled = true;
         btn.classList.add('is-loading');
+        box.style.display = '';
         empty.style.display = 'none';
         query = input.value;
         allItems = []; total = 0; hasMore = false;
@@ -344,6 +347,7 @@
             btn.disabled = false; btn.classList.remove('is-loading');
             if (!j || j.code !== 200) {
                 box.innerHTML = ''; clearMore();
+                box.style.display = 'none';
                 empty.style.display = '';
                 var em = (j && j.msg) || '检索失败';
                 empty.querySelector('.pv-empty-title').textContent = em;
@@ -366,6 +370,7 @@
         }).catch(function () {
             btn.disabled = false; btn.classList.remove('is-loading');
             box.innerHTML = ''; clearMore();
+            box.style.display = 'none';
             empty.style.display = '';
             empty.querySelector('.pv-empty-title').textContent = '网络请求失败';
             meta.style.display = 'none';
