@@ -81,6 +81,22 @@ if ($pvInstalled && $r === 'install') {
     pvw_redirect(pvw_url(PvAuth::check() ? '' : 'login'));
 }
 
+/* ---------- 链接访客阅片（无登录 / 只读 / 不写库 / 不关联用户） ----------
+ * 直链请求（viewer&uid 且无 mode）或持有有效访客令牌时进入访客上下文：
+ * 仅允许阅片相关路由；任何搜索 / 管理 / 模拟服务器 / 写操作一律拦截——
+ * 页面请求重定向回影像查看，接口请求返回 403。 */
+$pvGuestCtx = PvViewerController::isLink() || PvGuest::active();
+define('PV_GUEST', $pvGuestCtx);
+if ($pvGuestCtx) {
+    $pvGuestAllow = array('viewer', 'api/study', 'api/report', 'wadoprx', 'dicom', 'thumb', 'file', 'icon', 'manifest', 'sw');
+    if (!in_array($r, $pvGuestAllow, true)) {
+        if (strpos($r, 'api/') === 0 || $r === 'upload' || $r === 'upload/delete') {
+            pvw_json(403, '访客阅片模式仅支持只读影像访问');
+        }
+        pvw_redirect(pvw_url('viewer'));   // 强制回到影像查看
+    }
+}
+
 /* 站点根路径直接渲染检索页（避免 / → ?r=search 的重定向导致地址栏闪烁）；
  * 未登录则引导至登录。 */
 if ($r === '') {

@@ -38,7 +38,9 @@
         this.route = { uid: opts.uid || '', mode: opts.mode || 'append' };
         this.about = opts.about || {};
         this.direct = opts.direct || '';
-        this.studyLimit = clamp(parseInt(opts.limit, 10) || 5, 3, 10);
+        this.guest = !!opts.guest;   // 链接访客模式：仅临时阅片，无登录 / 无搜索 / 无关闭
+        this.studyLimit = this.guest ? 1 : clamp(parseInt(opts.limit, 10) || 5, 3, 10);
+        if (root && root.classList) root.classList.toggle('pv-guest', this.guest);
         this.q = function (k) { return root.querySelector('[data-pv="' + k + '"]'); };
         this.panesEl = this.q('panes');
         this.toolbarEl = this.q('toolbar');
@@ -49,7 +51,8 @@
         this.splitterEl = this.q('splitter');
         this.sidebar = new PvSidebar(this.seriesListEl);
         this.ws = { studies: [] };
-        this.seriesMap = loadSeriesMap();   // 序列操作痕迹（会话内按序列保留）
+        // 序列操作痕迹（会话内按序列保留）；访客每次进入均为全新状态，不读取/写入 sessionStorage
+        this.seriesMap = this.guest ? {} : loadSeriesMap();
         this.panes = [];
         this.active = 0;
         this.tool = 'wl';
@@ -68,6 +71,7 @@
         this._bindWindowResize();
         this._bindPersistFlush();
         this._bindKeys();
+        this._bindHostCommands();
         this.setLayout('1', true);
         this.boot();
     }
@@ -88,6 +92,36 @@
         var self = this;
         this._onUnload = function () { if (self._persistTimer) { clearTimeout(self._persistTimer); self._persistTimer = null; self.persistNow(); } };
         window.addEventListener('beforeunload', this._onUnload);
+    };
+
+    /* ---------- 宿主页指令桥（被 PACS 外呼系统 iframe 嵌入时，工具栏可远程驱动） ----------
+     * 宿主通过 window.postMessage({type:'pv-command', command|tool|preset|value}) 发送指令，
+     * 支持：tool（wl/zoom/pan/length/angle/rect/ellipse）、preset、fit、reset、rotate、flip、invert。 */
+    PvViewer.prototype._bindHostCommands = function () {
+        var self = this;
+        this._onHostMsg = function (e) {
+            var d = e && e.data;
+            if (!d || typeof d !== 'object' || d.type !== 'pv-command') return;
+            try { self.applyHostCommand(d); } catch (err) { /* 忽略非法指令 */ }
+        };
+        window.addEventListener('message', this._onHostMsg);
+    };
+    PvViewer.prototype.applyHostCommand = function (d) {
+        var p = this.activePane();
+        if (!p) return;
+        var tool = d.tool || (d.command === 'tool' ? d.value : '');
+        if (tool) { this.setTool(tool); return; }
+        if (d.command === 'preset') { this.setPreset(d.preset || d.value || ''); return; }
+        if (!p.hasImage()) return;
+        if (d.command === 'fit') { p.fit(); return; }
+        if (d.command === 'oneone') { this._paneAction(p, 'oneone'); return; }
+        if (d.command === 'reset') {
+            p.applyDefaults(); p.fit(); p.st.annos = []; p.st.draft = null; p.render();
+            p.setStatus('已重置视图'); return;
+        }
+        if (d.command === 'rotate') { this._paneAction(p, 'rotate-cw'); return; }
+        if (d.command === 'flip') { this._paneAction(p, 'flip-h'); return; }
+        if (d.command === 'invert') { this._paneAction(p, 'invert'); return; }
     };
 
     /** 键盘快捷键绑定（阅片器专属；输入框内不拦截） */
@@ -223,6 +257,7 @@
     /* ---------- 布局 ---------- */
     PvViewer.prototype.setLayoutByKey = function (key) { this.setLayout(key, false); };
     PvViewer.prototype.setLayout = function (layout, initial) {
+        if (this.guest) layout = '1';   // 访客仅单视图 / 单序列
         if (['1', '2h', '2v', '4'].indexOf(layout) < 0) layout = '1';
         this.layout = layout;
         var cols = '1fr', rows = '1fr';
@@ -281,7 +316,7 @@
         if (a === 'toggle-sidebar') { this.toggleSidebar(); return; }
         if (a === 'copy-link') { this.copyDirectLink(); return; }
         if (a === 'about') { this.showAbout(); return; }
-        if (a === 'back') { this.confirmExit(); return; }
+        if (a === 'back') { if (!this.guest) this.confirmExit(); return; }
         if (a === 'report') { this.showReport(); return; }
         if (a === 'dicom-info') { var p2 = this.activePane(); if (p2) p2.showDicomInfo(); return; }
         if (a === 'save-image') { var p3 = this.activePane(); if (p3) p3.saveImage(); return; }
@@ -433,6 +468,7 @@
         });
     };
     PvViewer.prototype.removeStudy = function (gi) {
+        if (this.guest) return;   // 访客不允许关闭检查
         if (gi < 0 || gi >= this.ws.studies.length) return;
         var removed = this.ws.studies.splice(gi, 1)[0];
         this.clearStudySeriesState(removed.uid);   // 关闭检查：丢弃其序列操作痕迹
@@ -491,6 +527,7 @@
         this._persistSeriesMap();
     };
     PvViewer.prototype._persistSeriesMap = function () {
+        if (this.guest) return;
         try { sessionStorage.setItem(SERIES_LS, JSON.stringify(this.seriesMap)); } catch (e) {}
     };
 
@@ -519,6 +556,7 @@
         this._persistTimer = setTimeout(function () { self._persistTimer = null; self.persistNow(); }, 150);
     };
     PvViewer.prototype.persistNow = function () {
+        if (this.guest) return;   // 访客不落盘会话状态
         try {
             var state = {
                 layout: this.layout, active: this.active,
@@ -528,7 +566,10 @@
             sessionStorage.setItem('pacs_workspace_v1', JSON.stringify(state));
         } catch (e) {}
     };
-    PvViewer.prototype.loadState = function () { try { return JSON.parse(sessionStorage.getItem('pacs_workspace_v1')); } catch (e) { return null; } };
+    PvViewer.prototype.loadState = function () {
+        if (this.guest) return null;   // 访客不做会话恢复
+        try { return JSON.parse(sessionStorage.getItem('pacs_workspace_v1')); } catch (e) { return null; }
+    };
     PvViewer.prototype.clearState = function () {
         if (this._persistTimer) { clearTimeout(this._persistTimer); this._persistTimer = null; }
         try { sessionStorage.removeItem('pacs_workspace_v1'); } catch (e) {}
@@ -536,6 +577,7 @@
 
     /* ---------- 日志 ---------- */
     PvViewer.prototype.logEvent = function (action, extra) {
+        if (this.guest) return;   // 访客不写数据库（操作日志）
         if (!window.PvApi || !PvApi.log) return;
         var p = this.activePane(), d = (p && p.data() && p.data().data) || {}, pt = d.patient || {}, s = d.study || {};
         var info = (pt.name || '') + ' / ' + (s.modality || '') + ' / ' + (s.description || '');
@@ -555,6 +597,7 @@
         window.PvModal.open({ title: '关于', body: html });
     };
     PvViewer.prototype.confirmExit = function () {
+        if (this.guest) return;   // 访客不允许关闭（无关闭按钮）
         var self = this;
         var go = function () { self.closeAll(); try { sessionStorage.removeItem('pacs_search_v1'); } catch (e) {} if (window.PvNav) window.PvNav.go('search'); };
         if (!this.ws.studies.length) { go(); return; }
@@ -629,7 +672,7 @@
 
     /* ---------- 关闭全部 / 分隔条 / 禁用右击 ---------- */
     PvViewer.prototype._bindCloseAll = function () {
-        var self = this, btn = this.closeAllEl; if (!btn) return;
+        var self = this, btn = this.closeAllEl; if (!btn || this.guest) return;
         btn.addEventListener('click', function () {
             if (!self.ws.studies.length) return;
             var run = function () { self.closeAll(); };
@@ -674,6 +717,7 @@
     };
 
     PvViewer.prototype.destroy = function () {
+        if (this._onHostMsg) { window.removeEventListener('message', this._onHostMsg); this._onHostMsg = null; }
         // 保存各窗格当前序列的操作痕迹，供再次进入时恢复
         var self = this;
         this.panes.forEach(function (p) { self.savePaneState(p); });
@@ -703,7 +747,8 @@
             if (instance) { try { instance.destroy(); } catch (e) {} instance = null; }
             instance = new PvViewer(root, {
                 uid: data.uid || '', mode: data.mode || 'append', direct: data.direct || '',
-                limit: data.studyLimit || 5, about: data.about || {}
+                limit: data.studyLimit || 5, about: data.about || {},
+                guest: !!data.guest
             });
         },
         destroy: function () { if (instance) { try { instance.destroy(); } catch (e) {} instance = null; } }

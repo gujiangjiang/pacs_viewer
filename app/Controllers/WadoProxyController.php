@@ -10,13 +10,19 @@
 class PvWadoProxyController {
 
     public static function instance() {
-        PvAuth::requireLogin();
         @set_time_limit(120);   // 大序列 / 首次生成可能较慢
 
         $study = (string)pvw_input('study');
         $series = (string)pvw_input('series');
         $inst = (string)pvw_input('instance');
         if ($study === '' || $series === '' || $inst === '') self::fail(400, '缺少参数');
+
+        // 鉴权：登录用户放行；访客令牌仅限链接绑定的检查 UID
+        if (!PvAuth::check()) {
+            $gu = PvGuest::uid();
+            if ($gu === null) PvAuth::requireLogin();
+            if ((string)$gu !== $study) self::fail(403, '访客仅可访问链接对应的检查');
+        }
 
         $base = PvDicomWebClient::base();
         if ($base === '') self::fail(400, '未配置 DICOMweb 接口地址');

@@ -6,11 +6,13 @@ $active = 'viewer';
 $bodyClass = 'pv-page-viewer';
 $extraCss = array('viewer.css');
 $extraJs = array('modules/dicom.js', 'modules/render.js', 'modules/osd.js', 'modules/sidebar.js', 'modules/toolbar.js', 'modules/measurements.js', 'modules/zip.js', 'modules/decoder.js', 'modules/pane.js', 'viewer.js');
+$isGuest = !empty($guest);   // 链接访客阅片模式
 $pageData = array(
     'uid'        => $uid,
     'mode'       => $mode,
-    'studyLimit' => (int)PvSettings::get('viewer_study_limit', '5'),
-    'isAdmin'    => PvAuth::isAdmin(),
+    'guest'      => $isGuest,
+    'studyLimit' => $isGuest ? 1 : (int)PvSettings::get('viewer_study_limit', '5'),
+    'isAdmin'    => $isGuest ? false : PvAuth::isAdmin(),
     'direct'     => $uid !== '' ? pvw_url('viewer', array('uid' => $uid)) : '',
     'about'      => array(
         'name'     => PvSettings::get('site_title', 'PACS 影像浏览器'),
@@ -22,7 +24,7 @@ $pageData = array(
     'icons'      => pvw_icons(),
 );
 ?>
-<div id="pvViewer" class="pv-app" data-pv="app">
+<div id="pvViewer" class="pv-app<?php echo $isGuest ? ' pv-guest' : ''; ?>" data-pv="app">
     <div class="pv-vw-toolbar" data-pv="toolbar">
         <button type="button" class="pv-bigbtn" data-pv-act="toggle-sidebar" title="显示 / 隐藏左侧序列栏">
             <span class="pv-bi"><?php echo pvw_icon('sidebar'); ?></span><span class="pv-bl">序列栏</span></button>
@@ -102,13 +104,17 @@ $pageData = array(
         <button type="button" class="pv-bigbtn" data-pv-act="about" title="关于本软件">
             <span class="pv-bi"><?php echo pvw_icon('about'); ?></span><span class="pv-bl">关于</span></button>
         <span class="pv-spacer"></span>
+        <?php if (!$isGuest) { ?>
         <button type="button" class="pv-bigbtn pv-bigbtn-exit" data-pv-act="back" title="关闭阅片，返回患者查询">
             <span class="pv-bi"><?php echo pvw_icon('close'); ?></span><span class="pv-bl">关闭</span></button>
+        <?php } ?>
     </div>
     <div class="pv-vw-body">
         <aside class="pv-filmstrip" data-pv="filmstrip">
             <div class="pv-serieslist" data-pv="serieslist"></div>
+            <?php if (!$isGuest) { ?>
             <button type="button" class="pv-closeall" data-pv="closeall" title="清空影像视图中全部检查序列">关闭全部</button>
+            <?php } ?>
         </aside>
         <div class="pv-splitter" data-pv="splitter" title="拖动调节序列栏宽度"></div>
         <main class="pv-panes" data-pv="panes"></main>

@@ -59,8 +59,13 @@ class PvApiController {
 
     /** 调阅单次检查（患者 + 检查 + 序列） */
     public static function study() {
-        PvAuth::requireLoginJson();
         $uid = (string)pvw_input('uid');
+        // 访客令牌仅可读取链接绑定的检查 UID（防止枚举其它检查）
+        if (!PvAuth::check()) {
+            $gu = PvGuest::uid();
+            if ($gu === null) PvAuth::requireLoginJson();
+            if ($uid === '' || (string)$gu !== $uid) pvw_json(403, '访客仅可访问链接对应的检查');
+        }
         if ($uid === '') pvw_json(400, '缺少检查标识');
         $ck = 'study:' . self::sourceFingerprint() . ':' . $uid;
         $data = PvCache::get($ck);
@@ -81,9 +86,13 @@ class PvApiController {
      * 无报告时返回 { available:false }，前端显示占位。
      */
     public static function report() {
-        PvAuth::requireLoginJson();
         $uid = (string)pvw_input('uid');
         $patient = (string)pvw_input('patient');
+        if (!PvAuth::check()) {
+            $gu = PvGuest::uid();
+            if ($gu === null) PvAuth::requireLoginJson();
+            if ($uid === '' || (string)$gu !== $uid) pvw_json(403, '访客仅可访问链接对应的检查');
+        }
         if ($uid === '' && $patient === '') pvw_json(400, '缺少检查标识');
         $ck = 'report:' . self::sourceFingerprint() . ':' . $uid . ':' . $patient . ':' . (string)pvw_input('modality') . ':' . (string)pvw_input('study_date');
         $data = PvCache::get($ck);

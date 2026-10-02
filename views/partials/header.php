@@ -10,6 +10,7 @@ $pvTitle = isset($pageTitle) && $pageTitle !== '' ? $pageTitle . ' · ' . $site 
 $pvHosp = pvw_hospital();
 $pvPage = isset($page) ? $page : '';
 $pvPageData = isset($pageData) ? $pageData : array();
+$pvGuest = !empty($guest);   // 链接访客阅片：无登录、仅影像查看入口
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -47,23 +48,35 @@ $pvPageData = isset($pageData) ? $pageData : array();
     'data'     => $pvPageData,
     'csrf'     => pvw_csrf(),
     'roles'    => array('admin' => ($pvUser && $pvUser['role'] === 'admin')),
+    'guest'    => $pvGuest,
 ), JSON_UNESCAPED_UNICODE); ?>;</script>
 </head>
 <body class="<?php echo pvw_e(isset($bodyClass) ? $bodyClass : ''); ?>">
-<header class="pv-topbar">
+<header class="pv-topbar<?php echo $pvGuest ? ' pv-topbar-guest' : ''; ?>">
+    <?php if ($pvGuest) { ?>
+    <span class="pv-brand pv-brand-guest">
+        <img class="pv-logo" src="<?php echo pvw_e(PvPwaController::iconUrl(96)); ?>" width="40" height="40" alt="">
+        <span class="pv-brand-name"><?php echo pvw_e($site); ?></span>
+    </span>
+    <?php } else { ?>
     <a class="pv-brand" href="<?php echo pvw_e(pvw_url('search')); ?>" data-nav="search">
         <img class="pv-logo" src="<?php echo pvw_e(PvPwaController::iconUrl(96)); ?>" width="40" height="40" alt="">
         <span class="pv-brand-name"><?php echo pvw_e($site); ?></span>
     </a>
+    <?php } ?>
     <nav class="pv-nav" id="pvNav">
+        <?php if ($pvGuest) { ?>
+        <a class="active" href="<?php echo pvw_e(pvw_url('viewer')); ?>" data-nav="viewer">影像查看</a>
+        <?php } else { ?>
         <a class="<?php echo $pvActive === 'search' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('search')); ?>" data-nav="search">患者查询</a>
         <a class="<?php echo $pvActive === 'viewer' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('viewer')); ?>" data-nav="viewer">影像查看</a>
         <?php if ($pvUser && $pvUser['role'] === 'admin') { ?>
         <a class="<?php echo $pvActive === 'admin' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('admin')); ?>" data-nav="admin">管理设置</a>
         <?php } ?>
+        <?php } ?>
     </nav>
     <div class="pv-user">
-        <?php if ($pvUser) { ?>
+        <?php if ($pvUser && !$pvGuest) { ?>
         <span class="pv-user-name"><?php echo pvw_e($pvUser['display_name'] !== '' ? $pvUser['display_name'] : $pvUser['username']); ?><?php echo $pvUser['role'] === 'admin' ? ' · 管理员' : ''; ?></span>
         <a class="pv-btn pv-btn-ghost pv-btn-sm" href="<?php echo pvw_e(pvw_url('logout')); ?>" data-no-nav="1"
            onclick="try{sessionStorage.removeItem('pacs_workspace_v1');sessionStorage.removeItem('pacs_search_v1');sessionStorage.removeItem('pacs_sidebar_w')}catch(e){}">退出</a>

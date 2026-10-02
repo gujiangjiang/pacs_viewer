@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '0.28.22');
+define('PV_VERSION', '0.28.23');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -64,6 +64,7 @@ require_once PV_APP . '/Support/Cache.php';
 require_once PV_APP . '/Support/Http.php';
 require_once PV_APP . '/Settings.php';
 require_once PV_APP . '/Auth.php';
+require_once PV_APP . '/Guest.php';
 require_once PV_APP . '/Pacs/DemoPacs.php';
 require_once PV_APP . '/Pacs/PacsClient.php';
 require_once PV_APP . '/Pacs/FhirClient.php';
