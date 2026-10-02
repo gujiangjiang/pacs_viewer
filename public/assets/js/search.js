@@ -66,13 +66,17 @@
         el.className = 'pv-study' + (hasImg ? '' : ' is-noimg') + ((s.study_uid || s.accession_no) === selectedKey ? ' selected' : '');
         el.innerHTML =
             '<div class="pv-study-head">' +
+            '<div class="pv-study-id">' +
+            '<div class="pv-study-line1">' +
             '<span class="pv-study-name">' + esc(s.name) + '</span>' +
-            '<span class="pv-study-sex">' + esc(s.gender) + ' / ' + esc(s.age) + '</span>' +
             (s.fhir ? '<span class="pv-src-tag" title="患者信息来自 FHIR R4 补充">FHIR</span>' : '') +
-            '<span class="pv-study-tags">' +
+            '</div>' +
+            '<span class="pv-study-sex">' + esc(s.gender) + ' / ' + esc(s.age) + '</span>' +
+            '</div>' +
+            '<div class="pv-study-tags">' +
             '<span class="pv-study-status">' + esc(s.status_name || '已完成') + '</span>' +
             '<span class="pv-mod">' + esc(s.modality) + '</span>' +
-            '</span></div>' +
+            '</div></div>' +
             '<div class="pv-study-desc">' + esc(s.description || '影像检查') + '</div>' +
             '<div class="pv-study-rows">' +
             '<div><b>患者号：</b>' + esc(s.patient_id) + '　<b>门诊号：</b>' + esc(s.outpatient_no || '—') + '</div>' +
