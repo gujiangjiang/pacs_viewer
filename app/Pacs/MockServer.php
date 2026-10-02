@@ -97,7 +97,11 @@ class PvMockServer {
 
     public static function search($keyword = '') {
         $rows = self::rows($keyword);
-        $site = pvw_hospital();
+        $site = pvw_hospital_source();     // 机构名回退：接口返回 > 项目名称 > 默认医院
+        if (self::source() === 'fhir') {   // 机构名优先取 FHIR Organization（取到会记录 pacs_hospital_name）
+            $h = PvFhirClient::hospitalName();
+            if ($h !== '') $site = $h;
+        }
         foreach ($rows as &$r) {
             if (empty($r['institution'])) $r['institution'] = $site;
             $r['status_name'] = '已完成';

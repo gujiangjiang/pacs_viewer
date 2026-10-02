@@ -9,6 +9,7 @@ class PvQueryLogRepository {
             'read'     => '读片',
             'download' => '下载',
             'dicom'    => '阅读 DICOM',
+            'report'   => '查看影像报告',
         );
         return isset($map[$action]) ? $map[$action] : ($action !== '' ? $action : '—');
     }

@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '0.28.11');
+define('PV_VERSION', '0.28.12');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -115,10 +115,32 @@ PvDatabase::init();   // 首次访问自动建库 / 建表 / 播种管理员
  * 通用助手（统一 pvw_ 前缀，避免与宿主环境冲突）
  * ============================================================ */
 
-/** 医院名称（未设置时回退默认名称） */
+/** 接口返回的机构名称（DICOMweb InstitutionName / FHIR Organization，自动记录） */
+function pvw_hospital_api() {
+    return trim((string)PvSettings::get('pacs_hospital_name', ''));
+}
+
+/** 管理员配置的医院名称（覆盖值，可为空） */
+function pvw_hospital_override() {
+    return trim((string)PvSettings::get('hospital_name', ''));
+}
+
+/** 全局展示用医院名称：管理员覆盖 > 接口返回 > 项目名称 > 默认医院 */
 function pvw_hospital() {
-    $h = trim((string)PvSettings::get('hospital_name', ''));
-    return $h !== '' ? $h : '默认医院';
+    $h = pvw_hospital_override();
+    if ($h !== '') return $h;
+    $a = pvw_hospital_api();
+    if ($a !== '') return $a;
+    $s = trim((string)PvSettings::get('site_title', ''));
+    return $s !== '' ? $s : '默认医院';
+}
+
+/** 接口来源医院名称（DICOM 详情 / 影像报告专用）：接口返回 > 项目名称 > 默认医院（不受管理员覆盖影响） */
+function pvw_hospital_source() {
+    $a = pvw_hospital_api();
+    if ($a !== '') return $a;
+    $s = trim((string)PvSettings::get('site_title', ''));
+    return $s !== '' ? $s : '默认医院';
 }
 
 /** HTML 转义 */

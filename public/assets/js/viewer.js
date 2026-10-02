@@ -154,6 +154,7 @@
             actions: [{ label: '关闭', cls: 'pv-btn-ghost' }],
             onOpen: function (h) { self._loadReport(h.body, pInfo, s, uid); }
         });
+        if (window.PvApi && PvApi.log) PvApi.log('report', (pInfo.name || '') + ' / ' + (s.modality || '') + ' / ' + (s.description || ''));
         return m;
     };
     PvViewer.prototype._loadReport = function (bodyEl, pInfo, s, uid) {
@@ -207,7 +208,7 @@
 
         return '<div class="pv-report"><div class="pv-report-doc">'
             + '<div class="pv-report-title">'
-            + '<div class="pv-report-hosp">' + esc(this.about && this.about.hospital ? this.about.hospital : '') + '</div>'
+            + '<div class="pv-report-hosp">' + esc(this.about && (this.about.report_hospital || this.about.hospital) ? (this.about.report_hospital || this.about.hospital) : '') + '</div>'
             + '<h2>影像检查报告</h2>'
             + corner + '</div>'
             + '<div class="pv-report-meta">' + meta + '</div>'

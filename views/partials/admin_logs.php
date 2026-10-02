@@ -1,9 +1,9 @@
 <?php /** views/partials/admin_logs.php — 管理设置子面板（由 admin.php 装配） */ ?>
-<!-- 检索日志 -->
+<!-- 操作日志 -->
 <section class="pv-tabpane<?php echo $tabCls('logs'); ?>" data-pane="logs">
     <div class="pv-card">
         <div class="pv-card-head">
-            <h3 class="pv-form-title">检索日志（共 <?php echo (int)$logCount; ?> 条）</h3>
+            <h3 class="pv-form-title">操作日志（共 <?php echo (int)$logCount; ?> 条）</h3>
             <button type="button" id="pvLogClear" class="pv-btn pv-btn-outline pv-btn-sm">清空</button>
         </div>
         <div class="pv-logscroll">

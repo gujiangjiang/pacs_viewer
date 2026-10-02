@@ -137,7 +137,7 @@ class PvDemoPacs {
         return PvMockDispatcher::seriesPlan($modality, $description, $seed, $bodyPart);
     }
 
-    public static function institution() { return pvw_hospital(); }
+    public static function institution() { return pvw_hospital_source(); }
 
     /* ---------- 确定性伪随机 ---------- */
     private static function rng($seedStr) {

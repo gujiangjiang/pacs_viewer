@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.28.11-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.28.12-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -71,7 +71,7 @@
   DICOMweb**（`/dicom-web/studies` QIDO-RS、WADO-RS 取像）与标准 DICOM 文件
   （WADO-URI）；使用内置仿真患者数据；可预览患者、一键应用、重新生成密钥、整体启停。
 - **管理设置**：站点 / 医院信息、外部接口配置、接口连通性测试、
-  账号管理（模态框）、检索日志、影像视图序列上限（3-10）、模拟服务器、存储情况。
+  账号管理（模态框）、操作日志、影像视图序列上限（3-10）、模拟服务器、存储情况。
 - **操作日志**：记录账号、操作（搜索 / 读片 / 下载 / 阅读 DICOM）、详情
   （患者姓名 + 检查类型）与 IP，便于溯源。
 - 无真实 PACS 时由内置模拟服务器生成多模态仿真 DICOM（颅脑 / 胸部 / 腰椎 / 腹部 / 膝等，多帧连续切片）；
@@ -111,7 +111,7 @@
 │   │                         #   + FhirClient(门诊 FHIR) + MockServer(模拟服务器)
 │   ├── Services/             #   StudyService(检查聚合) / IconRenderer(代码绘制图标) / UploadStore(上传存储)
 │   ├── Controllers/          #   认证 / 安装 / 检索 / 阅片 / 管理 / 模拟服务器 / PWA / 上传 / DICOMweb
-│   └── Repositories/         #   账号 / 检索日志
+│   └── Repositories/         #   账号 / 操作日志
 ├── views/                    # 页面模板（auth / install / search / viewer / admin / mock / error）
 ├── tools/                    # 工具（serve.sh 守护 / lint.php / mock_validate.php / mock_warm.php 预生成）
 ├── docs/                     # 详细文档（CHANGELOG / HELP）

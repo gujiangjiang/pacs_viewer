@@ -66,7 +66,7 @@ class PvAdminController {
         PvSettings::saveMany($pairs);
         self::reply('设置已保存', true, array(
             'site_title'    => PvSettings::get('site_title', ''),
-            'hospital_name' => PvSettings::get('hospital_name', ''),
+            'hospital_name' => pvw_hospital(),   // 生效后的医院名（覆盖 > 接口 > 项目名 > 默认医院）
             'icon_version'  => PvIconRenderer::version(),
         ), $tab === 'pacs' ? 'pacs' : 'basic');
     }
@@ -158,7 +158,7 @@ class PvAdminController {
         PvAuth::requireAdmin();
         pvw_csrf_check();
         PvQueryLogRepository::clear();
-        self::reply('检索日志已清空', true, null, 'logs');
+        self::reply('操作日志已清空', true, null, 'logs');
     }
 
     /* ---------------- 数据集成：FHIR 连通性 ---------------- */

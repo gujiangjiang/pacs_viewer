@@ -16,6 +16,7 @@ $pageData = array(
         'name'     => PvSettings::get('site_title', 'PACS 影像浏览器'),
         'version'  => PV_VERSION,
         'hospital' => pvw_hospital(),
+        'report_hospital' => pvw_hospital_source(),   // 报告/DICOM 详情用接口来源医院名
         'icon'     => PvPwaController::iconUrl(96),
     ),
     'icons'      => pvw_icons(),

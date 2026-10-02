@@ -26,9 +26,36 @@ class PvFhirClient {
     private static $lastError = '';
     /** 最近一次 HTTP 请求的响应状态码（0 表示未收到响应） */
     private static $lastStatus = 0;
+    /** 机构名称缓存（FHIR Organization.name） */
+    private static $hospital = null;
 
     public static function isConfigured() {
         return self::base() !== '';
+    }
+
+    /**
+     * 机构（医院）名称：标准 FHIR R4 Organization.name。取到后记录到设置
+     * pacs_hospital_name，供全局展示；未提供 Organization 时返回空。
+     */
+    public static function hospitalName() {
+        if (self::$hospital !== null) return self::$hospital;
+        self::$hospital = '';
+        if (!self::isConfigured()) return '';
+        try {
+            $b = self::getJson(self::base() . '/Organization?' . http_build_query(array('_count' => 1)));
+            $r = null;
+            if (is_array($b) && !empty($b['entry'][0]['resource'])) $r = $b['entry'][0]['resource'];
+            elseif (is_array($b) && isset($b['resourceType']) && $b['resourceType'] === 'Organization') $r = $b;
+            if (is_array($r) && !empty($r['name'])) {
+                self::$hospital = (string)$r['name'];
+                if (trim((string)PvSettings::get('pacs_hospital_name', '')) !== self::$hospital) {
+                    PvSettings::set('pacs_hospital_name', self::$hospital);
+                }
+            }
+        } catch (Exception $e) {
+            /* 未提供 Organization 资源时忽略（不记为错误） */
+        }
+        return self::$hospital;
     }
     public static function lastError() { return self::$lastError; }
     private static function note(Exception $e) { self::$lastError = $e->getMessage(); }
@@ -486,7 +513,7 @@ class PvFhirClient {
             'modality'      => $modality !== '' ? $modality : 'OT',
             'description'   => $desc !== '' ? $desc : '影像检查',
             'study_date'    => self::fmtDate($started),
-            'institution'   => pvw_hospital(),
+            'institution'   => (self::hospitalName() !== '' ? self::hospitalName() : pvw_hospital_source()),
             'station_name'  => ($modality !== '' ? $modality : 'OT') . '-ROOM',
             'apply_dept'    => '',
             'apply_doctor'  => '',
@@ -516,7 +543,7 @@ class PvFhirClient {
             'modality'      => 'OT',
             'description'   => $desc !== '' ? $desc : '门诊就诊 · 影像检查',
             'study_date'    => self::fmtDate($started),
-            'institution'   => pvw_hospital(),
+            'institution'   => (self::hospitalName() !== '' ? self::hospitalName() : pvw_hospital_source()),
             'station_name'  => 'FHIR',
             'apply_dept'    => '',
             'apply_doctor'  => '',

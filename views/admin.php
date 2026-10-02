@@ -16,7 +16,7 @@ $pageData = array('flash' => isset($flash) ? $flash : '');
     <button type="button" class="pv-tab<?php echo $tabCls('basic'); ?>" data-tab="basic">基础设置</button>
     <button type="button" class="pv-tab<?php echo $tabCls('pacs'); ?>" data-tab="pacs">外部接口</button>
     <button type="button" class="pv-tab<?php echo $tabCls('users'); ?>" data-tab="users">账号管理</button>
-    <button type="button" class="pv-tab<?php echo $tabCls('logs'); ?>" data-tab="logs">检索日志</button>
+    <button type="button" class="pv-tab<?php echo $tabCls('logs'); ?>" data-tab="logs">操作日志</button>
     <button type="button" class="pv-tab<?php echo $tabCls('mock'); ?>" data-tab="mock">模拟服务器</button>
     <button type="button" class="pv-tab<?php echo $tabCls('storage'); ?>" data-tab="storage">存储情况</button>
 </div>

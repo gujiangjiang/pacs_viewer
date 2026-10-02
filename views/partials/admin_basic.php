@@ -8,8 +8,8 @@
         <label class="pv-field"><span>站点名称</span>
             <input type="text" name="site_title" value="<?php echo pvw_e($v('site_title')); ?>"></label>
         <label class="pv-field"><span>医院名称</span>
-            <input type="text" name="hospital_name" value="<?php echo pvw_e($v('hospital_name')); ?>">
-            <em class="pv-hint">作为接口未返回机构名时的兜底展示</em></label>
+            <input type="text" name="hospital_name" value="<?php echo pvw_e($v('hospital_name')); ?>" placeholder="<?php echo pvw_e(pvw_hospital_api() !== '' ? pvw_hospital_api() : '默认医院'); ?>">
+            <em class="pv-hint">留空则显示接口返回的机构名（DICOM InstitutionName / FHIR Organization）；填写后<b>覆盖</b>全站的医院显示（页头 / 关于 / 页脚 / 影像预览）。<br>DICOM 详情与影像报告始终显示接口返回的机构名（无则回退项目名称）。</em></label>
         <div class="pv-grid2">
             <label class="pv-field"><span>默认窗宽 WW</span>
                 <input type="number" name="viewer_default_ww" value="<?php echo pvw_e($v('viewer_default_ww', '400')); ?>"></label>

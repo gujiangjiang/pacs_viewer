@@ -84,11 +84,11 @@
                 });
             }
 
-            // 检索日志：清空
+            // 操作日志：清空
             var logClear = document.getElementById('pvLogClear');
             if (logClear) {
                 logClear.addEventListener('click', function () {
-                    PvModal.confirm({ title: '清空检索日志', message: '确认清空全部检索日志？', okText: '清空', danger: true }).then(function (ok) {
+                    PvModal.confirm({ title: '清空操作日志', message: '确认清空全部操作日志？', okText: '清空', danger: true }).then(function (ok) {
                         if (!ok) return;
                         PvUI.post(PvNav.route('admin/log-clear'), {}).then(function (j) {
                             if (j && j.code === 200) { PvUI.toast(j.msg || '已清空', 'ok'); goTab('logs'); }
