@@ -55,6 +55,7 @@ $routes = array(
     'api/search'            => array('PvApiController', 'search'),
     'api/study'             => array('PvApiController', 'study'),
     'api/report'            => array('PvApiController', 'report'),
+    'api/facets'            => array('PvApiController', 'facets'),
     'api/ping'              => array('PvApiController', 'ping'),
     'api/log'               => array('PvApiController', 'log'),
     'api/pref'              => array('PvApiController', 'pref'),

@@ -46,9 +46,17 @@
     global.PvApi = {
         search: function (q, opts) {
             var p = { q: q };
-            if (opts) { if (opts.limit != null) p.limit = opts.limit; if (opts.offset != null) p.offset = opts.offset; }
+            if (opts) {
+                if (opts.limit != null) p.limit = opts.limit;
+                if (opts.offset != null) p.offset = opts.offset;
+                if (opts.gender) p.gender = opts.gender;
+                if (opts.modality) p.modality = opts.modality;
+                if (opts.date_from) p.date_from = opts.date_from;
+                if (opts.date_to) p.date_to = opts.date_to;
+            }
             return get('search', p);
         },
+        facets: function () { return get('facets', {}); },
         study:  study,
         /** 调阅影像报告（FHIR DiagnosticReport）；无报告返回 { available:false } */
         report: function (uid, patient) { return get('report', { uid: uid, patient: patient || '' }); },

@@ -48,20 +48,63 @@ class PvDicomWebController {
         $pid = trim((string)pvw_input('PatientID'));
         $acc = trim((string)pvw_input('AccessionNumber'));
         $suid = trim((string)pvw_input('StudyInstanceUID'));
+        $sex = strtoupper(trim((string)pvw_input('PatientSex')));          // M / F / O
+        $sdate = trim((string)pvw_input('StudyDate'));                     // YYYYMMDD 或 YYYYMMDD-YYYYMMDD
+        $mods = trim((string)pvw_input('ModalitiesInStudy'));              // 逗号分隔模态码
         $limit = max(0, (int)pvw_input('limit', 0));
         $offset = max(0, (int)pvw_input('offset', 0));
 
         $rows = PvMockServer::rows('');
+        // 排序：检查时间倒序（最新检查在最前）
+        usort($rows, function ($a, $b) {
+            $ta = isset($a['study_date']) ? (string)$a['study_date'] : '';
+            $tb = isset($b['study_date']) ? (string)$b['study_date'] : '';
+            if ($ta === $tb) return 0;
+            return ($ta < $tb) ? 1 : -1;
+        });
+        $modList = array();
+        if ($mods !== '') {
+            foreach (explode(',', $mods) as $m) { $m = strtoupper(trim($m)); if ($m !== '') $modList[] = $m; }
+        }
         $out = array();
         foreach ($rows as $row) {
             if ($suid !== '' && $row['study_uid'] !== $suid) continue;
             if ($pid !== '' && stripos($row['patient_id'], $pid) === false) continue;
-            if ($acc !== '' && stripos($row['accession_no'], $acc) === false) continue;
+            if ($acc !== '' && stripos((string)(isset($row['accession_no']) ? $row['accession_no'] : ''), $acc) === false) continue;
             if ($name !== '' && mb_stripos($row['name'], $name, 0, 'UTF-8') === false) continue;
+            if ($sex !== '' && self::sexCode(isset($row['gender']) ? $row['gender'] : '') !== $sex) continue;
+            if ($modList && !in_array(strtoupper((string)(isset($row['modality']) ? $row['modality'] : '')), $modList, true)) continue;
+            if ($sdate !== '' && !self::dateMatch(isset($row['study_date']) ? $row['study_date'] : '', $sdate)) continue;
             $out[] = self::studyResource($row);
         }
         if ($limit > 0) $out = array_slice($out, $offset, $limit);
         self::json($out);
+    }
+
+    /** 性别归一化为 DICOM PatientSex（M/F/O） */
+    private static function sexCode($g) {
+        $g = strtoupper(trim((string)$g));
+        if ($g === '男' || $g === 'M' || $g === 'MALE' || $g === '1') return 'M';
+        if ($g === '女' || $g === 'F' || $g === 'FEMALE' || $g === '2') return 'F';
+        return 'O';
+    }
+
+    /** StudyDate 匹配：支持单个 YYYYMMDD 或范围 YYYYMMDD-YYYYMMDD */
+    private static function dateMatch($studyDate, $range) {
+        $d = preg_replace('/\D/', '', substr((string)$studyDate, 0, 10));
+        if (strlen($d) < 8) return false;
+        $d = substr($d, 0, 8);
+        $range = preg_replace('/[^0-9\-]/', '', $range);
+        if (strpos($range, '-') !== false) {
+            list($a, $b) = array_pad(explode('-', $range, 2), 2, '');
+            $a = substr(preg_replace('/\D/', '', $a), 0, 8);
+            $b = substr(preg_replace('/\D/', '', $b), 0, 8);
+            if ($a !== '' && $d < $a) return false;
+            if ($b !== '' && $d > $b) return false;
+            return true;
+        }
+        $one = substr(preg_replace('/\D/', '', $range), 0, 8);
+        return $one === '' ? true : ($d === $one);
     }
 
     private static function studyMeta($uid) {

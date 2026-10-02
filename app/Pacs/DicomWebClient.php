@@ -72,11 +72,24 @@ class PvDicomWebClient {
         }
     }
 
-    /** 检索（QIDO-RS）：QIDO 无总数，has_more 依据返回数量推断 */
-    public static function search($keyword, $limit = 0, $offset = 0) {
+    /**
+     * 检索（QIDO-RS）：QIDO 无总数，has_more 依据返回数量推断。
+     * @param array $filters 可选：gender(M/F/O)、date_from/date_to(YYYY-MM-DD)、modality
+     */
+    public static function search($keyword, $limit = 0, $offset = 0, $filters = array()) {
         $q = array('includefield' => 'all');
         $kw = trim((string)$keyword);
         if ($kw !== '') $q['PatientName'] = $kw;
+        $filters = is_array($filters) ? $filters : array();
+        $sex = strtoupper(trim((string)(isset($filters['gender']) ? $filters['gender'] : '')));
+        if (in_array($sex, array('M', 'F', 'O'), true)) $q['PatientSex'] = $sex;
+        $mod = trim((string)(isset($filters['modality']) ? $filters['modality'] : ''));
+        if ($mod !== '') $q['ModalitiesInStudy'] = strtoupper($mod);
+        $df = preg_replace('/\D/', '', (string)(isset($filters['date_from']) ? $filters['date_from'] : ''));
+        $dt = preg_replace('/\D/', '', (string)(isset($filters['date_to']) ? $filters['date_to'] : ''));
+        if (strlen($df) >= 8) {
+            $q['StudyDate'] = (strlen($dt) >= 8 && $dt !== $df) ? ($df . '-' . $dt) : $df;
+        }
         if ((int)$limit > 0) { $q['limit'] = (int)$limit; $q['offset'] = max(0, (int)$offset); }
         $arr = self::getJson('/studies', $q);
         $list = array();

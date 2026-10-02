@@ -35,8 +35,8 @@ class PvPacsClient {
     }
 
     /** 分页检索：{list,total,has_more} */
-    public static function searchPage($keyword, $limit = 0, $offset = 0) {
-        return PvDicomWebClient::search($keyword, $limit, $offset);
+    public static function searchPage($keyword, $limit = 0, $offset = 0, $filters = array()) {
+        return PvDicomWebClient::search($keyword, $limit, $offset, $filters);
     }
 
     /** 调阅单次检查（患者 + 检查 + 序列） */

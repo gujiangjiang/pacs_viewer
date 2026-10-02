@@ -36,8 +36,8 @@ class PvStudyService {
     }
 
     /** 检索（分页）：数据来自 PACS/DICOMweb，补充展示字段后返回 {list,total,has_more} */
-    public static function search($keyword, $limit = 0, $offset = 0) {
-        $page = PvPacsClient::searchPage($keyword, $limit, $offset);
+    public static function search($keyword, $limit = 0, $offset = 0, $filters = array()) {
+        $page = PvPacsClient::searchPage($keyword, $limit, $offset, $filters);
         $list = $page['list'];
         $site = pvw_hospital();
         foreach ($list as &$row) {

@@ -72,6 +72,16 @@ class PvMockServer {
         return PvDemoPacs::search($keyword);
     }
 
+    /** 数据中出现过的检查模态（去重，供检索页「检查类型」筛选） */
+    public static function modalities() {
+        $out = array();
+        foreach (self::rows('') as $r) {
+            $m = strtoupper(trim((string)(isset($r['modality']) ? $r['modality'] : '')));
+            if ($m !== '') $out[$m] = 1;
+        }
+        return array_keys($out);
+    }
+
     /** 供管理界面预览：按患者聚合（患者 + 其检查） */
     public static function patients($keyword = '') {
         $patients = array();

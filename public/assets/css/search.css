@@ -1,17 +1,49 @@
-/* assets/css/search.css — 检索页 */
-.pv-page-search .pv-main { max-width: 1080px; width: 100%; margin: 0 auto; }
-.pv-searchbox { padding: 18px 20px; }
-#pvSearchForm { display: flex; gap: 10px; }
-.pv-search-input { flex: 1 1 auto; font-size: 15px; padding: 11px 14px; }
-.pv-search-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; font-size: 12px; color: var(--pv-txt2); }
-.pv-search-meta .is-remote { color: #7dd3fc; }
-.pv-search-meta .is-demo { color: #fbbf24; }
-.pv-result-meta { font-size: 13px; color: var(--pv-txt2); margin: 4px 2px 10px; }
-.pv-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+/* assets/css/search.css — 检索页（左右分栏） */
+.pv-page-search .pv-main { max-width: 1320px; width: 100%; margin: 0 auto; }
+
+.pv-search-wrap { display: flex; gap: 14px; align-items: flex-start; }
+
+/* ---------- 左侧栏 ---------- */
+.pv-search-side { width: 300px; flex: 0 0 300px; padding: 16px; position: sticky; top: 12px; }
+.pv-search-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: #e2e8f0; margin-bottom: 14px; }
+.pv-search-title svg { width: 18px; height: 18px; }
+.pv-search-inputrow { display: flex; gap: 8px; }
+.pv-search-input { flex: 1 1 auto; min-width: 0; padding: 9px 12px; font-size: 14px; }
+.pv-filter { margin-top: 6px; }
+.pv-filter-block { margin-top: 16px; }
+.pv-filter-label { display: block; font-size: 12px; color: var(--pv-txt2); margin-bottom: 7px; }
+.pv-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pv-chip { border: 1px solid var(--pv-line2); background: #0b0f17; color: var(--pv-txt2); border-radius: 8px; padding: 5px 10px; font-size: 12px; cursor: pointer; }
+.pv-chip:hover { border-color: var(--pv-acc2); color: #e2e8f0; }
+.pv-chip.active { background: rgba(14,165,233,.16); border-color: var(--pv-acc2); color: #7dd3fc; }
+.pv-daterange { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.pv-daterange input { flex: 1 1 0; min-width: 0; padding: 7px 8px; font-size: 12px; }
+.pv-daterange input:disabled { opacity: .7; cursor: not-allowed; background: #0e1524; }
+.pv-daterange-sep { color: var(--pv-txt2); font-size: 12px; flex: 0 0 auto; }
+.pv-filter-err { margin-top: 6px; font-size: 12px; color: #fca5a5; }
+.pv-side-foot { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--pv-line); display: flex; flex-direction: column; gap: 10px; }
+.pv-source { font-size: 12px; color: var(--pv-txt2); }
+.pv-source .is-remote { color: #7dd3fc; }
+.pv-source .is-demo { color: #fbbf24; }
+
+/* ---------- 右侧 ---------- */
+.pv-search-main { flex: 1 1 auto; min-width: 0; }
+.pv-search-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.pv-view-toggle { display: inline-flex; border: 1px solid var(--pv-line2); border-radius: 8px; overflow: hidden; flex: 0 0 auto; }
+.pv-toggle-btn { border: 0; background: #0b0f17; color: var(--pv-txt2); padding: 5px 9px; cursor: pointer; display: inline-flex; align-items: center; }
+.pv-toggle-btn svg { width: 16px; height: 16px; }
+.pv-toggle-btn.active { background: rgba(14,165,233,.16); color: #7dd3fc; }
+.pv-toggle-btn + .pv-toggle-btn { border-left: 1px solid var(--pv-line2); }
+
+.pv-result-meta { font-size: 13px; color: var(--pv-txt2); margin: 0; }
+
+/* 卡片视图 */
+.pv-results.pv-results-card { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+/* 列表视图（默认） */
+.pv-results.pv-results-list { display: flex; flex-direction: column; gap: 8px; }
+
 .pv-study { background: var(--pv-panel); border: 1px solid var(--pv-line); border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: all .13s;
-    /* 原生虚拟滚动：跳过离屏卡片的渲染与绘制（近似 contain） */
     content-visibility: auto; contain-intrinsic-size: 220px; }
-.pv-more { grid-column: 1 / -1; text-align: center; padding: 14px; color: var(--pv-txt2); font-size: 12px; }
 .pv-study:hover { border-color: var(--pv-acc2); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.35); }
 .pv-study-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .pv-study-name { font-size: 15px; font-weight: 700; color: #f1f5f9; }
@@ -24,13 +56,33 @@
 .pv-study-status { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(16,185,129,.16); color: #34d399; }
 .pv-study-open { font-size: 12px; color: var(--pv-acc2); }
 
+/* 列表形态：更紧凑、信息同行 */
+.pv-results-list .pv-study { padding: 10px 14px; }
+.pv-results-list .pv-study-head { margin-bottom: 4px; }
+.pv-results-list .pv-study-desc { margin-bottom: 4px; }
+.pv-results-list .pv-study-rows { display: flex; flex-wrap: wrap; gap: 0 18px; line-height: 1.7; }
+.pv-results-list .pv-study-rows > div { white-space: nowrap; }
+.pv-results-list .pv-study-foot { margin-top: 6px; }
+
+.pv-more { text-align: center; padding: 14px; color: var(--pv-txt2); font-size: 12px; }
+.pv-results-card .pv-more { grid-column: 1 / -1; }
+
 .pv-check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--pv-txt2); cursor: pointer; user-select: none; }
 .pv-check input { accent-color: var(--pv-acc); }
 
-#pvSearchBtn { min-width: 76px; }
+#pvSearchBtn { min-width: 64px; }
 .pv-btn.is-loading { opacity: .65; cursor: progress; }
 
 /* FHIR 补充标记 / 仅登记无影像 */
 .pv-src-tag { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 5px; background: rgba(16,185,129,.16); color: #6ee7b7; }
 .pv-study.is-noimg { opacity: .82; }
 .pv-study.is-noimg .pv-study-open { color: var(--pv-txt2); }
+
+/* 空态图标 */
+.pv-empty-ico svg { width: 44px; height: 44px; opacity: .5; }
+
+@media (max-width: 900px) {
+    .pv-search-wrap { flex-direction: column; }
+    .pv-search-side { width: auto; flex: none; position: static; }
+    .pv-results.pv-results-card { grid-template-columns: 1fr; }
+}

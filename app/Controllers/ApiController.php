@@ -19,12 +19,22 @@ class PvApiController {
         if ($limit < 0) $limit = 0;
         if ($limit > 200) $limit = 200;
         if ($offset < 0) $offset = 0;
+        $filters = array(
+            'gender'    => (string)pvw_input('gender'),
+            'modality'  => (string)pvw_input('modality'),
+            'date_from' => (string)pvw_input('date_from'),
+            'date_to'   => (string)pvw_input('date_to'),
+        );
+        // 日期区间拦截：起始不得晚于截止（允许相同）
+        if ($filters['date_from'] !== '' && $filters['date_to'] !== '' && $filters['date_from'] > $filters['date_to']) {
+            pvw_json(400, '起始日期不能晚于截止日期');
+        }
 
-        $ck = 'search:' . self::sourceFingerprint() . ':' . $limit . ':' . $offset . ':' . $kw;
+        $ck = 'search:' . self::sourceFingerprint() . ':' . $limit . ':' . $offset . ':' . $kw . ':' . md5(json_encode($filters));
         $res = PvCache::get($ck);
         if ($res === null) {
             try {
-                $res = PvStudyService::search($kw, $limit, $offset);
+                $res = PvStudyService::search($kw, $limit, $offset, $filters);
             } catch (Exception $e) {
                 pvw_json(500, $e->getMessage());
             }
@@ -88,6 +98,15 @@ class PvApiController {
             PvCache::set($ck, $data, 30);
         }
         pvw_json(200, 'success', $data);
+    }
+
+    /** 检索可选筛选项：检查类型（模态） */
+    public static function facets() {
+        PvAuth::requireLoginJson();
+        $mods = array();
+        try { $mods = PvMockServer::modalities(); } catch (Exception $e) { $mods = array(); }
+        sort($mods);
+        pvw_json(200, 'success', array('modalities' => array_values($mods)));
     }
 
     /** 接口连通性测试（管理端） */
