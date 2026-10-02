@@ -78,6 +78,7 @@ class PvPwaController {
             $asset . '/js/modules/toolbar.js' . $ver, $asset . '/js/modules/measurements.js' . $ver,
             $asset . '/js/modules/zip.js' . $ver, $asset . '/js/modules/decoder.js' . $ver,
             $asset . '/js/modules/dicom-worker.js' . $ver,
+            $asset . '/js/modules/scroll.js' . $ver,
             $asset . '/js/modules/pane.js' . $ver, $asset . '/js/viewer.js' . $ver,
         );
         ?>

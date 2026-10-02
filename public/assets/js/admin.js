@@ -98,6 +98,42 @@
                 });
             }
 
+            // 操作日志：滚动到底自动加载更多（复用通用 PvInfiniteScroll）
+            (function () {
+                var scroll = document.getElementById('pvLogScroll');
+                var body = document.getElementById('pvLogBody');
+                if (!scroll || !body || !global.PvInfiniteScroll) return;
+                var total = parseInt(scroll.getAttribute('data-total'), 10) || 0;
+                var rendered = body.querySelectorAll('tr[data-row]').length;
+                if (total <= rendered) return;
+                function esc(s) { return PvUI.esc(s == null ? '' : s); }
+                function rowHtml(l) {
+                    var rc = (l.action === 'search') ? String(l.result_count == null ? 0 : l.result_count) : '—';
+                    return '<tr data-row="1"><td class="pv-dim">' + esc(l.created_at) + '</td>'
+                        + '<td>' + esc(l.username) + '</td>'
+                        + '<td><span class="pv-badge op-' + esc(l.action) + '">' + esc(l.action_name) + '</span></td>'
+                        + '<td>' + esc(l.detail) + '</td>'
+                        + '<td>' + esc(l.keyword) + '</td>'
+                        + '<td>' + esc(rc) + '</td>'
+                        + '<td class="pv-dim">' + esc(l.ip) + '</td></tr>';
+                }
+                global.PvInfiniteScroll.create({
+                    container: scroll, list: scroll,
+                    offset: rendered, hasMore: true, pageSize: 30,
+                    sentinelClass: 'pv-more', moreText: '上拉加载更多…', endText: '',
+                    load: function (offset, limit) {
+                        var url = global.PvNav
+                            ? global.PvNav.route('admin/logs', { offset: offset, limit: limit })
+                            : ('?r=admin/logs&offset=' + offset + '&limit=' + limit);
+                        return PvUI.get(url).then(function (j) {
+                            if (!j || j.code !== 200) throw new Error((j && j.msg) || '加载失败');
+                            return j.data || {};
+                        });
+                    },
+                    append: function (list) { list.forEach(function (l) { body.insertAdjacentHTML('beforeend', rowHtml(l)); }); }
+                });
+            })();
+
             function formVal(name) {
                 var el = document.querySelector('[name="' + name + '"]');
                 return el ? el.value : '';

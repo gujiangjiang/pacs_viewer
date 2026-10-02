@@ -161,6 +161,34 @@ class PvAdminController {
         self::reply('操作日志已清空', true, null, 'logs');
     }
 
+    /** 操作日志分页读取（管理端滚动加载） */
+    public static function logs() {
+        PvAuth::requireAdmin();
+        $offset = max(0, (int)pvw_input('offset', 0));
+        $limit = max(1, min(200, (int)pvw_input('limit', 30)));
+        $rows = PvQueryLogRepository::page($offset, $limit);
+        $list = array();
+        foreach ($rows as $l) {
+            $act = isset($l['action']) ? (string)$l['action'] : 'search';
+            $list[] = array(
+                'created_at' => (string)$l['created_at'],
+                'username' => (string)$l['username'],
+                'action' => $act,
+                'action_name' => PvQueryLogRepository::actionName($act),
+                'detail' => isset($l['detail']) ? (string)$l['detail'] : '',
+                'keyword' => (string)$l['keyword'],
+                'result_count' => ($act === 'search') ? (int)$l['result_count'] : null,
+                'ip' => (string)$l['ip'],
+            );
+        }
+        $total = PvQueryLogRepository::count();
+        pvw_json(200, 'success', array(
+            'list' => $list,
+            'total' => $total,
+            'has_more' => ($offset + count($list)) < $total,
+        ));
+    }
+
     /* ---------------- 数据集成：FHIR 连通性 ---------------- */
 
     /** FHIR R4 连通性测试（POST 时使用当前输入，GET 时使用已保存配置） */

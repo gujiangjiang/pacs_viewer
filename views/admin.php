@@ -5,7 +5,7 @@ $pageTitle = '管理设置';
 $active = 'admin';
 $bodyClass = 'pv-page-admin';
 $extraCss = array('admin.css', 'mock.css');
-$extraJs = array('admin-users.js', 'admin-storage.js', 'admin.js', 'mock.js');
+$extraJs = array('modules/scroll.js', 'admin-users.js', 'admin-storage.js', 'admin.js', 'mock.js');
 $s = $settings;
 $v = function ($k, $d = '') use ($s) { return isset($s[$k]) ? $s[$k] : $d; };
 $curTab = isset($tab) ? $tab : 'basic';

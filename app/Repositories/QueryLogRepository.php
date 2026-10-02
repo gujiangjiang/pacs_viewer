@@ -35,6 +35,12 @@ class PvQueryLogRepository {
         $limit = max(1, min(500, (int)$limit));
         return PvDatabase::q("SELECT * FROM query_log ORDER BY id DESC LIMIT " . $limit);
     }
+    /** 分页读取（管理端滚动加载） */
+    public static function page($offset = 0, $limit = 30) {
+        $limit = max(1, min(200, (int)$limit));
+        $offset = max(0, (int)$offset);
+        return PvDatabase::q("SELECT * FROM query_log ORDER BY id DESC LIMIT " . $limit . " OFFSET " . $offset);
+    }
     public static function count() {
         return (int)PvDatabase::val("SELECT COUNT(*) FROM query_log");
     }

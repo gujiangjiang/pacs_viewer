@@ -95,6 +95,9 @@ input.pv-copy:active { border-color: var(--pv-acc); }
 
 .pv-alert { padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; font-size: 13px; }
 
+/* 通用滚动加载哨兵（PvInfiniteScroll 默认样式） */
+.pv-more { text-align: center; padding: 14px; color: var(--pv-txt2); font-size: 12px; }
+
 .pv-empty { text-align: center; padding: 56px 20px; color: var(--pv-txt2); }
 .pv-empty-ico { font-size: 44px; margin-bottom: 10px; }
 .pv-empty-title { font-size: 16px; color: #e2e8f0; margin-bottom: 6px; }

@@ -36,6 +36,7 @@ $routes = array(
     'admin/user-password'   => array('PvAdminController', 'userPassword'),
     'admin/user-delete'     => array('PvAdminController', 'userDelete'),
     'admin/log-clear'       => array('PvAdminController', 'logClear'),
+    'admin/logs'            => array('PvAdminController', 'logs'),
     'api/storage'           => array('PvAdminController', 'storage'),
     'api/storage/clear-uploads' => array('PvAdminController', 'storageClearUploads'),
     'api/storage/clear-cache'   => array('PvAdminController', 'storageClearCache'),
