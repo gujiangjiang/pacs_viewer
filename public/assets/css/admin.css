@@ -29,8 +29,8 @@
 .pv-logscroll .pv-table thead th { position: sticky; top: 0; z-index: 2; background: #0b0f17; }
 /* 固定布局 + 百分比列宽：列宽按比例稳定，不随内容长短跳动；
  * 容器过窄时在列表内部横向滚动（min-width 触发滚动条）。 */
-.pv-logscroll .pv-table { table-layout: fixed; width: 100%; min-width: 760px; }
-.pv-logscroll .pv-table th, .pv-logscroll .pv-table td { overflow: hidden; text-overflow: ellipsis; }
+.pv-logscroll .pv-table { table-layout: fixed; width: 100%; min-width: 780px; }
+.pv-logscroll .pv-table th, .pv-logscroll .pv-table td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 详情列超长省略，悬浮 title 显示完整内容 */
 .pv-log-detail { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
