@@ -174,7 +174,7 @@
         var meta = item('患者姓名', p.name) + item('性别', p.gender) + item('年龄', p.age)
             + item('患者号', p.patient_id) + item('门诊号', p.outpatient_no)
             + item('检查号', s.accession_no) + item('检查项目', s.description)
-            + item('报告号', rep.report_no) + item('检查时间', s.study_date) + item('设备', s.station_name);
+            + item('检查时间', s.study_date);
 
         var statusText = rep.available ? (rep.status_text || '') : '';
         var st = rep.status || '';
@@ -182,6 +182,9 @@
             : ((st === 'cancelled') ? 'off' : 'warn');
         var statusBadge = statusText !== ''
             ? '<span class="pv-report-status ' + stCls + '">' + esc(statusText) + '</span>' : '';
+        var reportNo = (rep.report_no || '').trim() !== '' ? '<span class="pv-report-no">报告号 ' + esc(rep.report_no) + '</span>' : '';
+        var corner = (reportNo !== '' || statusBadge !== '')
+            ? '<div class="pv-report-corner">' + reportNo + statusBadge + '</div>' : '';
 
         var sec = function (title, val) {
             val = (val === undefined || val === null) ? '' : String(val).trim();
@@ -203,9 +206,10 @@
         var pdfBtn = ('pdf_url' in rep && rep.pdf_url) ? '<a class="pv-btn pv-btn-ghost pv-btn-sm" href="' + esc(rep.pdf_url) + '" target="_blank" rel="noopener">查看 PDF 报告</a>' : '';
 
         return '<div class="pv-report"><div class="pv-report-doc">'
-            + '<div class="pv-report-title"><h2>影像检查报告</h2>'
+            + '<div class="pv-report-title">'
             + '<div class="pv-report-hosp">' + esc(this.about && this.about.hospital ? this.about.hospital : '') + '</div>'
-            + statusBadge + '</div>'
+            + '<h2>影像检查报告</h2>'
+            + corner + '</div>'
             + '<div class="pv-report-meta">' + meta + '</div>'
             + '<div class="pv-report-body">' + body + '</div>'
             + foot
