@@ -318,7 +318,7 @@
             return;
         }
         var pr = PRESETS[k]; if (!pr) return;
-        p.st.ww = pr.ww; p.st.wl = pr.wl; p.render();
+        p.st.ww = pr.ww; p.st.wl = pr.wl; p._wwTouched = true; p.render();
         p.setStatus(pr.label + ' · WW ' + pr.ww + ' / WL ' + pr.wl);
         Array.prototype.forEach.call(this.toolbarEl.querySelectorAll('[data-pv-preset]'), function (el) { el.classList.toggle('active', el.getAttribute('data-pv-preset') === k); });
     };
@@ -486,10 +486,11 @@
     PvViewer.prototype.renderSidebar = function () {
         var self = this, p = this.activePane();
         this.sidebar.renderStudies(this.ws.studies, { uid: p ? p.st.uid : '', si: p ? p.st.si : 0 }, {
-            onSeries: function (gi, si) { self.setSeriesOnActive(gi, si, false); },        // 单击：保留操作痕迹
-            onSeriesReset: function (gi, si) { self.setSeriesOnActive(gi, si, true); },    // 双击：重置该序列
-            onToggle: function (gi) { var st = self.ws.studies[gi]; if (!st) return; st.collapsed = !st.collapsed; self.renderSidebar(); self.persist(); },
-            onClose: function (gi) { self.removeStudy(gi); }
+            // 序列栏点击会 stopPropagation，需主动收起工具/预设下拉菜单，避免菜单残留
+            onSeries: function (gi, si) { if (self.toolbar) self.toolbar.closeMenus(); self.setSeriesOnActive(gi, si, false); },
+            onSeriesReset: function (gi, si) { if (self.toolbar) self.toolbar.closeMenus(); self.setSeriesOnActive(gi, si, true); },
+            onToggle: function (gi) { if (self.toolbar) self.toolbar.closeMenus(); var st = self.ws.studies[gi]; if (!st) return; st.collapsed = !st.collapsed; self.renderSidebar(); self.persist(); },
+            onClose: function (gi) { if (self.toolbar) self.toolbar.closeMenus(); self.removeStudy(gi); }
         });
     };
     PvViewer.prototype.removeStudy = function (gi) {

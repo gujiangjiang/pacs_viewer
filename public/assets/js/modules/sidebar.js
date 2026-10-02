@@ -101,6 +101,7 @@
                     + '<span class="pv-thumb-n">' + (se.slice_count || (se.images ? se.images.length : 1)) + ' 帧</span></div>'
                     + '<div class="pv-thumb-desc" title="' + self.esc(se.description || '') + '">' + self.esc(se.description || '') + '</div></div>';
             });
+            if (!(st.series || []).length) html += '<div class="pv-film-empty">暂无序列</div>';   // 无序列时占位提示
             html += '</div></div>';
         });
         this.el.innerHTML = html;

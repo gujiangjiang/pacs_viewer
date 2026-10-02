@@ -49,6 +49,7 @@
         this.imgCache = {};
         this._frames = {};         // 显示帧缓存（global frame index → {dec,raw}）
         this._instances = {};      // 解码实例缓存（instance index → {status,dec}，支持多帧复用）
+        this._wwTouched = false;   // 用户是否手动改过窗宽窗位（未改则采用序列/解码默认窗，避免来回跳变）
         this._ctrls = [];          // 在途请求的 AbortController（离开/换序列时中止）
         this._prefetchSeq = 0;     // 预取代次，用于中止后停止预取循环
         this._dir = 1;             // 最近滚动方向（+1 向后 / -1 向前），用于预取偏置
@@ -176,10 +177,9 @@
                 self._instances[ikey] = { status: 'ok', dec: res.dec };
                 self._frames[fkey] = { status: 'ok', dec: res.dec, raw: res.raw };
                 self._trimFrames(); self._trimInstances();
-                // 序列未提供窗宽窗位时，采用解码得到的 DICOM 窗（如对接仅返回元数据/代理取像的 PACS）
+                // 序列未提供窗宽窗位且用户未手动调窗时，采用解码得到的 DICOM 窗（保证各序列默认窗稳定一致）
                 var serN = self.curSeries();
-                if (serN && !serN.window_width && !self._winFromDicom && res.dec && res.dec.windowWidth) {
-                    self._winFromDicom = true;
+                if (serN && !serN.window_width && !self._wwTouched && res.dec && res.dec.windowWidth) {
                     self.st.ww = parseFloat(res.dec.windowWidth) || self.st.ww;
                     self.st.wl = parseFloat(res.dec.windowCenter) || self.st.wl;
                     if (self.viewer && self.viewer.updatePresetMenu) self.viewer.updatePresetMenu();
@@ -481,7 +481,7 @@
         if (st.drag) {
             if (st.drag.btn === 2 && (Math.abs(pt.x - st.drag.x) + Math.abs(pt.y - st.drag.y)) > 4) st.drag.moved = true;
             if (st.drag.mode === 'pan') { st.panX = st.drag.px + (pt.x - st.drag.x); st.panY = st.drag.py + (pt.y - st.drag.y); }
-            else if (st.drag.mode === 'wl') { var sc = st.isHU ? 4 : 2; st.ww = clamp(st.drag.ww + (pt.x - st.drag.x) * sc, 1, 6000); st.wl = clamp(st.drag.wl - (pt.y - st.drag.y) * sc, -1200, 3000); }
+            else if (st.drag.mode === 'wl') { var sc = st.isHU ? 4 : 2; st.ww = clamp(st.drag.ww + (pt.x - st.drag.x) * sc, 1, 6000); st.wl = clamp(st.drag.wl - (pt.y - st.drag.y) * sc, -1200, 3000); this._wwTouched = true; }
             else if (st.drag.mode === 'zoom') { this._zoomTo(st.drag.z * Math.exp((st.drag.y - pt.y) / 180), pt.x, pt.y); }
             this._scheduleRender(); return;
         }
@@ -587,7 +587,7 @@
         var w = this.defaultWindow();
         this.st.ww = w.ww; this.st.wl = w.wl;
         this.st.isHU = this.frameIsHU();
-        this._winFromDicom = false;   // 序列未带窗值时，允许采用解码得到的 DICOM 窗（首次）
+        this._wwTouched = false;   // 默认态：允许采用解码得到的 DICOM 窗
     };
     PvPane.prototype.fit = function () {
         this.st.zoom = clamp(Math.min(this.cssW / BASE, this.cssH / BASE) * 0.92, 0.05, 16);
@@ -599,7 +599,7 @@
         return {
             ww: s.ww, wl: s.wl, zoom: s.zoom, panX: s.panX, panY: s.panY,
             rot: s.rot, flipH: s.flipH, flipV: s.flipV, invert: s.invert,
-            fi: s.fi, annos: (s.annos || []).slice()
+            fi: s.fi, annos: (s.annos || []).slice(), wwTouched: !!this._wwTouched
         };
     };
     /** 应用视图状态（保留原缩放平移，不重新 fit） */
@@ -612,6 +612,7 @@
         s.annos = (v.annos || []).slice();
         s.draft = null;
         s.isHU = this.frameIsHU();
+        this._wwTouched = !!v.wwTouched;   // 恢复该序列的「是否手动调窗」痕迹
     };
 
     /**
