@@ -17,16 +17,17 @@
     var PAGE = 30;
     var allItems = [], total = 0, hasMore = false, loading = false, query = '', sentinelEl = null, moreIO = null;
 
+    // 列顺序：重要信息靠前
     var COLUMNS = [
         { key: 'name', label: '姓名' },
         { key: 'gender', label: '性别' },
         { key: 'age', label: '年龄', sort: 'birth_date' },
-        { key: 'patient_id', label: '患者号' },
-        { key: 'outpatient_no', label: '门诊号' },
-        { key: 'accession_no', label: '检查号' },
-        { key: 'study_date', label: '检查时间' },
         { key: 'modality', label: '类型' },
         { key: 'description', label: '检查项目' },
+        { key: 'accession_no', label: '检查号' },
+        { key: 'study_date', label: '检查时间' },
+        { key: 'patient_id', label: '患者号' },
+        { key: 'outpatient_no', label: '门诊号' },
         { key: 'station_name', label: '设备' },
         { key: 'status_name', label: '状态', nosort: true }
     ];
@@ -92,8 +93,6 @@
         return esc(v);
     }
     function buildTable(list) {
-        var wrap = document.createElement('div');
-        wrap.className = 'pv-tbl-wrap';
         var tbl = document.createElement('table');
         tbl.className = 'pv-table pv-result-table';
         var h = '<thead><tr>';
@@ -134,8 +133,7 @@
             else { sortState.key = key; sortState.dir = 'desc'; }
             doSearch();
         });
-        wrap.appendChild(tbl);
-        return wrap;
+        return tbl;
     }
 
     function setMeta() {
@@ -324,6 +322,8 @@
                 });
                 renderAll();
                 saveState();
+                // 视图偏好随用户保存到数据库（下次自动启用）
+                if (global.PvNav) PvUI.post(global.PvNav.route('api/pref'), { search_view: viewMode });
             });
         });
     }
@@ -398,10 +398,11 @@
             bindFilters();
             loadFacets();
 
+            // 视图偏好以数据库（用户级）为准，默认纯列表
+            viewMode = (data.searchView === 'card' || data.searchView === 'list') ? data.searchView : 'table';
             var saved = null;
             try { saved = JSON.parse(sessionStorage.getItem('pacs_search_v3')); } catch (e) {}
             if (saved) {
-                viewMode = (saved.view === 'card' || saved.view === 'list' || saved.view === 'table') ? saved.view : 'table';
                 if (saved.sort && saved.sort.key) sortState = saved.sort;
                 sideFilters.gender = saved.gender || '';
                 sideFilters.modality = saved.modality || '';

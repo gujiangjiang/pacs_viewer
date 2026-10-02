@@ -133,9 +133,20 @@ class PvApiController {
         PvAuth::requireLoginJson();
         pvw_csrf_check();
         $u = PvAuth::user();
-        $v = (string)pvw_input('clear_on_open') === '1' ? 1 : 0;
-        PvUserRepository::setClearOnOpen($u['id'], $v);
-        pvw_json(200, 'success', array('clear_on_open' => $v));
+        $out = array();
+        $clear = pvw_input('clear_on_open', null);
+        if ($clear !== null) {
+            $v = (string)$clear === '1' ? 1 : 0;
+            PvUserRepository::setClearOnOpen($u['id'], $v);
+            $out['clear_on_open'] = $v;
+        }
+        $view = pvw_input('search_view', null);
+        if ($view !== null && (string)$view !== '') {
+            $view = in_array((string)$view, array('table', 'list', 'card'), true) ? (string)$view : 'table';
+            PvUserRepository::setSearchView($u['id'], $view);
+            $out['search_view'] = $view;
+        }
+        pvw_json(200, 'success', $out);
     }
 
     /** 记录前端操作日志（读片 / 下载 / 阅读 DICOM 等） */

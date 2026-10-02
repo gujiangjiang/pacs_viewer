@@ -1,10 +1,10 @@
 /* assets/css/search.css — 检索页（左右分栏） */
 .pv-page-search .pv-main { max-width: 1320px; width: 100%; margin: 0 auto; }
 
-.pv-search-wrap { display: flex; gap: 14px; align-items: flex-start; }
+.pv-search-wrap { display: flex; gap: 14px; align-items: stretch; height: 100%; min-height: 0; }
 
 /* ---------- 左侧栏 ---------- */
-.pv-search-side { width: 300px; flex: 0 0 300px; padding: 16px; position: sticky; top: 12px; }
+.pv-search-side { width: 300px; flex: 0 0 300px; padding: 16px; overflow: auto; }
 .pv-search-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: #e2e8f0; margin-bottom: 14px; }
 .pv-search-title svg { width: 18px; height: 18px; }
 .pv-search-inputrow { display: flex; gap: 8px; }
@@ -27,13 +27,15 @@
 .pv-source .is-demo { color: #fbbf24; }
 
 /* ---------- 右侧 ---------- */
-.pv-search-main { flex: 1 1 auto; min-width: 0; }
-/* 工具栏固定不随列表滚动 */
+.pv-search-main { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+/* 工具栏固定在列表上方；列表在下方框内滚动，内容不会漏出 */
 .pv-search-toolbar {
-    position: sticky; top: 0; z-index: 4; height: 40px; box-sizing: border-box;
+    flex: 0 0 auto; height: 40px; box-sizing: border-box;
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
     margin-bottom: 10px; background: var(--pv-bg); border-bottom: 1px solid var(--pv-line);
 }
+/* 结果区：固定高度内滚动（含表头吸顶、横向滚动） */
+.pv-results { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .pv-view-toggle { display: inline-flex; border: 1px solid var(--pv-line2); border-radius: 8px; overflow: hidden; flex: 0 0 auto; }
 .pv-toggle-btn { border: 0; background: #0b0f17; color: var(--pv-txt2); padding: 5px 9px; cursor: pointer; display: inline-flex; align-items: center; }
 .pv-toggle-btn svg { width: 16px; height: 16px; }
@@ -50,7 +52,7 @@
 .pv-study { background: var(--pv-panel); border: 1px solid var(--pv-line); border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: all .13s;
     content-visibility: auto; contain-intrinsic-size: 220px; }
 .pv-study:hover { border-color: var(--pv-acc2); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.35); }
-.pv-study-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.pv-study-head { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
 .pv-study-name { font-size: 15px; font-weight: 700; color: #f1f5f9; }
 .pv-study-sex { font-size: 12px; color: var(--pv-txt2); }
 .pv-mod { margin-left: auto; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: rgba(14,165,233,.16); color: #7dd3fc; }
@@ -89,10 +91,9 @@
 .pv-study.selected { border-color: var(--pv-acc); box-shadow: 0 0 0 1px var(--pv-acc) inset; }
 
 /* 纯列表（表格，默认） */
-.pv-tbl-wrap { overflow-x: auto; border: 1px solid var(--pv-line); border-radius: 10px; }
-.pv-result-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-.pv-result-table th, .pv-result-table td { white-space: nowrap; padding: 8px 12px; border-bottom: 1px solid var(--pv-line); text-align: left; }
-.pv-result-table thead th { position: sticky; top: 40px; z-index: 3; background: #0b0f17; color: var(--pv-txt2); font-weight: 600; }
+.pv-result-table { width: 100%; min-width: max-content; border-collapse: separate; border-spacing: 0; font-size: 13.5px; }
+.pv-result-table th, .pv-result-table td { white-space: nowrap; padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--pv-line); }
+.pv-result-table thead th { position: sticky; top: 0; z-index: 3; background: #0b0f17; color: var(--pv-txt2); font-weight: 600; box-shadow: inset 0 -1px 0 var(--pv-line); }
 .pv-result-table th.sortable { cursor: pointer; user-select: none; }
 .pv-result-table th.sortable:hover { color: #e2e8f0; }
 .pv-result-table th.sortable.active { color: var(--pv-acc2); }
@@ -106,7 +107,8 @@
 .pv-empty-ico svg { width: 44px; height: 44px; opacity: .5; }
 
 @media (max-width: 900px) {
-    .pv-search-wrap { flex-direction: column; }
-    .pv-search-side { width: auto; flex: none; position: static; }
+    .pv-search-wrap { flex-direction: column; height: auto; }
+    .pv-search-side { width: auto; flex: none; overflow: visible; }
+    .pv-results { overflow: visible; }
     .pv-results.pv-results-card { grid-template-columns: 1fr; }
 }

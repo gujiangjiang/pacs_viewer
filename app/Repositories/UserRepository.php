@@ -76,6 +76,12 @@ class PvUserRepository {
         return PvDatabase::exec("UPDATE users SET clear_on_open=? WHERE id=?", array($value ? 1 : 0, (int)$id));
     }
 
+    /** 检索视图偏好：table / list / card（默认 table） */
+    public static function setSearchView($id, $value) {
+        $value = in_array($value, array('table', 'list', 'card'), true) ? $value : 'table';
+        return PvDatabase::exec("UPDATE users SET search_view=? WHERE id=?", array($value, (int)$id));
+    }
+
     public static function countAll() {
         return (int)PvDatabase::val("SELECT COUNT(*) FROM users");
     }

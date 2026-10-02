@@ -6,7 +6,7 @@ $active = 'search';
 $bodyClass = 'pv-page-search';
 $extraCss = array('search.css');
 $extraJs = array('search.js');
-$pageData = array('mode' => $mode, 'source' => isset($source) ? $source : null, 'flash' => isset($flash) ? $flash : '', 'clearOnOpen' => !empty($clearOnOpen) ? 1 : 0);
+$pageData = array('mode' => $mode, 'source' => isset($source) ? $source : null, 'flash' => isset($flash) ? $flash : '', 'clearOnOpen' => !empty($clearOnOpen) ? 1 : 0, 'searchView' => isset($searchView) ? $searchView : 'table');
 $pvSrc = isset($source) ? $source : array('label' => '未配置 PACS 接口', 'state' => 'unset', 'fhir' => false);
 ?>
 <div class="pv-search-wrap">

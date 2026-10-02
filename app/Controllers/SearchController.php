@@ -16,6 +16,7 @@ class PvSearchController {
             'source'  => PvStudyService::sourceInfo(),
             'isAdmin' => PvAuth::isAdmin(),
             'clearOnOpen' => !empty($u['clear_on_open']) ? 1 : 0,
+            'searchView' => (isset($u['search_view']) && in_array($u['search_view'], array('table', 'list', 'card'), true)) ? $u['search_view'] : 'table',
         ));
     }
 }
