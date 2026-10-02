@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '0.28.15');
+define('PV_VERSION', '0.28.16');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -254,7 +254,7 @@ function pvw_view_file($name) {
 }
 
 /**
- * 渲染「受外壳包裹」的页面（研究检索 / 阅片 / 管理 / 模拟服务器）。
+ * 渲染「受外壳包裹」的页面（患者查询 / 阅片 / 管理 / 模拟服务器）。
  * - 普通请求：输出完整 HTML（页头 + 主区 + 页脚）。
  * - AJAX 请求：输出 JSON 片段（html + css + js + data），由前端 spa.js 局部替换，
  *   地址栏保持不变。
