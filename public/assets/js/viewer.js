@@ -184,7 +184,7 @@
             ? '<span class="pv-report-status ' + stCls + '">' + esc(statusText) + '</span>' : '';
         var reportNo = (rep.report_no || '').trim() !== '' ? '<span class="pv-report-no">报告号 ' + esc(rep.report_no) + '</span>' : '';
         var corner = (reportNo !== '' || statusBadge !== '')
-            ? '<div class="pv-report-corner">' + reportNo + statusBadge + '</div>' : '';
+            ? '<div class="pv-report-corner">' + statusBadge + reportNo + '</div>' : '';
 
         var sec = function (title, val) {
             val = (val === undefined || val === null) ? '' : String(val).trim();

@@ -42,11 +42,12 @@
 .pv-report { font-size: 13px; color: #cbd5e1; }
 .pv-report-loading { padding: 48px 0; text-align: center; color: var(--pv-txt2); }
 .pv-report-doc { background: #0b0f17; border: 1px solid var(--pv-line); border-radius: 10px; overflow: hidden; }
-.pv-report-title { position: relative; text-align: center; padding: 16px 18px 12px; border-bottom: 1px dashed var(--pv-line2); }
-.pv-report-title h2 { margin: 4px 0 0; font-size: 18px; letter-spacing: 3px; color: #f1f5f9; }
-.pv-report-hosp { font-size: 13px; color: #94a3b8; letter-spacing: 1px; }
-.pv-report-corner { position: absolute; top: 14px; right: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-.pv-report-no { font-size: 11px; color: var(--pv-txt2); }
+.pv-report-title { position: relative; text-align: center; padding: 14px 18px 12px; border-bottom: 1px dashed var(--pv-line2); }
+.pv-report-hosp { font-size: 21px; line-height: 1; font-weight: 700; letter-spacing: 1px; color: #e2e8f0; }
+.pv-report-title h2 { margin: 7px 0 0; font-size: 16px; font-weight: 600; letter-spacing: 4px; color: #cbd5e1; }
+/* 右上角：状态在上、报告号在下；顶部与医院名称文字顶部齐平 */
+.pv-report-corner { position: absolute; top: 15px; right: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.pv-report-no { font-size: 11px; color: #94a3b8; }
 .pv-report-status { font-size: 11px; padding: 2px 9px; border-radius: 10px; }
 .pv-report-status.ok { background: rgba(16,185,129,.16); color: #34d399; }
 .pv-report-status.warn { background: rgba(245,158,11,.16); color: #fbbf24; }
