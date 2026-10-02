@@ -11,7 +11,7 @@
     var THUMB = 128;
 
     var THUMB_CACHE = {};                 // key -> ImageData（内存）
-    var LS_PREFIX = 'pvthumb:';
+    var LS_PREFIX = 'pvthumb2:';   // v2：缩略图窗值算法更新，作废旧缓存
     var LS_INDEX = 'pvthumb:__idx';
     var LS_MAX = 120;                     // 最多持久化 120 张缩略图
 
@@ -212,7 +212,9 @@
                 fetch(dsrc, { credentials: 'same-origin' }).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
                     var dec = window.PvDicom ? PvDicom.decode(buf) : null;
                     if (dec) {
-                        var ww = parseFloat(series.window_width) || 256, wl = parseFloat(series.window_center) || 128;
+                        // 与右侧窗格一致：序列无窗值时优先采用解码 DICOM 自带窗，避免缩略图过曝
+                        var ww = parseFloat(series.window_width) || (dec.windowWidth != null ? dec.windowWidth : 0) || (series.is_hu ? 400 : 256);
+                        var wl = parseFloat(series.window_center) || (dec.windowCenter != null ? dec.windowCenter : 0) || (series.is_hu ? 40 : 128);
                         var img = PvRender.decodeToImage(dec, THUMB, ww, wl, false);
                         THUMB_CACHE[key] = img;
                         lsSet(hk, encodeGray(img));
