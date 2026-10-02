@@ -121,11 +121,55 @@ class PvDicomWebController {
 
     /* ---------------- WADO-RS ---------------- */
 
+    /** 真实序列定义（来自 FHIR ImagingStudy.series），无则返回 null */
+    private static function realSeries($row) {
+        return (isset($row['series']) && is_array($row['series']) && $row['series']) ? $row['series'] : null;
+    }
+
+    /** 取 UID 末段数字 */
+    private static function lastUidInt($uid, $default = 0) {
+        $parts = explode('.', trim((string)$uid));
+        $last = preg_replace('/\D/', '', (string)end($parts));
+        return $last === '' ? (int)$default : (int)$last;
+    }
+
+    /** 在真实序列中匹配指定序列 UID（先精确、再按末段数字） */
+    private static function matchRealSeries($row, $seUid) {
+        $real = self::realSeries($row);
+        if (!$real) return null;
+        foreach ($real as $s) {
+            if ((string)(isset($s['series_id']) ? $s['series_id'] : '') === (string)$seUid) return $s;
+        }
+        $want = self::lastUidInt($seUid, 0);
+        if ($want > 0) {
+            foreach ($real as $s) {
+                if (self::lastUidInt(isset($s['series_id']) ? $s['series_id'] : '', 0) === $want) return $s;
+            }
+        }
+        return null;
+    }
+
     private static function series($studyUid) {
         $row = self::findRow($studyUid);
         if (!$row) self::jsonError(404, '未找到该检查');
-        $plan = PvMockDispatcher::seriesPlan(strtoupper($row['modality']), $row['description'], $row['study_uid']);
         $out = array();
+        $real = self::realSeries($row);
+        if ($real) {
+            foreach ($real as $s) {
+                $seUid = isset($s['series_id']) ? (string)$s['series_id'] : '';
+                if ($seUid === '') continue;
+                $mod = isset($s['modality']) && $s['modality'] !== '' ? (string)$s['modality'] : (string)$row['modality'];
+                $out[] = array(
+                    '0020000E' => array('vr' => 'UI', 'Value' => array($seUid)),
+                    '00080060' => array('vr' => 'CS', 'Value' => array(strtoupper($mod))),
+                    '0008103E' => array('vr' => 'LO', 'Value' => array((string)(isset($s['description']) ? $s['description'] : ''))),
+                    '00201209' => array('vr' => 'IS', 'Value' => array((string)max(0, (int)(isset($s['slice_count']) ? $s['slice_count'] : 0)))),
+                );
+            }
+            self::json($out);
+        }
+        // 回退：内置序列规划
+        $plan = PvMockDispatcher::seriesPlan(strtoupper($row['modality']), $row['description'], $row['study_uid']);
         foreach ($plan as $i => $s) {
             $seUid = PvMockDicomTagBuilder::deriveUid($row['study_uid'], array($i + 1));
             $out[] = array(
@@ -141,6 +185,43 @@ class PvDicomWebController {
     private static function instances($studyUid, $seUid) {
         $row = self::findRow($studyUid);
         if (!$row) self::jsonError(404, '未找到该检查');
+        // 优先：真实序列（与区域 PACS / FHIR 一致）
+        $real = self::matchRealSeries($row, $seUid);
+        if ($real) {
+            $seUidReal = (string)(isset($real['series_id']) ? $real['series_id'] : $seUid);
+            $seriesNo = max(1, self::lastUidInt($seUidReal, 1));
+            $mod = isset($real['modality']) && $real['modality'] !== '' ? (string)$real['modality'] : (string)$row['modality'];
+            $count = max(0, (int)(isset($real['slice_count']) ? $real['slice_count'] : 0));
+            $gen = PvMockDispatcher::generatorForSeriesIndex(strtoupper($row['modality']), $row['description'], $row['study_uid'], $seriesNo - 1);
+            $dim = $gen->getDimensions();
+            $ps = $gen->getPixelSpacing();
+            $win = $gen->getRecommendedWindow();
+            $tags = $gen->getModalitySpecificTags();
+            $out = array();
+            for ($i = 1; $i <= $count; $i++) {
+                $out[] = array(
+                    '00080018' => array('vr' => 'UI', 'Value' => array($seUidReal . '.' . $i)),
+                    '0020000E' => array('vr' => 'UI', 'Value' => array($seUidReal)),
+                    '00200013' => array('vr' => 'IS', 'Value' => array((string)$i)),
+                    '00280008' => array('vr' => 'IS', 'Value' => array('1')),
+                    '00080060' => array('vr' => 'CS', 'Value' => array(strtoupper($mod))),
+                    '00280010' => array('vr' => 'US', 'Value' => array((int)$dim['rows'])),
+                    '00280011' => array('vr' => 'US', 'Value' => array((int)$dim['columns'])),
+                    '00280100' => array('vr' => 'US', 'Value' => array((int)$dim['bits_allocated'])),
+                    '00280101' => array('vr' => 'US', 'Value' => array((int)$dim['bits_stored'])),
+                    '00280103' => array('vr' => 'US', 'Value' => array((int)$dim['pixel_representation'])),
+                    '00281050' => array('vr' => 'DS', 'Value' => array((string)$win['center'])),
+                    '00281051' => array('vr' => 'DS', 'Value' => array((string)$win['width'])),
+                    '00281052' => array('vr' => 'DS', 'Value' => array((string)(isset($tags['rescale_intercept']) ? $tags['rescale_intercept'] : 0))),
+                    '00281053' => array('vr' => 'DS', 'Value' => array((string)(isset($tags['rescale_slope']) ? $tags['rescale_slope'] : 1))),
+                    '00280030' => array('vr' => 'DS', 'Value' => array((string)$ps[0])),
+                    '00180050' => array('vr' => 'DS', 'Value' => array((string)$gen->getSliceThickness())),
+                    '00200037' => array('vr' => 'DS', 'Value' => array(self::iopFor($gen->getOrientation()))),
+                );
+            }
+            self::json($out);
+        }
+        // 回退：内置序列规划
         $idx = self::seriesIndexByUid($row, $seUid);
         if ($idx < 0) self::jsonError(404, '未找到该序列');
         $plan = PvMockDispatcher::seriesPlan(strtoupper($row['modality']), $row['description'], $row['study_uid']);
@@ -158,7 +239,6 @@ class PvDicomWebController {
                 '00200013' => array('vr' => 'IS', 'Value' => array((string)$i)),
                 '00280008' => array('vr' => 'IS', 'Value' => array((string)$nf)),
                 '00080060' => array('vr' => 'CS', 'Value' => array(strtoupper($row['modality']))),
-                // 像素与窗宽窗位参数（供前端正确渲染）
                 '00280010' => array('vr' => 'US', 'Value' => array((int)$s['rows'])),
                 '00280011' => array('vr' => 'US', 'Value' => array((int)$s['columns'])),
                 '00280100' => array('vr' => 'US', 'Value' => array((int)$s['bits_allocated'])),
@@ -179,12 +259,8 @@ class PvDicomWebController {
     private static function instance($studyUid, $seUid, $iuid) {
         $row = self::findRow($studyUid);
         if (!$row) self::jsonError(404, '未找到该检查');
-        $idx = self::seriesIndexByUid($row, $seUid);
-        if ($idx < 0) self::jsonError(404, '未找到该序列');
-        $seriesUid = PvMockDicomTagBuilder::deriveUid($row['study_uid'], array($idx + 1));
-        $inst = self::instanceByUid($seriesUid, $iuid);
         try {
-            $r = PvMockServer::wado(array('uid' => $row['study_uid'], 'series' => $idx + 1, 'instance' => $inst));
+            $r = PvMockServer::wadoByUids($studyUid, $seUid, $iuid);
         } catch (Exception $e) {
             self::jsonError(404, $e->getMessage());
         }
@@ -201,10 +277,8 @@ class PvDicomWebController {
     private static function rendered($studyUid, $seUid) {
         $row = self::findRow($studyUid);
         if (!$row) self::jsonError(404, '未找到该检查');
-        $idx = self::seriesIndexByUid($row, $seUid);
-        if ($idx < 0) self::jsonError(404, '未找到该序列');
         try {
-            $r = PvMockServer::thumbnail(array('uid' => $row['study_uid'], 'series' => $idx + 1));
+            $r = PvMockServer::thumbnailByUids($studyUid, $seUid);
         } catch (Exception $e) {
             self::jsonError(404, $e->getMessage());
         }

@@ -213,4 +213,17 @@ class PvMockDispatcher {
             'weight' => $s['weight'] ? $s['weight'] : 'T1',
         ));
     }
+
+    /**
+     * 按「序列序号」生成任意序列的生成器，不依赖内置系列规划数量。
+     * 用于对齐真实 DICOM 序列 UID（如区域 PACS / FHIR 提供的序列）。
+     */
+    public static function generatorForSeriesIndex($modality, $description, $studyUid, $seriesIndex, $bodyPart = '') {
+        $modality = strtoupper((string)$modality);
+        $body = self::bodyKey($description, $bodyPart, $modality);
+        $idx = max(0, (int)$seriesIndex);
+        $weight = ($modality === 'MR') ? ((($idx % 2) === 1) ? 'T2' : 'T1') : 'T1';
+        $seed = 'src|' . $studyUid . '|s' . ($idx + 1);
+        return self::createGenerator(array('modality' => $modality, 'body_key' => $body, 'seed' => $seed, 'weight' => $weight));
+    }
 }

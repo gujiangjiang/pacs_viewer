@@ -557,8 +557,12 @@ class PvFhirClient {
         $desc = isset($im['description']) ? (string)$im['description'] : '';
         $seriesCount = isset($im['numberOfSeries']) ? (int)$im['numberOfSeries'] : 0;
         if ($seriesCount <= 0) $seriesCount = in_array($modality, array('CT', 'MR'), true) ? 3 : 1;
+        // 优先使用 FHIR ImagingStudy.identifier 的真实 DICOM StudyInstanceUID（urn:dicom:uid），
+        // 与门诊/区域 PACS 保持一致；缺失时回退内部 id（fhir-{id}）。
+        $realUid = self::dicomStudyUid($im);
+        $studyUid = $realUid !== '' ? $realUid : ('fhir-' . $uid);
         return array(
-            'study_uid'     => 'fhir-' . $uid,
+            'study_uid'     => $studyUid,
             'patient_id'    => $pid,
             'name'          => $name,
             'gender'        => $gender,
@@ -575,6 +579,7 @@ class PvFhirClient {
             'apply_doctor'  => '',
             'status'        => 'completed',
             'series_count'  => $seriesCount,
+            'series'        => self::seriesFromImagingStudy($im),   // 真实序列（UID/描述/张数），供模拟 DICOMweb 对齐
         );
     }
 

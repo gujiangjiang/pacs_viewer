@@ -189,6 +189,55 @@ class PvMockServer {
         return array('binary' => $binary, 'filename' => $base, 'content_type' => 'application/dicom');
     }
 
+    /** 取 UID 末段数字（如 ...1.2 → 2），无则返回默认值 */
+    private static function lastUidInt($uid, $default = 1) {
+        $parts = explode('.', trim((string)$uid));
+        $last = preg_replace('/\D/', '', (string)end($parts));
+        return $last === '' ? (int)$default : (int)$last;
+    }
+
+    /**
+     * 按真实序列/SOP UID 生成标准 DICOM（不依赖内置系列规划数量），
+     * 用于与区域 PACS / FHIR 发布的真实 UID 对齐。
+     */
+    public static function wadoByUids($studyUid, $seriesUid, $instanceUid) {
+        $row = self::findStudyRow($studyUid);
+        if (!$row) throw new RuntimeException('未找到该检查');
+        $modality = strtoupper($row['modality']);
+        $desc = isset($row['description']) ? (string)$row['description'] : '';
+        $seriesNo = self::lastUidInt($seriesUid, 1);
+        $instNo = self::lastUidInt($instanceUid, 1);
+        $gen = PvMockDispatcher::generatorForSeriesIndex($modality, $desc, $studyUid, $seriesNo - 1);
+        $series = array('description' => 'Series ' . $seriesNo, 'orientation' => $gen->getOrientation());
+        if (!empty($row['series']) && is_array($row['series'])) {
+            foreach ($row['series'] as $s) {
+                $sid = isset($s['series_id']) ? (string)$s['series_id'] : '';
+                if ($sid === (string)$seriesUid || self::lastUidInt($sid, 0) === $seriesNo) {
+                    if (isset($s['description'])) $series['description'] = (string)$s['description'];
+                    if (!empty($s['orientation'])) $series['orientation'] = (string)$s['orientation'];
+                    break;
+                }
+            }
+        }
+        $pixels = $gen->generateFrame(max(0, $instNo - 1));
+        $binary = self::buildDicom($row, $series, $seriesNo - 1, $instNo, $gen, $pixels, 1, $instNo - 1, $seriesUid, $instanceUid);
+        $base = ($row['patient_id'] ? $row['patient_id'] : 'patient') . '_s' . $seriesNo . '_i' . $instNo . '.dcm';
+        return array('binary' => $binary, 'content_type' => 'application/dicom', 'filename' => $base);
+    }
+
+    /** 按真实序列 UID 生成缩略图（PNG） */
+    public static function thumbnailByUids($studyUid, $seriesUid) {
+        $row = self::findStudyRow($studyUid);
+        if (!$row) throw new RuntimeException('未找到该检查');
+        $modality = strtoupper($row['modality']);
+        $desc = isset($row['description']) ? (string)$row['description'] : '';
+        $seriesNo = self::lastUidInt($seriesUid, 1);
+        $gen = PvMockDispatcher::generatorForSeriesIndex($modality, $desc, $studyUid, $seriesNo - 1);
+        $size = 128;
+        $png = self::grayToPng($gen->generateThumbnailGray($size), $size);
+        return array('binary' => $png, 'content_type' => 'image/png');
+    }
+
     /**
      * 生成序列缩略图（PNG）：以低分辨率直接采样，避免生成整幅像素，
      * 供侧栏缩略图使用，首屏更快、流量更小。
@@ -266,12 +315,12 @@ class PvMockServer {
     }
 
     /** 组装单实例标准 DICOM 数据集（支持原生多帧） */
-    private static function buildDicom($row, array $series, $seriesIndex, $instance, PvMockAbstractGenerator $gen, $pixels, $frameCount = 1, $startFrame = 0) {
+    private static function buildDicom($row, array $series, $seriesIndex, $instance, PvMockAbstractGenerator $gen, $pixels, $frameCount = 1, $startFrame = 0, $seriesUidOverride = null, $sopUidOverride = null) {
         $modality = strtoupper($row['modality']);
         $studyUid = $row['study_uid'];
         $seriesNo = $seriesIndex + 1;
-        $seriesUid = PvMockDicomTagBuilder::deriveUid($studyUid, array($seriesNo));
-        $sopUid = PvMockDicomTagBuilder::deriveUid($seriesUid, array($instance));
+        $seriesUid = $seriesUidOverride !== null ? (string)$seriesUidOverride : PvMockDicomTagBuilder::deriveUid($studyUid, array($seriesNo));
+        $sopUid = $sopUidOverride !== null ? (string)$sopUidOverride : PvMockDicomTagBuilder::deriveUid($seriesUid, array($instance));
 
         list($ipp, $iop, $sliceLoc) = self::spatial($series['orientation'], $startFrame + 1, $gen->getSliceThickness());
 

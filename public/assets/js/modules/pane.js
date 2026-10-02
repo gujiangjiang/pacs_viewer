@@ -175,6 +175,13 @@
                 self._instances[ikey] = { status: 'ok', dec: res.dec };
                 self._frames[fkey] = { status: 'ok', dec: res.dec, raw: res.raw };
                 self._trimFrames(); self._trimInstances();
+                // 序列未提供窗宽窗位时，采用解码得到的 DICOM 窗（如对接仅返回元数据/代理取像的 PACS）
+                var serN = self.curSeries();
+                if (serN && !serN.window_width && !self._winFromDicom && res.dec && res.dec.windowWidth) {
+                    self._winFromDicom = true;
+                    self.st.ww = parseFloat(res.dec.windowWidth) || self.st.ww;
+                    self.st.wl = parseFloat(res.dec.windowCenter) || self.st.wl;
+                }
                 self.render();
             })
             .catch(function (err) {
@@ -559,6 +566,7 @@
             }
         } else { this.st.ww = 256; this.st.wl = 128; }
         this.st.isHU = this.frameIsHU();
+        this._winFromDicom = false;   // 序列未带窗值时，允许采用解码得到的 DICOM 窗（首次）
     };
     PvPane.prototype.fit = function () {
         this.st.zoom = clamp(Math.min(this.cssW / BASE, this.cssH / BASE) * 0.92, 0.05, 16);
