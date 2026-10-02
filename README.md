@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v0.28.22-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v0.28.23-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -28,6 +28,9 @@
   （如阅片器 `?r=viewer&uid=...`）仍可整页进入，阅片器可一键复制直链。
   研究检索 / 影像查看的页面片段在**前端缓存**，标签切换为**纯前端操作**（零后端
   请求、零等待），高负载下也不卡顿；影像数据仍由各页按需经接口获取。
+- **链接访客阅片**：`?r=viewer&uid=<StudyInstanceUID>` 直链以**临时访客**身份打开——
+  免登录、不关联用户、不写数据库，仅保留「影像查看」入口与只读影像访问，无关闭 / 搜索 /
+  管理功能；适合外呼系统 iframe 嵌入或分享单次检查阅片（宿主可经 `postMessage` 远程驱动工具）。
 - **PWA / 离线**：可「安装到桌面 / 主屏幕」，Service Worker 静态资源缓存优先 +
   后台更新、页面离线回退缓存、接口实时直连；**影像缩略图与 DICOM 帧**按 cache-first
   缓存（近似 LRU），二次打开近乎即时、可离线查看已缓存帧；图标由**代码绘制**
