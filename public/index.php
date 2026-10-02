@@ -89,7 +89,11 @@ $pvGuestCtx = PvViewerController::isLink() || PvGuest::active();
 define('PV_GUEST', $pvGuestCtx);
 if ($pvGuestCtx) {
     $pvGuestAllow = array('viewer', 'api/study', 'api/report', 'wadoprx', 'dicom', 'thumb', 'file', 'icon', 'manifest', 'sw');
-    if (!in_array($r, $pvGuestAllow, true)) {
+    // 登录 / 站点根 / 安装：不做访客化——清除残留访客令牌并放行到正常登录流程，
+    // 避免「已登录用户退出后残留令牌把登录页劫持成访客阅片」。
+    if ($r === 'login' || $r === '' || $r === 'install') {
+        PvGuest::clear();
+    } elseif (!in_array($r, $pvGuestAllow, true)) {
         if (strpos($r, 'api/') === 0 || $r === 'upload' || $r === 'upload/delete') {
             pvw_json(403, '访客阅片模式仅支持只读影像访问');
         }
