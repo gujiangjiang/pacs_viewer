@@ -8,6 +8,10 @@
         </div>
         <div class="pv-logscroll" id="pvLogScroll" data-total="<?php echo (int)$logCount; ?>">
         <table class="pv-table">
+            <colgroup>
+                <col style="width:15%"><col style="width:10%"><col style="width:8%">
+                <col style="width:34%"><col style="width:13%"><col style="width:8%"><col style="width:12%">
+            </colgroup>
             <thead><tr><th>时间</th><th>账号</th><th>操作</th><th>详情</th><th>关键词</th><th>结果数</th><th>IP</th></tr></thead>
             <tbody id="pvLogBody">
             <?php if (!$logs) { ?>
