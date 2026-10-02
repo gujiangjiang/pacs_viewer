@@ -28,7 +28,12 @@
 
 /* ---------- 右侧 ---------- */
 .pv-search-main { flex: 1 1 auto; min-width: 0; }
-.pv-search-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+/* 工具栏固定不随列表滚动 */
+.pv-search-toolbar {
+    position: sticky; top: 0; z-index: 4; height: 40px; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin-bottom: 10px; background: var(--pv-bg); border-bottom: 1px solid var(--pv-line);
+}
 .pv-view-toggle { display: inline-flex; border: 1px solid var(--pv-line2); border-radius: 8px; overflow: hidden; flex: 0 0 auto; }
 .pv-toggle-btn { border: 0; background: #0b0f17; color: var(--pv-txt2); padding: 5px 9px; cursor: pointer; display: inline-flex; align-items: center; }
 .pv-toggle-btn svg { width: 16px; height: 16px; }
@@ -77,6 +82,25 @@
 .pv-src-tag { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 5px; background: rgba(16,185,129,.16); color: #6ee7b7; }
 .pv-study.is-noimg { opacity: .82; }
 .pv-study.is-noimg .pv-study-open { color: var(--pv-txt2); }
+
+/* 卡片头右上角：状态在上、类型在下 */
+.pv-study-tags { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.pv-study-tags .pv-mod { margin-left: 0; }
+.pv-study.selected { border-color: var(--pv-acc); box-shadow: 0 0 0 1px var(--pv-acc) inset; }
+
+/* 纯列表（表格，默认） */
+.pv-tbl-wrap { overflow-x: auto; border: 1px solid var(--pv-line); border-radius: 10px; }
+.pv-result-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.pv-result-table th, .pv-result-table td { white-space: nowrap; padding: 8px 12px; border-bottom: 1px solid var(--pv-line); text-align: left; }
+.pv-result-table thead th { position: sticky; top: 40px; z-index: 3; background: #0b0f17; color: var(--pv-txt2); font-weight: 600; }
+.pv-result-table th.sortable { cursor: pointer; user-select: none; }
+.pv-result-table th.sortable:hover { color: #e2e8f0; }
+.pv-result-table th.sortable.active { color: var(--pv-acc2); }
+.pv-result-table tbody tr { cursor: pointer; }
+.pv-result-table tbody tr:hover { background: #0e1524; }
+.pv-result-table tbody tr.selected { background: rgba(14,165,233,.12); }
+.pv-result-table .pv-study-status { font-size: 11px; }
+.pv-results-table .pv-more { text-align: center; padding: 14px; color: var(--pv-txt2); font-size: 12px; }
 
 /* 空态图标 */
 .pv-empty-ico svg { width: 44px; height: 44px; opacity: .5; }

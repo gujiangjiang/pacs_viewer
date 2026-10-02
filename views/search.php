@@ -1,7 +1,7 @@
 <?php
-/** views/search.php — 研究检索主页（片段，左右分栏） */
+/** views/search.php — 患者查询主页（片段，左右分栏） */
 $page = 'search';
-$pageTitle = '研究检索';
+$pageTitle = '患者查询';
 $active = 'search';
 $bodyClass = 'pv-page-search';
 $extraCss = array('search.css');
@@ -11,7 +11,7 @@ $pvSrc = isset($source) ? $source : array('label' => '未配置 PACS 接口', 's
 ?>
 <div class="pv-search-wrap">
     <aside class="pv-search-side pv-card">
-        <div class="pv-search-title"><?php echo pvw_icon('search'); ?> 研究检索</div>
+        <div class="pv-search-title"><?php echo pvw_icon('search'); ?> 患者查询</div>
 
         <form id="pvSearchForm" onsubmit="return false;">
             <div class="pv-search-inputrow">
@@ -71,7 +71,8 @@ $pvSrc = isset($source) ? $source : array('label' => '未配置 PACS 接口', 's
         <div class="pv-search-toolbar">
             <div id="pvResultMeta" class="pv-result-meta"></div>
             <div class="pv-view-toggle" id="pvViewToggle">
-                <button type="button" class="pv-toggle-btn active" data-view="list" title="列表视图"><?php echo pvw_icon('view-list'); ?></button>
+                <button type="button" class="pv-toggle-btn active" data-view="table" title="纯列表（表格）"><?php echo pvw_icon('view-table'); ?></button>
+                <button type="button" class="pv-toggle-btn" data-view="list" title="紧凑列表"><?php echo pvw_icon('view-list'); ?></button>
                 <button type="button" class="pv-toggle-btn" data-view="card" title="卡片视图"><?php echo pvw_icon('view-card'); ?></button>
             </div>
         </div>

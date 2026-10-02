@@ -90,6 +90,11 @@ class PvDicomWebClient {
         if (strlen($df) >= 8) {
             $q['StudyDate'] = (strlen($dt) >= 8 && $dt !== $df) ? ($df . '-' . $dt) : $df;
         }
+        $sort = trim((string)(isset($filters['sort']) ? $filters['sort'] : ''));
+        if ($sort !== '') {
+            $q['orderby'] = $sort;
+            $q['order'] = (strtolower((string)(isset($filters['dir']) ? $filters['dir'] : '')) === 'asc') ? 'asc' : 'desc';
+        }
         if ((int)$limit > 0) { $q['limit'] = (int)$limit; $q['offset'] = max(0, (int)$offset); }
         $arr = self::getJson('/studies', $q);
         $list = array();

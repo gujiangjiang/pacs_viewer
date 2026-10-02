@@ -161,7 +161,9 @@
         var self = this;
         var done = function (rep) { bodyEl.innerHTML = self.reportHtml(pInfo, s, rep || { available: false }); };
         if (window.PvApi && PvApi.report) {
-            PvApi.report(uid, pInfo.patient_id || '').then(function (j) {
+            PvApi.report(uid, pInfo.patient_id || '', {
+                modality: s.modality || '', study_date: s.study_date || '', title: s.description || ''
+            }).then(function (j) {
                 done((j && j.code === 200 && j.data) ? j.data : null);
             }).catch(function () { done(null); });
         } else { done(null); }
@@ -556,7 +558,7 @@
         var go = function () { self.closeAll(); try { sessionStorage.removeItem('pacs_search_v1'); } catch (e) {} if (window.PvNav) window.PvNav.go('search'); };
         if (!this.ws.studies.length) { go(); return; }
         if (window.PvModal) {
-            PvModal.confirm({ title: '关闭影像查看', message: '关闭将清空全部已打开的检查与检索记录，并返回研究检索，确认关闭？', okText: '关闭', danger: true })
+            PvModal.confirm({ title: '关闭影像查看', message: '关闭将清空全部已打开的检查与检索记录，并返回患者查询，确认关闭？', okText: '关闭', danger: true })
                 .then(function (ok) { if (ok) go(); });
         } else go();
     };

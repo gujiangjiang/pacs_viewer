@@ -314,7 +314,7 @@
             var isActive = this === this.viewer.activePane();
             var emptyWs = !this.viewer.ws.studies.length;
             this.placeholder((emptyWs && isActive)
-                ? '请在「研究检索」中选择检查\n或点击顶部「影像查看」查看已打开的检查'
+                ? '请在「患者查询」中选择检查\n或点击顶部「影像查看」查看已打开的检查'
                 : '空视图\n从左侧序列载入', emptyWs && isActive);
         }
         if (winCanvas) {
@@ -548,9 +548,15 @@
             this.st.ww = parseFloat(ser.window_width) || 400;
             this.st.wl = parseFloat(ser.window_center) || 40;
         } else if (ser && ser.is_hu) {
-            var m = (s.modality || '').toUpperCase();
-            var pre = (m === 'DR' || m === 'MG') ? PRESETS.full : PRESETS.soft;
-            this.st.ww = pre.ww; this.st.wl = pre.wl;
+            if (s.default_ww) {
+                // 序列未提供窗宽窗位时，采用管理员配置的默认窗
+                this.st.ww = parseFloat(s.default_ww) || PRESETS.soft.ww;
+                this.st.wl = parseFloat(s.default_wl) || PRESETS.soft.wl;
+            } else {
+                var m = (s.modality || '').toUpperCase();
+                var pre = (m === 'DR' || m === 'MG') ? PRESETS.full : PRESETS.soft;
+                this.st.ww = pre.ww; this.st.wl = pre.wl;
+            }
         } else { this.st.ww = 256; this.st.wl = 128; }
         this.st.isHU = this.frameIsHU();
     };

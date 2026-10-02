@@ -101,7 +101,7 @@ $pageData = array(
         <button type="button" class="pv-bigbtn" data-pv-act="about" title="关于本软件">
             <span class="pv-bi"><?php echo pvw_icon('about'); ?></span><span class="pv-bl">关于</span></button>
         <span class="pv-spacer"></span>
-        <button type="button" class="pv-bigbtn pv-bigbtn-exit" data-pv-act="back" title="关闭阅片，返回研究检索">
+        <button type="button" class="pv-bigbtn pv-bigbtn-exit" data-pv-act="back" title="关闭阅片，返回患者查询">
             <span class="pv-bi"><?php echo pvw_icon('close'); ?></span><span class="pv-bl">关闭</span></button>
     </div>
     <div class="pv-vw-body">

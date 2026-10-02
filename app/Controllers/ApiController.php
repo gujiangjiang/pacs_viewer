@@ -24,6 +24,8 @@ class PvApiController {
             'modality'  => (string)pvw_input('modality'),
             'date_from' => (string)pvw_input('date_from'),
             'date_to'   => (string)pvw_input('date_to'),
+            'sort'      => (string)pvw_input('sort'),
+            'dir'       => (string)pvw_input('dir'),
         );
         // 日期区间拦截：起始不得晚于截止（允许相同）
         if ($filters['date_from'] !== '' && $filters['date_to'] !== '' && $filters['date_from'] > $filters['date_to']) {
@@ -83,13 +85,19 @@ class PvApiController {
         $uid = (string)pvw_input('uid');
         $patient = (string)pvw_input('patient');
         if ($uid === '' && $patient === '') pvw_json(400, '缺少检查标识');
-        $ck = 'report:' . self::sourceFingerprint() . ':' . $uid . ':' . $patient;
+        $ck = 'report:' . self::sourceFingerprint() . ':' . $uid . ':' . $patient . ':' . (string)pvw_input('modality') . ':' . (string)pvw_input('study_date');
         $data = PvCache::get($ck);
         if ($data === null) {
             $data = array('available' => false);
             if (PvFhirClient::isConfigured()) {
                 try {
-                    $r = PvFhirClient::diagnosticReport($uid);
+                    $r = PvFhirClient::diagnosticReport(
+                        $uid,
+                        $patient,
+                        (string)pvw_input('modality'),
+                        (string)pvw_input('study_date'),
+                        (string)pvw_input('title')
+                    );
                     if (is_array($r)) $data = $r;
                 } catch (Exception $e) {
                     /* 报告获取失败按「暂无报告」处理 */

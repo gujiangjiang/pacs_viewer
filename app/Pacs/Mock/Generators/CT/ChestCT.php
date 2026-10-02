@@ -18,16 +18,17 @@ class PvMockChestCT extends PvMockAbstractGenerator {
             'seriesDescription' => 'Axial 5.0mm', 'frameCount' => 40,
             'sliceThickness' => 5.0, 'spacingBetweenSlices' => 5.0,
             'rowSpacing' => 0.72, 'colSpacing' => 0.72,
-            'windowCenter' => -600.0, 'windowWidth' => 1500.0,   // 肺窗
+            // 默认纵隔/软组织窗（与其他 CT 一致）；肺窗作为第二预设可选
+            'windowCenter' => 40.0, 'windowWidth' => 350.0,
             'noise' => $this->seed . '|chestct',
         ));
     }
 
-    /** 肺窗 + 纵隔窗双预设 */
+    /** 纵隔/软组织窗（默认）+ 肺窗（预设） */
     public function getModalitySpecificTags() {
         $tags = parent::getModalitySpecificTags();
-        $tags['window_center'] = array(-600, 40);
-        $tags['window_width'] = array(1500, 350);
+        $tags['window_center'] = array(40, -600);
+        $tags['window_width'] = array(350, 1500);
         return $tags;
     }
 

@@ -53,13 +53,20 @@
                 if (opts.modality) p.modality = opts.modality;
                 if (opts.date_from) p.date_from = opts.date_from;
                 if (opts.date_to) p.date_to = opts.date_to;
+                if (opts.sort) { p.sort = opts.sort; p.dir = opts.dir || 'desc'; }
             }
             return get('search', p);
         },
         facets: function () { return get('facets', {}); },
         study:  study,
         /** 调阅影像报告（FHIR DiagnosticReport）；无报告返回 { available:false } */
-        report: function (uid, patient) { return get('report', { uid: uid, patient: patient || '' }); },
+        report: function (uid, patient, opts) {
+            opts = opts || {};
+            return get('report', {
+                uid: uid, patient: patient || '',
+                modality: opts.modality || '', study_date: opts.study_date || '', title: opts.title || ''
+            });
+        },
         ping:   function () { return get('ping', {}); },
         /** 记录操作日志（读片 / 下载 / 阅读 DICOM），失败静默 */
         log: function (action, detail) {

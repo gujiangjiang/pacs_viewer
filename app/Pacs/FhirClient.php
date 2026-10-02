@@ -249,22 +249,69 @@ class PvFhirClient {
      * @param string $imagingStudyUid 检查标识（可为 fhir-imagingstudy-N、imagingstudy-N 或裸 N）
      * @return array|null 归一化报告结构；未配置 FHIR 或无报告返回 null
      */
-    public static function diagnosticReport($imagingStudyUid) {
+    public static function diagnosticReport($imagingStudyUid, $patientNo = '', $modality = '', $studyDate = '', $title = '') {
         self::$lastError = '';
         if (!self::isConfigured()) return null;
+        // ① 优先按 ImagingStudy 引用精确取报告
         $ref = self::imagingStudyRef($imagingStudyUid);
-        if ($ref === '') return null;
+        if ($ref !== '') {
+            try {
+                $b = self::getJson(self::base() . '/DiagnosticReport?' . http_build_query(array('imagingStudy' => $ref, '_count' => 1)));
+                $r = self::firstResource($b, 'DiagnosticReport');
+                if ($r) return self::mapReport($r);
+            } catch (Exception $e) {
+                self::note($e);
+            }
+        }
+        // ② 回退：按患者匹配（同一天优先，其次检查项目/模态包含），解决「打开的是真实 UID 而非 fhir-imagingstudy-N」时取不到报告
+        $pno = trim((string)$patientNo);
+        if ($pno === '') return null;
+        if (strpos($pno, 'patient-') === 0) $pno = substr($pno, 8);
         try {
-            $b = self::getJson(self::base() . '/DiagnosticReport?' . http_build_query(array('imagingStudy' => $ref, '_count' => 1)));
+            $b = self::getJson(self::base() . '/DiagnosticReport?' . http_build_query(array('patient' => $pno, '_count' => 50)));
         } catch (Exception $e) {
             self::note($e);
             return null;
         }
-        if (!is_array($b) || empty($b['entry'])) return null;
-        $r = isset($b['entry'][0]['resource']) ? $b['entry'][0]['resource'] : null;
-        if (!is_array($r)) return null;
-        if (isset($r['resourceType']) && $r['resourceType'] !== 'DiagnosticReport') return null;
-        return self::mapReport($r);
+        $list = self::bundleResources($b, 'DiagnosticReport');
+        if (!$list) return null;
+        $wantDate = preg_replace('/\D/', '', (string)$studyDate);
+        $wantDate = strlen($wantDate) >= 8 ? substr($wantDate, 0, 8) : '';
+        $wantTitle = trim((string)$title);
+        $best = null; $bestScore = -1;
+        foreach ($list as $r) {
+            $score = 0;
+            $d = preg_replace('/\D/', '', (string)(isset($r['effectiveDateTime']) ? $r['effectiveDateTime'] : ''));
+            $d = strlen($d) >= 8 ? substr($d, 0, 8) : '';
+            if ($wantDate !== '' && $d === $wantDate) $score += 2;
+            $codeText = isset($r['code']['text']) ? (string)$r['code']['text'] : '';
+            if ($wantTitle !== '' && $codeText !== '' && (mb_stripos($codeText, $wantTitle, 0, 'UTF-8') !== false || mb_stripos($wantTitle, $codeText, 0, 'UTF-8') !== false)) $score += 1;
+            if ($score > $bestScore) { $bestScore = $score; $best = $r; }
+        }
+        return $best ? self::mapReport($best) : null;
+    }
+
+    /** Bundle 中首个指定类型资源 */
+    private static function firstResource($b, $type) {
+        $list = self::bundleResources($b, $type);
+        return $list ? $list[0] : null;
+    }
+
+    /** Bundle（或直接资源）→ 资源数组 */
+    private static function bundleResources($b, $type) {
+        $out = array();
+        if (!is_array($b)) return $out;
+        if (isset($b['entry']) && is_array($b['entry'])) {
+            foreach ($b['entry'] as $e) {
+                if (!empty($e['resource']) && is_array($e['resource'])) {
+                    $rt = isset($e['resource']['resourceType']) ? $e['resource']['resourceType'] : '';
+                    if ($rt === '' || $rt === $type) $out[] = $e['resource'];
+                }
+            }
+        } elseif (isset($b['resourceType']) && $b['resourceType'] === $type) {
+            $out[] = $b;
+        }
+        return $out;
     }
 
     /** 检查标识 → ImagingStudy 引用（ImagingStudy/imagingstudy-N） */

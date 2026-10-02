@@ -55,12 +55,18 @@ class PvDicomWebController {
         $offset = max(0, (int)pvw_input('offset', 0));
 
         $rows = PvMockServer::rows('');
-        // 排序：检查时间倒序（最新检查在最前）
-        usort($rows, function ($a, $b) {
-            $ta = isset($a['study_date']) ? (string)$a['study_date'] : '';
-            $tb = isset($b['study_date']) ? (string)$b['study_date'] : '';
-            if ($ta === $tb) return 0;
-            return ($ta < $tb) ? 1 : -1;
+        // 排序：默认按检查时间倒序；支持 orderby/order 自定义排序（供列表表头点击）
+        $orderby = trim((string)pvw_input('orderby'));
+        $order = strtolower(trim((string)pvw_input('order')));
+        $allowed = array('name', 'gender', 'birth_date', 'patient_id', 'outpatient_no', 'accession_no', 'study_date', 'modality', 'description', 'station_name');
+        if ($orderby === '' || !in_array($orderby, $allowed, true)) $orderby = 'study_date';
+        $desc = ($order !== 'asc');   // 默认降序
+        usort($rows, function ($a, $b) use ($orderby, $desc) {
+            $va = isset($a[$orderby]) ? (string)$a[$orderby] : '';
+            $vb = isset($b[$orderby]) ? (string)$b[$orderby] : '';
+            if ($va === $vb) return 0;
+            $cmp = ($va < $vb) ? -1 : 1;
+            return $desc ? -$cmp : $cmp;
         });
         $modList = array();
         if ($mods !== '') {
