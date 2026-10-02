@@ -56,11 +56,17 @@ class PvDicomWebClient {
         return $j;
     }
 
-    /** 连通性测试：拉取 studies（limit=1） */
+    /** 连通性测试：拉取 studies（limit=1），并返回机构名称（InstitutionName） */
     public static function ping() {
         try {
             $arr = self::getJson('/studies', array('limit' => 1, 'includefield' => 'all'));
-            return array('name' => 'DICOMweb 服务', 'endpoint' => self::base(), 'mode' => 'DICOMweb', 'studies' => count((array)$arr));
+            $first = (is_array($arr) && isset($arr[0]) && is_array($arr[0])) ? $arr[0] : array();
+            $inst = self::val('00080080', $first);
+            if ($inst === '') $inst = pvw_hospital_api();
+            return array(
+                'name' => 'DICOMweb 服务', 'endpoint' => self::base(), 'mode' => 'DICOMweb',
+                'studies' => count((array)$arr), 'institution' => $inst,
+            );
         } catch (Exception $e) {
             throw new RuntimeException('DICOMweb 连接失败：' . $e->getMessage());
         }

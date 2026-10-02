@@ -55,10 +55,8 @@ class PvStudyService {
     public static function study($uid) {
         $d = PvPacsClient::study($uid);                 // DICOM / PACS 必选
         if (!empty($d['study']['institution'])) self::captureHospital($d['study']['institution']);
-        // DICOM 详情/报告机构名：接口返回值优先，缺失回退项目名称（默认医院）
+        // DICOM 详情 / 影像预览 / 报告机构名：接口返回值优先，缺失回退项目名称（默认医院）
         if (empty($d['study']['institution'])) $d['study']['institution'] = pvw_hospital_source();
-        // 影像预览（OSD 水印）用全局显示名（受管理员覆盖）
-        $d['study']['hospital_display'] = pvw_hospital();
         if (empty($d['study']['station_name'])) $d['study']['station_name'] = ($d['study']['modality'] . '-ROOM');
         $d['study']['default_ww'] = (int)PvSettings::get('viewer_default_ww', '400');
         $d['study']['default_wl'] = (int)PvSettings::get('viewer_default_wl', '40');

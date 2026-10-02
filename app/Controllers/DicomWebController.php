@@ -26,7 +26,9 @@ class PvDicomWebController {
             $path = substr($r, strlen('dicomweb'));
         }
         $path = trim((string)$path, '/');
-        $seg = $path === '' ? array() : explode('/', $path);
+        // 根地址（/dicom-web 或 /dicom-web/）视为 QIDO 检查检索，便于外部连通性测试
+        if ($path === '') { self::qidoStudies(); return; }
+        $seg = explode('/', $path);
         if (!isset($seg[0]) || $seg[0] !== 'studies') { self::jsonError(404, '不支持的 DICOMweb 路径'); }
 
         if (count($seg) === 1) { self::qidoStudies(); return; }

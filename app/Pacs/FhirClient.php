@@ -177,7 +177,16 @@ class PvFhirClient {
              * 再对一个真实数据端点（Patient 检索）发一次带鉴权的请求，
              * 使错误密钥返回 401/403 时能够被识别为失败。 */
             self::getJson($base . '/Patient?' . http_build_query(array('_count' => 1)));
-            return array('name' => $name, 'endpoint' => $base, 'source' => 'fhir');
+            // 机构名称（FHIR Organization.name）；未提供时留空
+            $institution = '';
+            try {
+                $ob = self::getJson($base . '/Organization?' . http_build_query(array('_count' => 1)));
+                $or = null;
+                if (is_array($ob) && !empty($ob['entry'][0]['resource'])) $or = $ob['entry'][0]['resource'];
+                elseif (is_array($ob) && isset($ob['resourceType']) && $ob['resourceType'] === 'Organization') $or = $ob;
+                if (is_array($or) && !empty($or['name'])) $institution = (string)$or['name'];
+            } catch (Exception $e) { /* 未提供 Organization 时忽略 */ }
+            return array('name' => $name, 'endpoint' => $base, 'source' => 'fhir', 'institution' => $institution);
         } finally {
             self::$override = null;
         }

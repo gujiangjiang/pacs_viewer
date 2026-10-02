@@ -120,7 +120,7 @@
                         if (j && j.code === 200) {
                             out.className = 'pv-test-result ok';
                             var d = j.data || {};
-                            out.textContent = '✓ 接口可用 · ' + (d.name || '') + (d.version ? ' v' + d.version : '') + (d.mode ? ' · 模式 ' + d.mode : '') + (d.studies != null ? ' · 检查数 ' + d.studies : '');
+                            out.textContent = '✓ 接口可用 · ' + (d.name || '') + (d.mode ? ' · 模式 ' + d.mode : '') + (d.institution ? ' · 机构 ' + d.institution : '');
                         } else {
                             out.className = 'pv-test-result err';
                             out.textContent = '✗ ' + ((j && j.msg) || '测试失败');
@@ -145,7 +145,7 @@
                         fhir_timeout: formVal('fhir_timeout')
                     }).then(function (j) {
                         fhirBtn.disabled = false;
-                        if (j && j.code === 200) { fhirOut.className = 'pv-test-result ok'; fhirOut.textContent = '✓ 连接成功 · ' + ((j.data && j.data.name) || 'FHIR'); }
+                        if (j && j.code === 200) { fhirOut.className = 'pv-test-result ok'; fhirOut.textContent = '✓ 连接成功 · ' + ((j.data && (j.data.institution || j.data.name)) || 'FHIR'); }
                         else { fhirOut.className = 'pv-test-result err'; fhirOut.textContent = '✗ ' + ((j && j.msg) || '连接失败'); }
                     }).catch(function () { fhirBtn.disabled = false; fhirOut.className = 'pv-test-result err'; fhirOut.textContent = '✗ 网络请求失败'; });
                 });

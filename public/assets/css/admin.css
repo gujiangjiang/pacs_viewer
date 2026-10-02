@@ -13,6 +13,7 @@
 .pv-badge.op-read { background: rgba(16,185,129,.16); color: #34d399; }
 .pv-badge.op-download { background: rgba(245,158,11,.16); color: #fbbf24; }
 .pv-badge.op-dicom { background: rgba(168,85,247,.18); color: #c4b5fd; }
+.pv-badge.op-report { background: rgba(244,63,94,.16); color: #fb7185; }
 
 /* 子 Tab 固定不随内容滚动（顶部无空隙，滚动内容从其下方经过） */
 .pv-page-admin .pv-main { padding-top: 0; }

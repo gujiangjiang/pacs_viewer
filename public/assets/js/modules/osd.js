@@ -19,7 +19,7 @@
         var loc = (o.fi - (o.count - 1) / 2) * thick;
         var zdeg = ((o.rot % 360) + 360) % 360;
         var flip = (o.flipH ? 'H' : '') + (o.flipV ? 'V' : '') || 'N';
-        var TL = [(s.hospital_display || s.institution || ''), (s.modality || '') + '  ' + (s.station_name || ''), s.description || '',
+        var TL = [(s.institution || ''), (s.modality || '') + '  ' + (s.station_name || ''), s.description || '',
                   'Ser: ' + (ser.series_id || '') + ' - ' + (ser.description || '')];
         var TR = [p.name || '', (p.gender || '') + ' / ' + (p.age || ''), 'PID: ' + (p.patient_id || ''), 'OPD No: ' + (p.outpatient_no || '')];
         var BL = ['WW: ' + Math.round(o.ww) + ' WL: ' + Math.round(o.wl), 'Im: ' + (o.fi + 1) + '/' + o.count,
