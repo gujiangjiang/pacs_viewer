@@ -14,6 +14,38 @@
 
 ---
 
+## [1.0.0] - 2026-10-03
+
+首个 1.0.0 里程碑：完成全量架构复盘与解耦重构，功能行为与接口契约保持不变。
+
+### 变更
+- **巨石文件拆分**：`modules/pane.js`（878 → 584 行）拆出标注、帧滚动条、导出、
+  DICOM 详情四个子模块；`viewer.js`（785 → 580 行）拆出报告、右键菜单、会话记忆
+  三个子模块。全部以 `PvPane.prototype` / `PvViewer.prototype` 扩展方式装配，
+  保持原有全局命名空间与加载顺序，并同步 `views/viewer.php` 与 Service Worker 预缓存清单。
+- **后端基础设施去重**：FHIR 客户端复用统一 HTTP 助手 `PvHttp`；新增 DICOM 值规范化
+  助手 `PvDicom`；统一 UID 末段提取（`PvMockDicomTagBuilder::uidTail`）与检查行查找
+  （`PvMockServer::findRow`）；二进制响应下发统一为 `PvHttp::sendBinary`。
+- **前端通用组件抽取**：新增 `PvUI.bindSplit` / `postThen` / `bindConnTest`；`PvRender`
+  新增 `imageToRaw` / `drawFit`，供窗格渲染、导出与序列缩略图共用。
+- **版本标识**：自本版本起进入 1.0.0，版本号仍与本仓库独立计算。
+
+### 修复
+- **访客缩略图令牌拼接**：缩略图地址无查询串时改用 `?` 拼接 `gtoken`，避免参数丢失。
+- **FHIR 映射空值防御**：ImagingStudy 缺少 `id` 时不再触发未定义索引。
+- **模态框取消语义**：Esc / 点遮罩 / 关闭按钮关闭确认框时正确 resolve，避免回调悬挂。
+- **宿主指令来源校验**：`postMessage` 指令桥默认仅接受同源来源。
+- **CSRF 普通表单回退**：登录 / 安装等非 AJAX 表单校验失败时渲染可读错误页。
+
+### 移除
+- 清理后端死代码（`instanceByUid`、`frameRng`、`progress`、`firstArrayVal`）与前端
+  未使用字段（`direct`、`loading`）。
+
+### 安全
+- 宿主页 `postMessage` 指令桥增加来源校验，避免任意页面远程驱动阅片器。
+
+---
+
 ## [0.29.0] - 2026-10-03
 
 ### 变更
