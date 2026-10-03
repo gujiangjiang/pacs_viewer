@@ -254,6 +254,9 @@ class PvAdminController {
      */
     public static function storageSettings() {
         PvAuth::requireAdmin();
+        // GET：返回当前已保存的缓存设置，供设置模态框每次打开时回填最新值
+        $isPost = isset($_SERVER['REQUEST_METHOD']) && strtoupper((string)$_SERVER['REQUEST_METHOD']) === 'POST';
+        if (!$isPost) pvw_json(200, 'success', self::cacheSettings());
         pvw_csrf_check();
         PvSettings::set('cache_apcu_enabled', ((string)pvw_input('cache_apcu_enabled') === '1') ? '1' : '0');
         PvSettings::set('cache_disk_enabled', ((string)pvw_input('cache_disk_enabled') === '1') ? '1' : '0');
@@ -262,6 +265,19 @@ class PvAdminController {
         PvSettings::set('cache_max_days', self::cleanPositiveInt(pvw_input('cache_max_days')));
         PvMockCache::enforceLimits();   // 保存后立即执行开关与上限
         self::reply('缓存设置已保存', true, PvMockCache::stats(), 'storage');
+    }
+
+    /** 当前缓存设置（供 GET 回填；容量以 MB 展示，留空表示不限制） */
+    private static function cacheSettings() {
+        $mb = function ($bytes) { $bytes = (int)$bytes; return $bytes > 0 ? round($bytes / 1048576, 2) : ''; };
+        $days = (int)PvSettings::get('cache_max_days', '');
+        return array(
+            'apcuEnabled' => (string)PvSettings::get('cache_apcu_enabled', '1') === '1',
+            'diskEnabled' => (string)PvSettings::get('cache_disk_enabled', '1') === '1',
+            'maxMb'       => $mb(PvSettings::get('cache_max_bytes', '')),
+            'diskMaxMb'   => $mb(PvSettings::get('cache_disk_max_bytes', '')),
+            'maxDays'     => $days > 0 ? (string)$days : '',
+        );
     }
 
     /** 正整数（>0）校验：留空或非法均返回空串（表示不限制） */

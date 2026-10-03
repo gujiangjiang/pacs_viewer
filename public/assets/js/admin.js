@@ -268,6 +268,7 @@
         },
         destroy: function () {
             if (global.__pvLogStopLive) { try { global.__pvLogStopLive(); } catch (e) {} global.__pvLogStopLive = null; }
+            if (global.__pvStorageStop) { try { global.__pvStorageStop(); } catch (e) {} global.__pvStorageStop = null; }
         }
     };
 })(window);

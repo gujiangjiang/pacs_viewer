@@ -1,5 +1,5 @@
 /* assets/js/admin-storage.js — 管理页「存储情况」面板（PvAdminStorage）
- * 由 admin.js 装配；查询运行时存储占用并提供上传 / 缓存一键清空。
+ * 由 admin.js 装配；查询运行时存储占用，提供刷新 / 实时、合并清空与缓存设置。
  */
 (function (global) {
     'use strict';
@@ -19,12 +19,14 @@
     global.PvAdminStorage = {
         /**
          * @param {string} curTab 当前激活页签（storage 时自动加载）
-         * @param {object} [cache] 当前缓存设置（用于设置模态框回填）
+         * @param {object} [cache] 缓存设置兜底值（打开设置模态框时优先取服务端最新值）
          */
         init: function (curTab, cache) {
             var box = document.getElementById('pvStorageBox');
             if (!box) return;
             cache = cache || {};
+            var liveTimer = null;
+            var docClick = null;
 
             function render(d) {
                 d = d || {};
@@ -46,7 +48,7 @@
             }
             function load(showLoading) {
                 if (showLoading) box.innerHTML = '<div class="pv-dim">加载中…</div>';
-                PvUI.get(route('api/storage'))
+                return PvUI.get(route('api/storage'))
                     .then(function (j) { if (j && j.code === 200) render(j.data); else box.innerHTML = '<div class="pv-dim">加载失败</div>'; })
                     .catch(function () { box.innerHTML = '<div class="pv-dim">网络请求失败</div>'; });
             }
@@ -54,24 +56,50 @@
             var refresh = document.getElementById('pvStorageRefresh');
             if (refresh) refresh.addEventListener('click', function () { load(true); });
 
-            var cu = document.getElementById('pvStorageClearUploads');
-            if (cu) cu.addEventListener('click', function () {
-                PvModal.confirm({ title: '清空上传文件', message: '确认删除全部上传文件及其记录？此操作不可恢复。', okText: '清空', danger: true }).then(function (ok) {
-                    if (!ok) return;
-                    PvUI.postThen('api/storage/clear-uploads', {}, { okMsg: '操作结束', errMsg: '操作结束', onOk: function () { load(false); }, onError: function () { load(false); } });
-                });
-            });
-            var cc = document.getElementById('pvStorageClearCache');
-            if (cc) cc.addEventListener('click', function () {
-                PvModal.confirm({ title: '清空缓存区', message: '确认清空影像内存缓存？清空后再次打开影像会重新生成。', okText: '清空', danger: true }).then(function (ok) {
-                    if (!ok) return;
-                    PvUI.postThen('api/storage/clear-cache', {}, { okMsg: '操作结束', errMsg: '操作结束', onOk: function () { load(false); }, onError: function () { load(false); } });
-                });
+            // 实时：定时刷新存储占用
+            var liveBtn = document.getElementById('pvStorageLive');
+            function stopLive() {
+                if (liveTimer) { clearInterval(liveTimer); liveTimer = null; }
+                if (liveBtn) liveBtn.classList.remove('active');
+            }
+            function startLive() {
+                stopLive();
+                if (liveBtn) liveBtn.classList.add('active');
+                load(false);
+                liveTimer = setInterval(function () { load(false); }, 5000);
+            }
+            if (liveBtn) liveBtn.addEventListener('click', function () {
+                if (liveBtn.classList.contains('active')) stopLive(); else startLive();
             });
 
-            // 缓存设置：APCu / 磁盘开关、各自容量上限、共享日期上限（均可留空不限制）
+            // 合并「清空」下拉：清空上传文件 / 清空缓存区
+            var dd = document.getElementById('pvStorageClear');
+            function confirmClear(title, msg, r) {
+                PvModal.confirm({ title: title, message: msg, okText: '清空', danger: true }).then(function (ok) {
+                    if (!ok) return;
+                    PvUI.postThen(r, {}, { okMsg: '操作结束', errMsg: '操作结束', onOk: function () { load(false); }, onError: function () { load(false); } });
+                });
+            }
+            if (dd) {
+                var ddBtn = dd.querySelector('button');
+                if (ddBtn) ddBtn.addEventListener('click', function (e) { e.stopPropagation(); dd.classList.toggle('open'); });
+                Array.prototype.forEach.call(dd.querySelectorAll('[data-clear]'), function (b) {
+                    b.addEventListener('click', function () {
+                        var kind = b.getAttribute('data-clear');
+                        dd.classList.remove('open');
+                        if (kind === 'uploads') confirmClear('清空上传文件', '确认删除全部上传文件及其记录？此操作不可恢复。', 'api/storage/clear-uploads');
+                        else confirmClear('清空缓存区', '确认清空影像内存缓存？清空后再次打开影像会重新生成。', 'api/storage/clear-cache');
+                    });
+                });
+                docClick = function (ev) { if (!dd.contains(ev.target)) dd.classList.remove('open'); };
+                document.addEventListener('click', docClick);
+            }
+
+            // 缓存设置：每次打开前拉取服务端最新值回填，避免显示过期内容
             var cs = document.getElementById('pvStorageSettings');
-            if (cs) cs.addEventListener('click', function () {
+            function openCacheModal(v) {
+                v = v || {};
+                var val = function (x) { return (x === undefined || x === null) ? '' : x; };
                 var body = ''
                     + '<div class="pv-field"><label class="pv-check"><input type="checkbox" id="pvCacheApcu"> 启用 APCu 内存缓存</label></div>'
                     + '<div class="pv-field"><span>内存缓存上限（MB，留空不限制）</span>'
@@ -110,19 +138,30 @@
                         var maxMb = document.getElementById('pvCacheMaxMb');
                         var diskMb = document.getElementById('pvCacheDiskMaxMb');
                         var days = document.getElementById('pvCacheMaxDays');
-                        if (apcu) apcu.checked = cache.apcuEnabled !== false;
-                        if (disk) disk.checked = cache.diskEnabled !== false;
-                        if (maxMb) maxMb.value = (cache.maxMb === 0 || cache.maxMb) ? cache.maxMb : '';
-                        if (diskMb) diskMb.value = (cache.diskMaxMb === 0 || cache.diskMaxMb) ? cache.diskMaxMb : '';
-                        if (days) days.value = (cache.maxDays !== undefined && cache.maxDays !== '') ? cache.maxDays : '';
+                        if (apcu) apcu.checked = v.apcuEnabled !== false;
+                        if (disk) disk.checked = v.diskEnabled !== false;
+                        if (maxMb) maxMb.value = val(v.maxMb);
+                        if (diskMb) diskMb.value = val(v.diskMaxMb);
+                        if (days) days.value = val(v.maxDays);
                     }
                 });
+            }
+            if (cs) cs.addEventListener('click', function () {
+                PvUI.get(route('api/storage/settings')).then(function (j) {
+                    openCacheModal((j && j.code === 200 && j.data) ? j.data : cache);
+                }).catch(function () { openCacheModal(cache); });
             });
 
             Array.prototype.forEach.call(document.querySelectorAll('.pv-tab'), function (t) {
                 if (t.getAttribute('data-tab') === 'storage') t.addEventListener('click', function () { load(false); });
             });
             if (curTab === 'storage') load(true);
+
+            // 供页面销毁时清理定时器与文档监听
+            global.__pvStorageStop = function () {
+                stopLive();
+                if (docClick) { document.removeEventListener('click', docClick); docClick = null; }
+            };
         }
     };
 })(window);
