@@ -394,9 +394,10 @@ class PvFhirClient {
             $val = isset($id['value']) ? (string)$id['value'] : '';
             if ($val === '') continue;
             if (stripos($sys, 'dicom') !== false || stripos($val, 'urn:oid:') === 0) {
-                $oid = preg_replace('/^urn:oid:/i', '', $val);
-                $oid = preg_replace('/[^0-9.]/', '', $oid);
-                if ($oid !== '') return $oid;
+                $oid = trim(preg_replace('/^urn:oid:/i', '', $val));
+                // 仅接受标准 DICOM UID（数字与点、至少两段、每段无前导零、≤64）；
+                // 不合规（如旧的 BG 占位）不臆造，交由上层回退，避免产生非标准 UID。
+                if (strlen($oid) <= 64 && preg_match('/^(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))+$/', $oid)) return $oid;
             }
         }
         return '';
@@ -560,7 +561,10 @@ class PvFhirClient {
         // 优先使用 FHIR ImagingStudy.identifier 的真实 DICOM StudyInstanceUID（urn:dicom:uid），
         // 与门诊/区域 PACS 保持一致；缺失时回退内部 id（fhir-{id}）。
         $realUid = self::dicomStudyUid($im);
-        $studyUid = $realUid !== '' ? $realUid : ('fhir-' . $uid);
+        // 缺失时回退：派生合规 DICOM UID（根 1.2.826.0.1.3680043.8.498），不再用 fhir-{id} 之类非标准串
+        $studyUid = $realUid !== '' ? $realUid : ('1.2.826.0.1.3680043.8.498.'
+            . sprintf('%u', crc32('uid|fhir|' . $uid . '|a')) . '.'
+            . sprintf('%u', crc32('uid|fhir|' . $uid . '|b')));
         return array(
             'study_uid'     => $studyUid,
             'patient_id'    => $pid,
