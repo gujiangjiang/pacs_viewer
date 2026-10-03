@@ -9,9 +9,8 @@ class PvAuth {
         if (!$u) return '用户名或密码错误';
         if ((int)$u['status'] !== 1) return '该账号已被停用';
         if (!password_verify((string)$password, (string)$u['password_hash'])) return '用户名或密码错误';
-        // 登录成功：重置会话，并清除访客令牌（避免与登录态混淆）
+        // 登录成功：重置会话
         @session_regenerate_id(true);
-        PvGuest::clear();
         $_SESSION['pv_uid'] = (int)$u['id'];
         $_SESSION['pv_user'] = array(
             'id' => (int)$u['id'],
@@ -24,8 +23,6 @@ class PvAuth {
     }
 
     public static function logout() {
-        // 清除访客令牌：否则退出后残留的 PV_GUEST 会把后续请求（如登录页）误判为访客阅片
-        PvGuest::clear();
         $_SESSION = array();
         if (session_status() === PHP_SESSION_ACTIVE) @session_destroy();
     }

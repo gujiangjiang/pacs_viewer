@@ -81,25 +81,11 @@ if ($pvInstalled && $r === 'install') {
     pvw_redirect(pvw_url(PvAuth::check() ? '' : 'login'));
 }
 
-/* ---------- 链接访客阅片（无登录 / 只读 / 不写库 / 不关联用户） ----------
- * 直链请求（viewer&uid 且无 mode）或持有有效访客令牌时进入访客上下文：
- * 仅允许阅片相关路由；任何搜索 / 管理 / 模拟服务器 / 写操作一律拦截——
- * 页面请求重定向回影像查看，接口请求返回 403。 */
-$pvGuestCtx = PvViewerController::isLink() || PvGuest::active();
-define('PV_GUEST', $pvGuestCtx);
-if ($pvGuestCtx) {
-    $pvGuestAllow = array('viewer', 'api/study', 'api/report', 'wadoprx', 'dicom', 'thumb', 'file', 'icon', 'manifest', 'sw');
-    // 登录 / 站点根 / 安装：不做访客化——清除残留访客令牌并放行到正常登录流程，
-    // 避免「已登录用户退出后残留令牌把登录页劫持成访客阅片」。
-    if ($r === 'login' || $r === '' || $r === 'install') {
-        PvGuest::clear();
-    } elseif (!in_array($r, $pvGuestAllow, true)) {
-        if (strpos($r, 'api/') === 0 || $r === 'upload' || $r === 'upload/delete') {
-            pvw_json(403, '访客阅片模式仅支持只读影像访问');
-        }
-        pvw_redirect(pvw_url('viewer'));   // 强制回到影像查看
-    }
-}
+/* ---------- 链接访客阅片：无 Cookie / 无会话 / 与登录态完全隔离 ----------
+ * 访客授权完全内联在请求里（viewer 直链按 uid 计算签名令牌，后续 API / 取像
+ * 携带该令牌按 (uid, token) 校验），不设置任何 Cookie、不读写会话身份。
+ * 因此这里不再需要「访客上下文」拦截：未登录访问受保护路由天然走登录，
+ * 登录用户与访客互不干扰，杜绝残留状态劫持登录态。 */
 
 /* 站点根路径直接渲染检索页（避免 / → ?r=search 的重定向导致地址栏闪烁）；
  * 未登录则引导至登录。 */

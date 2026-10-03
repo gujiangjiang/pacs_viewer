@@ -17,11 +17,9 @@ class PvWadoProxyController {
         $inst = (string)pvw_input('instance');
         if ($study === '' || $series === '' || $inst === '') self::fail(400, '缺少参数');
 
-        // 鉴权：登录用户放行；访客令牌仅限链接绑定的检查 UID
+        // 鉴权：登录用户放行；访客须携带与该检查 UID 匹配的签名令牌（无 Cookie / 无会话）
         if (!PvAuth::check()) {
-            $gu = PvGuest::uid();
-            if ($gu === null) PvAuth::requireLogin();
-            if ((string)$gu !== $study) self::fail(403, '访客仅可访问链接对应的检查');
+            if (!PvGuest::verify($study, (string)pvw_input('gtoken'))) self::fail(403, '访客阅片令牌无效或已过期');
         }
 
         $base = PvDicomWebClient::base();

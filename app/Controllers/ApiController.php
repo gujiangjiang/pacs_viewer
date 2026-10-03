@@ -60,13 +60,16 @@ class PvApiController {
     /** 调阅单次检查（患者 + 检查 + 序列） */
     public static function study() {
         $uid = (string)pvw_input('uid');
-        // 访客令牌仅可读取链接绑定的检查 UID（防止枚举其它检查）
-        if (!PvAuth::check()) {
-            $gu = PvGuest::uid();
-            if ($gu === null) PvAuth::requireLoginJson();
-            if ($uid === '' || (string)$gu !== $uid) pvw_json(403, '访客仅可访问链接对应的检查');
+        $guest = !PvAuth::check();
+        // 访客（未登录）：必须携带与该检查 UID 匹配的签名令牌，仅放行该检查（防枚举）；
+        // 令牌为无状态、无 Cookie，与登录态完全隔离。
+        if ($guest) {
+            if ($uid === '' || !PvGuest::verify($uid, (string)pvw_input('gtoken'))) {
+                pvw_json(403, '访客阅片令牌无效或已过期');
+            }
+        } elseif ($uid === '') {
+            pvw_json(400, '缺少检查标识');
         }
-        if ($uid === '') pvw_json(400, '缺少检查标识');
         $ck = 'study:' . self::sourceFingerprint() . ':' . $uid;
         $data = PvCache::get($ck);
         if ($data === null) {
@@ -76,6 +79,20 @@ class PvApiController {
                 pvw_json(500, $e->getMessage());
             }
             PvCache::set($ck, $data, 30);
+        }
+        // 访客：把签名令牌并入各序列取像地址，使 wadoprx 代理按 (uid, token) 放行
+        if ($guest) {
+            $gt = rawurlencode((string)pvw_input('gtoken'));
+            if (!empty($data['series']) && is_array($data['series'])) {
+                foreach ($data['series'] as &$se) {
+                    if (!empty($se['images']) && is_array($se['images'])) {
+                        foreach ($se['images'] as &$u) $u = $u . (strpos($u, '?') === false ? '?' : '&') . 'gtoken=' . $gt;
+                        unset($u);
+                    }
+                    if (!empty($se['thumbnail'])) $se['thumbnail'] .= '&gtoken=' . $gt;
+                }
+                unset($se);
+            }
         }
         pvw_json(200, 'success', $data);
     }
@@ -89,9 +106,9 @@ class PvApiController {
         $uid = (string)pvw_input('uid');
         $patient = (string)pvw_input('patient');
         if (!PvAuth::check()) {
-            $gu = PvGuest::uid();
-            if ($gu === null) PvAuth::requireLoginJson();
-            if ($uid === '' || (string)$gu !== $uid) pvw_json(403, '访客仅可访问链接对应的检查');
+            if ($uid === '' || !PvGuest::verify($uid, (string)pvw_input('gtoken'))) {
+                pvw_json(403, '访客阅片令牌无效或已过期');
+            }
         }
         if ($uid === '' && $patient === '') pvw_json(400, '缺少检查标识');
         $ck = 'report:' . self::sourceFingerprint() . ':' . $uid . ':' . $patient . ':' . (string)pvw_input('modality') . ':' . (string)pvw_input('study_date');

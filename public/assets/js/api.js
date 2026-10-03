@@ -19,6 +19,10 @@
         return u;
     }
     function get(sub, params) {
+        // 访客阅片：随请求附带签名令牌（无 Cookie / 无会话，与登录态隔离）
+        params = params || {};
+        var gt = (boot.data && boot.data.guestToken) || '';
+        if (gt) params.gtoken = gt;
         // 复用通用请求助手（含 401 跳转登录）
         return PvUI.get(buildUrl(sub, params));
     }

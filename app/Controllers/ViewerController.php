@@ -11,18 +11,17 @@ class PvViewerController {
 
     public static function show() {
         $uid = trim((string)pvw_input('uid'));
-        // 访客阅片：直链请求，或已持有有效访客令牌（被拦截重定向而来）
-        $guest = self::isLink() || PvGuest::active();
-        if ($guest) {
-            if ($uid === '') $uid = (string)PvGuest::uid();   // 重定向而来：复用令牌中的检查
-            if ($uid !== '' && !PvAuth::check()) PvGuest::issue($uid);   // 登录用户不签发访客令牌，避免残留
+        // 访客阅片：仅当「阅片直链」请求（uid + 无 mode）。无 Cookie / 无会话，
+        // 仅向页面下发按 UID 计算的签名令牌，供后续 API / 取像按请求校验。
+        if (self::isLink()) {
             pvw_page('viewer', array(
-                'user'    => null,
-                'guest'   => true,
-                'uid'     => $uid,
-                'mode'    => 'replace',
-                'site'    => PvSettings::get('site_title', 'PACS 影像浏览器'),
-                'isAdmin' => false,
+                'user'       => null,
+                'guest'      => true,
+                'uid'        => $uid,
+                'mode'       => 'replace',
+                'guestToken' => PvGuest::token($uid),
+                'site'       => PvSettings::get('site_title', 'PACS 影像浏览器'),
+                'isAdmin'    => false,
             ));
             return;
         }
@@ -33,6 +32,7 @@ class PvViewerController {
             'guest' => false,
             'uid'  => $uid,
             'mode' => $mode,
+            'guestToken' => '',
             'site' => PvSettings::get('site_title', 'PACS 影像浏览器'),
             'isAdmin' => PvAuth::isAdmin(),
         ));

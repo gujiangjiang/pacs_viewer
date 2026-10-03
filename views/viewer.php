@@ -11,6 +11,7 @@ $pageData = array(
     'uid'        => $uid,
     'mode'       => $mode,
     'guest'      => $isGuest,
+    'guestToken' => isset($guestToken) ? (string)$guestToken : '',
     'studyLimit' => $isGuest ? 1 : (int)PvSettings::get('viewer_study_limit', '5'),
     'isAdmin'    => $isGuest ? false : PvAuth::isAdmin(),
     'direct'     => $uid !== '' ? pvw_url('viewer', array('uid' => $uid)) : '',
