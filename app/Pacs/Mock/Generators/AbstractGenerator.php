@@ -122,19 +122,6 @@ abstract class PvMockAbstractGenerator implements PvMockSliceGeneratorInterface,
         return $stored;
     }
 
-    /**
-     * 单帧固定的确定性随机源（同一帧多次生成结果一致）。
-     * @return callable
-     */
-    protected function frameRng($i) {
-        return PvMockProceduralNoise::rng(PvMockProceduralNoise::seed($this->seed . '#' . (int)$i));
-    }
-
-    /** 帧序号归一化参数（0..1） */
-    protected function progress($i) {
-        return $this->frameCount > 1 ? $i / ($this->frameCount - 1) : 0.0;
-    }
-
     /* ---------------- 标准属性输出 ---------------- */
 
     /** 覆盖方位（用于重建序列元数据，不改变像素生成逻辑） */

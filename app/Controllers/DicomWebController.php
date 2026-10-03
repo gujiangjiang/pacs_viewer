@@ -296,13 +296,6 @@ class PvDicomWebController {
         return -1;
     }
 
-    private static function instanceByUid($seriesUid, $iuid) {
-        for ($i = 1; $i <= 9999; $i++) {
-            if (PvMockDicomTagBuilder::deriveUid($seriesUid, array($i)) === $iuid) return $i;
-        }
-        return 1;
-    }
-
     private static function studyResource($row) {
         return array(
             '0020000D' => array('vr' => 'UI', 'Value' => array((string)$row['study_uid'])),

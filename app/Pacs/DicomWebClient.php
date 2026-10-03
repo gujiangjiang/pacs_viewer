@@ -194,8 +194,6 @@ class PvDicomWebClient {
         return (string)$x;
     }
 
-    private static function firstArrayVal($tag, $res) { return self::val($tag, $res, 0); }
-
     /** 取数值型标签（DS/IS），无值时返回 0 */
     private static function num($tag, $res) {
         $s = self::val($tag, $res);
@@ -222,7 +220,7 @@ class PvDicomWebClient {
         $gender = ($sex === 'M') ? '男' : (($sex === 'F') ? '女' : ($sex !== '' ? $sex : '未知'));
         $birth = self::fmtDate(self::val('00100030', $res));
         $age = self::ageOf($birth, self::val('00101010', $res));   // 优先 PatientAge(0010,1010)，否则由出生日期推算
-        $mod = self::firstArrayVal('00080061', $res);            // ModalitiesInStudy
+        $mod = self::val('00080061', $res);                      // ModalitiesInStudy
         if ($mod === '') $mod = self::val('00080060', $res);     // Modality
         $seriesCnt = self::val('00201206', $res);                // NumberOfStudyRelatedSeries
         if ($seriesCnt === '') $seriesCnt = self::val('00201209', $res);
