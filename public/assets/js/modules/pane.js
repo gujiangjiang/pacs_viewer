@@ -311,16 +311,7 @@
         if (src && src.kind === 'raw') {
             winCanvas = this.windowRaw(src.raw, st.ww, st.wl, st.invert);
         } else if (src && src.kind === 'image') {
-            var im = src.img, rc = this.raw.getContext('2d');
-            rc.setTransform(1, 0, 0, 1, 0, 0); rc.fillStyle = '#000'; rc.fillRect(0, 0, BASE, BASE);
-            var sc = Math.min(BASE / im.width, BASE / im.height), dw = im.width * sc, dh = im.height * sc;
-            rc.drawImage(im, (BASE - dw) / 2, (BASE - dh) / 2, dw, dh);
-            var data = rc.getImageData(0, 0, BASE, BASE);
-            var raw = new Float32Array(BASE * BASE);
-            for (var i = 0, n = BASE * BASE; i < n; i++) {
-                var j = i * 4;
-                raw[i] = data.data[j] * .299 + data.data[j + 1] * .587 + data.data[j + 2] * .114;
-            }
+            var raw = PvRender.imageToRaw(src.img, BASE, this.raw);
             winCanvas = this.windowRaw(raw, st.ww, st.wl, st.invert);
         } else if (src && src.kind === 'loading') {
             this.placeholder('正在解码图像…');
@@ -770,13 +761,7 @@
         return new Promise(function (resolve) {
             var im = new Image();
             im.onload = function () {
-                var rc = self.raw.getContext('2d');
-                rc.setTransform(1, 0, 0, 1, 0, 0); rc.fillStyle = '#000'; rc.fillRect(0, 0, BASE, BASE);
-                var sc = Math.min(BASE / im.width, BASE / im.height), dw = im.width * sc, dh = im.height * sc;
-                rc.drawImage(im, (BASE - dw) / 2, (BASE - dh) / 2, dw, dh);
-                var data = rc.getImageData(0, 0, BASE, BASE);
-                var raw = new Float32Array(BASE * BASE);
-                for (var i = 0, n = BASE * BASE; i < n; i++) { var j = i * 4; raw[i] = data.data[j] * .299 + data.data[j + 1] * .587 + data.data[j + 2] * .114; }
+                var raw = PvRender.imageToRaw(im, BASE, self.raw);
                 cx.drawImage(self.windowRaw(raw, self.st.ww, self.st.wl, self.st.invert), 0, 0);
                 resolve(cv);
             };

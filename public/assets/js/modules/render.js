@@ -69,8 +69,40 @@
         return window(resample(dec, size), size, ww, wl, invert);
     }
 
+    /** 等比缩放并居中绘制图像到 w×h 目标区域 */
+    function drawFit(ctx, w, h, img) {
+        var sc = Math.min(w / img.width, h / img.height);
+        var dw = img.width * sc, dh = img.height * sc;
+        ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+    }
+
+    /**
+     * 已加载图像 → size×size 灰度值场（黑底等比居中，亮度按 Rec.601 加权）。
+     * @param {HTMLImageElement} img
+     * @param {number} size 目标边长
+     * @param {HTMLCanvasElement} [canvas] 可复用的绘制画布（避免重复分配）
+     * @return {Float32Array}
+     */
+    function imageToRaw(img, size, canvas) {
+        var cv = canvas || document.createElement('canvas');
+        if (cv.width !== size) cv.width = size;
+        if (cv.height !== size) cv.height = size;
+        var ctx = cv.getContext('2d');
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, size, size);
+        drawFit(ctx, size, size, img);
+        var data = ctx.getImageData(0, 0, size, size).data;
+        var raw = new Float32Array(size * size);
+        for (var i = 0, n = size * size; i < n; i++) {
+            var j = i * 4;
+            raw[i] = data[j] * .299 + data[j + 1] * .587 + data[j + 2] * .114;
+        }
+        return raw;
+    }
+
     global.PvRender = {
         BASE: BASE,
-        resample: resample, window: window, decodeToImage: decodeToImage, clamp: clamp
+        resample: resample, window: window, decodeToImage: decodeToImage, clamp: clamp,
+        drawFit: drawFit, imageToRaw: imageToRaw
     };
 })(typeof self !== 'undefined' ? self : window);

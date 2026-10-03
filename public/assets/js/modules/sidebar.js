@@ -183,12 +183,12 @@
         ctx.putImageData(img, 0, 0);
     };
     PvSidebar.prototype._repaintThumbs = function (key) {
-        var img = THUMB_CACHE[key];
+        var img = THUMB_CACHE[key], self = this;
         if (!img) return;
         Array.prototype.forEach.call(document.querySelectorAll('.pv-thumb[data-tkey]'), function (th) {
             if (th.getAttribute('data-tkey') !== key) return;
             var cv = th.querySelector('canvas');
-            if (cv) { var ctx = cv.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height); ctx.putImageData(img, 0, 0); }
+            if (cv) self._paintThumb(cv, img);
         });
     };
     PvSidebar.prototype.drawThumb = function (cv, series) {
@@ -230,9 +230,7 @@
                 im.onload = function () {
                     var c2 = cv.getContext('2d');
                     c2.fillStyle = '#000'; c2.fillRect(0, 0, cv.width, cv.height);
-                    var sc = Math.min(cv.width / im.width, cv.height / im.height);
-                    var dw = im.width * sc, dh = im.height * sc;
-                    c2.drawImage(im, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh);
+                    PvRender.drawFit(c2, cv.width, cv.height, im);
                     try {
                         var id = c2.getImageData(0, 0, cv.width, cv.height);
                         THUMB_CACHE[key] = id; lsSet(hk, encodeGray(id));
@@ -251,9 +249,7 @@
         var im = new Image();
         im.onload = function () {
             ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
-            var sc = Math.min(cv.width / im.width, cv.height / im.height);
-            var dw = im.width * sc, dh = im.height * sc;
-            ctx.drawImage(im, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh);
+            PvRender.drawFit(ctx, cv.width, cv.height, im);
         };
         im.src = src;
     };
