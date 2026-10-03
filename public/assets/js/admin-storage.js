@@ -17,20 +17,27 @@
     }
 
     global.PvAdminStorage = {
-        /** @param {string} curTab 当前激活页签（storage 时自动加载） */
-        init: function (curTab) {
+        /**
+         * @param {string} curTab 当前激活页签（storage 时自动加载）
+         * @param {object} [cache] 当前缓存设置（用于设置模态框回填）
+         */
+        init: function (curTab, cache) {
             var box = document.getElementById('pvStorageBox');
             if (!box) return;
+            cache = cache || {};
 
             function render(d) {
                 d = d || {};
+                var c = d.cache || {};
+                var limitTxt = function (bytes) { return bytes ? ' · 上限 ' + human(bytes) : ' · 不限容量'; };
+                var dayTxt = (c.ttl_seconds ? ' · 保留 ' + Math.round(c.ttl_seconds / 86400) + ' 天' : ' · 不限日期');
                 var rows = [
                     ['数据库', (d.db || {}).bytes, (d.db || {}).path || ''],
                     ['上传文件', (d.uploads || {}).bytes, ((d.uploads || {}).files || 0) + ' 个文件'],
-                    ['内存缓存', (d.cache || {}).bytes, '后端：' + ((d.cache || {}).backend || '—') + ' · ' + ((d.cache || {}).count || 0) + ' 条目' + ((d.cache || {}).max_bytes ? ' · 上限 ' + human(d.cache.max_bytes) : '')],
+                    ['内存缓存', c.bytes, (c.enabled ? '后端：' + (c.backend || '—') + ' · ' + (c.count || 0) + ' 条目' : '已关闭 / 不可用（' + (c.backend || '—') + '）') + limitTxt(c.max_bytes) + dayTxt],
+                    ['磁盘缓存', c.disk_bytes || 0, (c.disk_enabled ? (c.disk_files || 0) + ' 个影像文件（跨进程持久复用）' : '已关闭') + limitTxt(c.disk_max_bytes || 0) + dayTxt],
                     ['会话文件', (d.session || {}).bytes, ((d.session || {}).files || 0) + ' 个文件']
                 ];
-                if (d.cache && d.cache.disk_bytes > 0) rows.push(['磁盘缓存', d.cache.disk_bytes, (d.cache.disk_files || 0) + ' 个影像文件（跨进程持久复用）']);
                 var html = '<table class="pv-table pv-storage-table"><thead><tr><th>项目</th><th>占用</th><th>说明</th></tr></thead><tbody>';
                 rows.forEach(function (r) {
                     html += '<tr><td>' + PvUI.esc(r[0]) + '</td><td class="pv-storage-size">' + human(r[1]) + '</td><td class="pv-dim">' + PvUI.esc(r[2] || '') + '</td></tr>';
@@ -59,6 +66,56 @@
                 PvModal.confirm({ title: '清空缓存区', message: '确认清空影像内存缓存？清空后再次打开影像会重新生成。', okText: '清空', danger: true }).then(function (ok) {
                     if (!ok) return;
                     PvUI.postThen('api/storage/clear-cache', {}, { okMsg: '操作结束', errMsg: '操作结束', onOk: function () { load(false); }, onError: function () { load(false); } });
+                });
+            });
+
+            // 缓存设置：APCu / 磁盘开关、各自容量上限、共享日期上限（均可留空不限制）
+            var cs = document.getElementById('pvStorageSettings');
+            if (cs) cs.addEventListener('click', function () {
+                var body = ''
+                    + '<div class="pv-field"><label class="pv-check"><input type="checkbox" id="pvCacheApcu"> 启用 APCu 内存缓存</label></div>'
+                    + '<div class="pv-field"><span>内存缓存上限（MB，留空不限制）</span>'
+                    + '<input id="pvCacheMaxMb" type="number" min="0" step="1" placeholder="如 64"></div>'
+                    + '<div class="pv-field"><label class="pv-check"><input type="checkbox" id="pvCacheDisk"> 启用硬盘缓存</label></div>'
+                    + '<div class="pv-field"><span>硬盘缓存上限（MB，留空不限制）</span>'
+                    + '<input id="pvCacheDiskMaxMb" type="number" min="0" step="1" placeholder="如 512"></div>'
+                    + '<div class="pv-field"><span>缓存日期上限（天，留空不限制；内存与硬盘共用）</span>'
+                    + '<input id="pvCacheMaxDays" type="number" min="0" step="1" placeholder="如 3"></div>'
+                    + '<p class="pv-hint">超过上限时自动删除最早生成的缓存；容量与日期谁先达到即执行谁，留空表示该维度不限制。</p>';
+                var m = PvModal.open({
+                    title: '缓存设置',
+                    body: body,
+                    actions: [
+                        { label: '取消', cls: 'pv-btn-ghost' },
+                        {
+                            label: '保存', cls: 'pv-btn-primary', onClick: function () {
+                                var data = {
+                                    cache_apcu_enabled: document.getElementById('pvCacheApcu').checked ? '1' : '0',
+                                    cache_disk_enabled: document.getElementById('pvCacheDisk').checked ? '1' : '0',
+                                    cache_max_mb: (document.getElementById('pvCacheMaxMb').value || '').trim(),
+                                    cache_disk_max_mb: (document.getElementById('pvCacheDiskMaxMb').value || '').trim(),
+                                    cache_max_days: (document.getElementById('pvCacheMaxDays').value || '').trim()
+                                };
+                                PvUI.post(route('api/storage/settings'), data).then(function (j) {
+                                    if (j && j.code === 200) { PvUI.toast(j.msg || '已保存', 'ok'); m.close(); load(false); }
+                                    else PvUI.toast((j && j.msg) || '保存失败', 'err');
+                                }).catch(function () { PvUI.toast('网络请求失败', 'err'); });
+                                return false;   // 保持打开，由回调决定关闭
+                            }
+                        }
+                    ],
+                    onOpen: function () {
+                        var apcu = document.getElementById('pvCacheApcu');
+                        var disk = document.getElementById('pvCacheDisk');
+                        var maxMb = document.getElementById('pvCacheMaxMb');
+                        var diskMb = document.getElementById('pvCacheDiskMaxMb');
+                        var days = document.getElementById('pvCacheMaxDays');
+                        if (apcu) apcu.checked = cache.apcuEnabled !== false;
+                        if (disk) disk.checked = cache.diskEnabled !== false;
+                        if (maxMb) maxMb.value = (cache.maxMb === 0 || cache.maxMb) ? cache.maxMb : '';
+                        if (diskMb) diskMb.value = (cache.diskMaxMb === 0 || cache.diskMaxMb) ? cache.diskMaxMb : '';
+                        if (days) days.value = (cache.maxDays !== undefined && cache.maxDays !== '') ? cache.maxDays : '';
+                    }
                 });
             });
 

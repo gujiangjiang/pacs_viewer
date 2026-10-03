@@ -84,6 +84,43 @@
                 });
             }
 
+            // 操作日志：保留上限设置（条数 / 天数，均可留空不限制）
+            var logSettings = document.getElementById('pvLogSettings');
+            if (logSettings) {
+                logSettings.addEventListener('click', function () {
+                    var body = ''
+                        + '<div class="pv-field"><span>上限条数（留空不限制）</span>'
+                        + '<input id="pvLogMaxCount" type="number" min="0" step="1" placeholder="如 500"></div>'
+                        + '<div class="pv-field"><span>上限天数（留空不限制）</span>'
+                        + '<input id="pvLogMaxDays" type="number" min="0" step="1" placeholder="如 3"></div>'
+                        + '<p class="pv-hint">任一上限先达到即删除最早的日志；两项均留空表示不限制。</p>';
+                    var m = PvModal.open({
+                        title: '日志保留设置',
+                        body: body,
+                        actions: [
+                            { label: '取消', cls: 'pv-btn-ghost' },
+                            {
+                                label: '保存', cls: 'pv-btn-primary', onClick: function () {
+                                    var count = ((document.getElementById('pvLogMaxCount') || {}).value || '').trim();
+                                    var days = ((document.getElementById('pvLogMaxDays') || {}).value || '').trim();
+                                    PvUI.post(PvNav.route('admin/log-settings'), { log_max_count: count, log_max_days: days }).then(function (j) {
+                                        if (j && j.code === 200) { PvUI.toast(j.msg || '已保存', 'ok'); m.close(); goTab('logs'); }
+                                        else PvUI.toast((j && j.msg) || '保存失败', 'err');
+                                    }).catch(function () { PvUI.toast('网络请求失败', 'err'); });
+                                    return false;   // 保持打开，由回调决定关闭
+                                }
+                            }
+                        ],
+                        onOpen: function () {
+                            var c = document.getElementById('pvLogMaxCount');
+                            var d = document.getElementById('pvLogMaxDays');
+                            if (c) c.value = (data.logMaxCount !== undefined && data.logMaxCount !== '') ? data.logMaxCount : '';
+                            if (d) d.value = (data.logMaxDays !== undefined && data.logMaxDays !== '') ? data.logMaxDays : '';
+                        }
+                    });
+                });
+            }
+
             // 操作日志：清空
             var logClear = document.getElementById('pvLogClear');
             if (logClear) {
@@ -154,7 +191,7 @@
             // 账号管理面板
             if (global.PvAdminUsers) global.PvAdminUsers.init(goTab);
             // 存储情况面板
-            if (global.PvAdminStorage) global.PvAdminStorage.init(curTab);
+            if (global.PvAdminStorage) global.PvAdminStorage.init(curTab, data.cache);
             // 模拟服务器面板（复用 mock.js 的面板逻辑）
             if (global.PvPages && global.PvPages.mock && typeof global.PvPages.mock.init === 'function') {
                 try { global.PvPages.mock.init({}); } catch (e) { if (global.console) console.error(e); }

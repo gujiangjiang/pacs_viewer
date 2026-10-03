@@ -26,10 +26,51 @@ class PvQueryLogRepository {
 
     private static function record($username, $action, $detail, $keyword, $resultCount) {
         $ip = isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : '';
-        return PvDatabase::insert(
+        $id = PvDatabase::insert(
             "INSERT INTO query_log(username,keyword,result_count,ip,action,detail,created_at) VALUES(?,?,?,?,?,?,?)",
             array((string)$username, (string)$keyword, (int)$resultCount, $ip, (string)$action, (string)$detail, date('Y-m-d H:i:s'))
         );
+        self::enforceLimits();   // 写入后按「条数 / 天数」上限清理最早记录（哪个先到执行哪个）
+        return $id;
+    }
+
+    /** 日志保留上限设置：{count, days}（0 表示不限制） */
+    public static function limits() {
+        return array(
+            'count' => self::maxCount(),
+            'days'  => self::maxDays(),
+        );
+    }
+
+    /** 条数上限（<=0 不限制） */
+    public static function maxCount() {
+        $v = (int)PvSettings::get('log_max_count', '');
+        return $v > 0 ? $v : 0;
+    }
+
+    /** 天数上限（<=0 不限制） */
+    public static function maxDays() {
+        $v = (int)PvSettings::get('log_max_days', '');
+        return $v > 0 ? $v : 0;
+    }
+
+    /**
+     * 按设置清理超限日志：条数上限保留最新 N 条；天数上限删除 N 天前的记录。
+     * 两者可同时生效（谁先满足就清理谁），未设置则对应维度不限制。
+     */
+    public static function enforceLimits() {
+        $max = self::maxCount();
+        if ($max > 0) {
+            // 仅保留最新 max 条（id 自增即时间序），删除更早的
+            PvDatabase::exec(
+                "DELETE FROM query_log WHERE id NOT IN (SELECT id FROM query_log ORDER BY id DESC LIMIT " . $max . ")"
+            );
+        }
+        $days = self::maxDays();
+        if ($days > 0) {
+            $cut = date('Y-m-d H:i:s', time() - $days * 86400);
+            PvDatabase::exec("DELETE FROM query_log WHERE created_at < ?", array($cut));
+        }
     }
     public static function recent($limit = 50) {
         $limit = max(1, min(500, (int)$limit));

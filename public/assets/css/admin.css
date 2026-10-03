@@ -7,6 +7,13 @@
 .pv-icon-form input[type=file] { color: var(--pv-txt2); font-size: 13px; max-width: 260px; }
 
 
+/* 卡片头部操作按钮组（设置 / 清空 / 刷新等） */
+.pv-card-actions { display: inline-flex; align-items: center; gap: 8px; }
+
+/* 模态框内复选框行 */
+.pv-check { display: inline-flex; align-items: center; gap: 8px; color: var(--pv-txt); font-size: 13px; cursor: pointer; }
+.pv-check input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--pv-acc); }
+
 /* 操作日志徽章 */
 .pv-badge[class*="op-"] { padding: 2px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap; }
 .pv-badge.op-search { background: rgba(14,165,233,.16); color: #7dd3fc; }

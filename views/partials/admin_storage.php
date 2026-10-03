@@ -4,7 +4,10 @@
     <div class="pv-card">
         <div class="pv-card-head">
             <h3 class="pv-form-title">存储情况</h3>
-            <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" id="pvStorageRefresh">刷新</button>
+            <span class="pv-card-actions">
+                <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" id="pvStorageSettings">设置</button>
+                <button type="button" class="pv-btn pv-btn-outline pv-btn-sm" id="pvStorageRefresh">刷新</button>
+            </span>
         </div>
         <p class="pv-hint">统计运行时数据占用。缓存区为服务端生成影像的内存缓存（APCu 共享内存，避免磁盘反复读写）。</p>
         <div id="pvStorageBox" class="pv-storage"><div class="pv-dim">加载中…</div></div>

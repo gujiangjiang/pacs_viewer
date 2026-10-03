@@ -10,7 +10,20 @@ $s = $settings;
 $v = function ($k, $d = '') use ($s) { return isset($s[$k]) ? $s[$k] : $d; };
 $curTab = isset($tab) ? $tab : 'basic';
 $tabCls = function ($t) use ($curTab) { return $curTab === $t ? ' active' : ''; };
-$pageData = array('flash' => isset($flash) ? $flash : '');
+$pageData = array(
+    'flash' => isset($flash) ? $flash : '',
+    // 日志保留上限（可选项，空串表示不限制）
+    'logMaxCount' => $v('log_max_count', ''),
+    'logMaxDays'  => $v('log_max_days', ''),
+    // 缓存设置（容量以 MB 展示；空串表示不限制）
+    'cache' => array(
+        'apcuEnabled'    => $v('cache_apcu_enabled', '1') !== '0',
+        'diskEnabled'    => $v('cache_disk_enabled', '1') !== '0',
+        'maxMb'          => ($v('cache_max_bytes', '') !== '') ? round((float)$v('cache_max_bytes', '') / 1048576, 2) : '',
+        'diskMaxMb'      => ($v('cache_disk_max_bytes', '') !== '') ? round((float)$v('cache_disk_max_bytes', '') / 1048576, 2) : '',
+        'maxDays'        => $v('cache_max_days', ''),
+    ),
+);
 ?>
 <div class="pv-tabs">
     <button type="button" class="pv-tab<?php echo $tabCls('basic'); ?>" data-tab="basic">基础设置</button>

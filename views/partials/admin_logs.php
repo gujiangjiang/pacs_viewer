@@ -4,7 +4,10 @@
     <div class="pv-card">
         <div class="pv-card-head">
             <h3 class="pv-form-title">操作日志（共 <?php echo (int)$logCount; ?> 条）</h3>
-            <button type="button" id="pvLogClear" class="pv-btn pv-btn-outline pv-btn-sm">清空</button>
+            <span class="pv-card-actions">
+                <button type="button" id="pvLogSettings" class="pv-btn pv-btn-outline pv-btn-sm">设置</button>
+                <button type="button" id="pvLogClear" class="pv-btn pv-btn-outline pv-btn-sm">清空</button>
+            </span>
         </div>
         <div class="pv-logscroll" id="pvLogScroll" data-total="<?php echo (int)$logCount; ?>">
         <table class="pv-table">
