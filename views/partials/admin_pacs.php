@@ -39,10 +39,8 @@
 
         <div class="pv-form-actions">
             <button type="button" id="pvTestPacs" class="pv-btn pv-btn-outline">测试接口连通性</button>
-            <span id="pvTestResult" class="pv-test-result"></span>
-        </div>
-        <div class="pv-form-actions">
             <button type="submit" class="pv-btn pv-btn-primary">保存外部接口配置</button>
+            <span id="pvTestResult" class="pv-test-result"></span>
         </div>
     </form>
 </section>
