@@ -4,6 +4,13 @@
  */
 class PvAuth {
 
+    /** 请求级用户缓存：避免一次请求内多路径（requireLogin/isAdmin/控制器）重复查询数据库 */
+    private static $userCache = null;
+    private static $userResolved = false;
+
+    /** 失效用户缓存（登录 / 登出后调用） */
+    private static function forgetUser() { self::$userCache = null; self::$userResolved = false; }
+
     public static function login($username, $password) {
         $u = PvDatabase::one("SELECT * FROM users WHERE username=? LIMIT 1", array($username));
         if (!$u) return '用户名或密码错误';
@@ -19,19 +26,24 @@ class PvAuth {
             'role' => $u['role'],
         );
         $_SESSION['pv_login_at'] = time();
+        self::forgetUser();
         return true;
     }
 
     public static function logout() {
         $_SESSION = array();
         if (session_status() === PHP_SESSION_ACTIVE) @session_destroy();
+        self::forgetUser();
     }
 
     public static function user() {
-        if (empty($_SESSION['pv_uid'])) return null;
+        if (self::$userResolved) return self::$userCache;
+        self::$userResolved = true;
+        if (empty($_SESSION['pv_uid'])) { self::$userCache = null; return null; }
         // 实时校验账号有效性（停用即失效）
         $u = PvDatabase::one("SELECT id,username,display_name,role,status,clear_on_open,search_view FROM users WHERE id=?", array((int)$_SESSION['pv_uid']));
         if (!$u || (int)$u['status'] !== 1) { self::logout(); return null; }
+        self::$userCache = $u;
         return $u;
     }
 
