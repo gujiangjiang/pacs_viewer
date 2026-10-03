@@ -114,7 +114,7 @@ class PvDicomWebController {
     }
 
     private static function studyMeta($uid) {
-        $row = self::findRow($uid);
+        $row = PvMockServer::findRow($uid);
         if (!$row) self::jsonError(404, '未找到该检查');
         self::json(array(self::studyResource($row)));
     }
@@ -126,13 +126,6 @@ class PvDicomWebController {
         return (isset($row['series']) && is_array($row['series']) && $row['series']) ? $row['series'] : null;
     }
 
-    /** 取 UID 末段数字 */
-    private static function lastUidInt($uid, $default = 0) {
-        $parts = explode('.', trim((string)$uid));
-        $last = preg_replace('/\D/', '', (string)end($parts));
-        return $last === '' ? (int)$default : (int)$last;
-    }
-
     /** 在真实序列中匹配指定序列 UID（先精确、再按末段数字） */
     private static function matchRealSeries($row, $seUid) {
         $real = self::realSeries($row);
@@ -140,17 +133,17 @@ class PvDicomWebController {
         foreach ($real as $s) {
             if ((string)(isset($s['series_id']) ? $s['series_id'] : '') === (string)$seUid) return $s;
         }
-        $want = self::lastUidInt($seUid, 0);
+        $want = PvMockDicomTagBuilder::uidTailInt($seUid, 0);
         if ($want > 0) {
             foreach ($real as $s) {
-                if (self::lastUidInt(isset($s['series_id']) ? $s['series_id'] : '', 0) === $want) return $s;
+                if (PvMockDicomTagBuilder::uidTailInt(isset($s['series_id']) ? $s['series_id'] : '', 0) === $want) return $s;
             }
         }
         return null;
     }
 
     private static function series($studyUid) {
-        $row = self::findRow($studyUid);
+        $row = PvMockServer::findRow($studyUid);
         if (!$row) self::jsonError(404, '未找到该检查');
         $out = array();
         $real = self::realSeries($row);
@@ -183,7 +176,7 @@ class PvDicomWebController {
     }
 
     private static function instances($studyUid, $seUid) {
-        $row = self::findRow($studyUid);
+        $row = PvMockServer::findRow($studyUid);
         if (!$row) self::jsonError(404, '未找到该检查');
         // 可选分页：供区域客户端仅取首个实例元数据（如按需获取像素参数）
         $limit = max(0, (int)pvw_input('limit', 0));
@@ -192,7 +185,7 @@ class PvDicomWebController {
         $real = self::matchRealSeries($row, $seUid);
         if ($real) {
             $seUidReal = (string)(isset($real['series_id']) ? $real['series_id'] : $seUid);
-            $seriesNo = max(1, self::lastUidInt($seUidReal, 1));
+            $seriesNo = max(1, PvMockDicomTagBuilder::uidTailInt($seUidReal, 1));
             $mod = isset($real['modality']) && $real['modality'] !== '' ? (string)$real['modality'] : (string)$row['modality'];
             $count = max(0, (int)(isset($real['slice_count']) ? $real['slice_count'] : 0));
             $gen = PvMockDispatcher::generatorForSeriesIndex(strtoupper($row['modality']), $row['description'], $row['study_uid'], $seriesNo - 1);
@@ -260,7 +253,7 @@ class PvDicomWebController {
     }
 
     private static function instance($studyUid, $seUid, $iuid) {
-        $row = self::findRow($studyUid);
+        $row = PvMockServer::findRow($studyUid);
         if (!$row) self::jsonError(404, '未找到该检查');
         try {
             $r = PvMockServer::wadoByUids($studyUid, $seUid, $iuid);
@@ -278,7 +271,7 @@ class PvDicomWebController {
 
     /** WADO-RS 渲染图（rendered）：返回小尺寸 PNG，供缩略图使用 */
     private static function rendered($studyUid, $seUid) {
-        $row = self::findRow($studyUid);
+        $row = PvMockServer::findRow($studyUid);
         if (!$row) self::jsonError(404, '未找到该检查');
         try {
             $r = PvMockServer::thumbnailByUids($studyUid, $seUid);
@@ -305,13 +298,6 @@ class PvDicomWebController {
             return substr($_SERVER['HTTP_AUTHORIZATION'], 7);
         }
         return '';
-    }
-
-    private static function findRow($uid) {
-        foreach (PvMockServer::rows('') as $row) {
-            if ($row['study_uid'] === $uid || (isset($row['accession_no']) && $row['accession_no'] === $uid)) return $row;
-        }
-        return null;
     }
 
     private static function seriesIndexByUid($row, $seUid) {

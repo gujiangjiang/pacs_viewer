@@ -153,6 +153,18 @@ class PvMockDicomTagBuilder {
 
     /* ---------------- UID 工具 ---------------- */
 
+    /** 取 UID 末段中的数字（如 `...1.3` → `"3"`；无数字） */
+    public static function uidTail($uid) {
+        $parts = explode('.', trim((string)$uid));
+        return preg_replace('/\D/', '', (string)end($parts));
+    }
+
+    /** 取 UID 末段数字（无则返回默认值） */
+    public static function uidTailInt($uid, $default = 1) {
+        $tail = self::uidTail($uid);
+        return $tail === '' ? (int)$default : (int)$tail;
+    }
+
     /** 由根 UID 派生标准子 UID（保证同一序列内树状拓扑） */
     public static function deriveUid($root, array $suffix) {
         $root = preg_replace('/[^0-9.]/', '', (string)$root);

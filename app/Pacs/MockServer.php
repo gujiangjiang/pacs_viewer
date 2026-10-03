@@ -129,7 +129,7 @@ class PvMockServer {
 
     /** 调阅单次检查（按来源行组装，含按检查号回退匹配） */
     public static function study($uid) {
-        $row = self::findStudyRow($uid);
+        $row = self::findRow($uid);
         return $row ? PvDemoPacs::assembleStudy($row) : null;
     }
 
@@ -155,7 +155,7 @@ class PvMockServer {
         $instance = 1;
         if (!empty($p['objectUID']) || !empty($p['object_uid'])) {
             $ouid = !empty($p['objectUID']) ? (string)$p['objectUID'] : (string)$p['object_uid'];
-            $instance = (int)self::lastUidSegment($ouid);
+            $instance = (int)PvMockDicomTagBuilder::uidTail($ouid);
         } elseif (isset($p['instance']) && $p['instance'] !== '') {
             $instance = (int)$p['instance'];
         }
@@ -189,31 +189,24 @@ class PvMockServer {
         return array('binary' => $binary, 'filename' => $base, 'content_type' => 'application/dicom');
     }
 
-    /** 取 UID 末段数字（如 ...1.2 → 2），无则返回默认值 */
-    private static function lastUidInt($uid, $default = 1) {
-        $parts = explode('.', trim((string)$uid));
-        $last = preg_replace('/\D/', '', (string)end($parts));
-        return $last === '' ? (int)$default : (int)$last;
-    }
-
     /**
      * 按真实序列/SOP UID 生成标准 DICOM（不依赖内置系列规划数量），
      * 用于与区域 PACS / FHIR 发布的真实 UID 对齐。
      */
     public static function wadoByUids($studyUid, $seriesUid, $instanceUid) {
-        $row = self::findStudyRow($studyUid);
+        $row = self::findRow($studyUid);
         if (!$row) throw new RuntimeException('未找到该检查');
         $modality = strtoupper($row['modality']);
         $desc = isset($row['description']) ? (string)$row['description'] : '';
-        $seriesNo = self::lastUidInt($seriesUid, 1);
-        $instNo = self::lastUidInt($instanceUid, 1);
+        $seriesNo = PvMockDicomTagBuilder::uidTailInt($seriesUid, 1);
+        $instNo = PvMockDicomTagBuilder::uidTailInt($instanceUid, 1);
         $gen = PvMockDispatcher::generatorForSeriesIndex($modality, $desc, $studyUid, $seriesNo - 1);
         $series = array('description' => 'Series ' . $seriesNo, 'orientation' => $gen->getOrientation());
         $totalFrames = 0;
         if (!empty($row['series']) && is_array($row['series'])) {
             foreach ($row['series'] as $s) {
                 $sid = isset($s['series_id']) ? (string)$s['series_id'] : '';
-                if ($sid === (string)$seriesUid || self::lastUidInt($sid, 0) === $seriesNo) {
+                if ($sid === (string)$seriesUid || PvMockDicomTagBuilder::uidTailInt($sid, 0) === $seriesNo) {
                     if (isset($s['description'])) $series['description'] = (string)$s['description'];
                     if (!empty($s['orientation'])) $series['orientation'] = (string)$s['orientation'];
                     if (isset($s['slice_count'])) $totalFrames = (int)$s['slice_count'];
@@ -234,11 +227,11 @@ class PvMockServer {
 
     /** 按真实序列 UID 生成缩略图（PNG） */
     public static function thumbnailByUids($studyUid, $seriesUid) {
-        $row = self::findStudyRow($studyUid);
+        $row = self::findRow($studyUid);
         if (!$row) throw new RuntimeException('未找到该检查');
         $modality = strtoupper($row['modality']);
         $desc = isset($row['description']) ? (string)$row['description'] : '';
-        $seriesNo = self::lastUidInt($seriesUid, 1);
+        $seriesNo = PvMockDicomTagBuilder::uidTailInt($seriesUid, 1);
         $gen = PvMockDispatcher::generatorForSeriesIndex($modality, $desc, $studyUid, $seriesNo - 1);
         $size = 128;
         $png = self::grayToPng($gen->generateThumbnailGray($size), $size);
@@ -273,7 +266,7 @@ class PvMockServer {
         }
         if ($studyUid === '') throw new RuntimeException('缺少检查标识 studyUID');
 
-        $row = self::findStudyRow($studyUid);
+        $row = self::findRow($studyUid);
         if (!$row) throw new RuntimeException('未找到该检查');
 
         $modality = strtoupper($row['modality']);
@@ -283,7 +276,7 @@ class PvMockServer {
         $seriesIndex = 0;
         if (!empty($p['seriesUID']) || !empty($p['series_uid'])) {
             $suid = !empty($p['seriesUID']) ? (string)$p['seriesUID'] : (string)$p['series_uid'];
-            $tail = self::lastUidSegment($suid);
+            $tail = PvMockDicomTagBuilder::uidTail($suid);
             foreach ($plan as $i => $s) {
                 if ((string)$s['series_id'] === $tail || strpos($suid, '.' . $s['series_id']) !== false || strpos($suid, $s['series_id']) !== false) {
                     $seriesIndex = $i; break;
@@ -377,17 +370,12 @@ class PvMockServer {
         return array(array(0, 0, 0), array(1, 0, 0, 0, 1, 0), 0);
     }
 
-    private static function findStudyRow($uid) {
+    /** 按 StudyInstanceUID 或检查号查找检查行（供本类与 DICOMweb 端点复用） */
+    public static function findRow($uid) {
         foreach (self::rows('') as $r) {
             if ($r['study_uid'] === $uid || (isset($r['accession_no']) && $r['accession_no'] === $uid)) return $r;
         }
         return null;
-    }
-
-    private static function lastUidSegment($uid) {
-        $parts = explode('.', trim((string)$uid));
-        $last = end($parts);
-        return preg_replace('/\D/', '', (string)$last);
     }
 
     /* ---------------- 内部工具 ---------------- */
