@@ -185,6 +185,9 @@ class PvDicomWebController {
     private static function instances($studyUid, $seUid) {
         $row = self::findRow($studyUid);
         if (!$row) self::jsonError(404, '未找到该检查');
+        // 可选分页：供区域客户端仅取首个实例元数据（如按需获取像素参数）
+        $limit = max(0, (int)pvw_input('limit', 0));
+        $offset = max(0, (int)pvw_input('offset', 0));
         // 优先：真实序列（与区域 PACS / FHIR 一致）
         $real = self::matchRealSeries($row, $seUid);
         if ($real) {
@@ -219,7 +222,7 @@ class PvDicomWebController {
                     '00200037' => array('vr' => 'DS', 'Value' => array(self::iopFor($gen->getOrientation()))),
                 );
             }
-            self::json($out);
+            self::json(self::sliceOut($out, $limit, $offset));
         }
         // 回退：内置序列规划
         $idx = self::seriesIndexByUid($row, $seUid);
@@ -253,7 +256,7 @@ class PvDicomWebController {
                 '00200037' => array('vr' => 'DS', 'Value' => array(self::iopFor($s['orientation']))),
             );
         }
-        self::json($out);
+        self::json(self::sliceOut($out, $limit, $offset));
     }
 
     private static function instance($studyUid, $seUid, $iuid) {
@@ -372,6 +375,13 @@ class PvDicomWebController {
         if ($s === '男' || strtoupper($s) === 'M' || $s === '1') return 'M';
         if ($s === '女' || strtoupper($s) === 'F' || $s === '2') return 'F';
         return 'O';
+    }
+
+    /** 实例列表分页切片（limit=0 表示不限） */
+    private static function sliceOut($out, $limit, $offset) {
+        if ($limit > 0) return array_slice($out, $offset, $limit);
+        if ($offset > 0) return array_slice($out, $offset);
+        return $out;
     }
 
     private static function json($data) {
