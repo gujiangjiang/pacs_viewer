@@ -27,8 +27,9 @@
         this.route = { uid: opts.uid || '', mode: opts.mode || 'append' };
         this.about = opts.about || {};
         this.guest = !!opts.guest;   // 链接访客模式：仅临时阅片，无登录 / 无搜索 / 无关闭
-        // 宿主指令桥允许来源：默认仅同源；如宿主为独立域，可在 init 传入 hostOrigin
-        this.hostOrigin = opts.hostOrigin || global.location.origin;
+        // 宿主指令桥允许来源：显式配置的 hostOrigin 优先；未配置时信任「嵌入本页的
+        // 直接父窗口」与同源来源（见 _isTrustedHost），兼容独立域的 iframe 宿主。
+        this.hostOrigin = opts.hostOrigin || '';
         this.studyLimit = this.guest ? 1 : clamp(parseInt(opts.limit, 10) || 5, 3, 10);
         if (root && root.classList) root.classList.toggle('pv-guest', this.guest);
         this.q = function (k) { return root.querySelector('[data-pv="' + k + '"]'); };
@@ -117,31 +118,48 @@
     PvViewer.prototype._bindHostCommands = function () {
         var self = this;
         this._onHostMsg = function (e) {
-            if (self.hostOrigin && e.origin !== self.hostOrigin) return;   // 仅接受可信来源
+            if (!self._isTrustedHost(e)) return;   // 仅接受可信来源
             var d = e && e.data;
             if (!d || typeof d !== 'object' || d.type !== 'pv-command') return;
             try { self.applyHostCommand(d); } catch (err) { /* 忽略非法指令 */ }
         };
         window.addEventListener('message', this._onHostMsg);
     };
+    /**
+     * 指令来源校验：
+     *   ① 配置了 hostOrigin → 严格匹配该来源；
+     *   ② 未配置时，信任嵌入本页的直接父窗口（iframe 宿主，跨域亦放行）；
+     *   ③ 其余仅接受同源消息。
+     * 如此既能让独立域的宿主工作站驱动工具栏，又不会被任意第三方页面远程操控。
+     */
+    PvViewer.prototype._isTrustedHost = function (e) {
+        if (!e) return false;
+        if (this.hostOrigin) return e.origin === this.hostOrigin;
+        if (global.parent && global.parent !== global && e.source === global.parent) return true;
+        return e.origin === global.location.origin;
+    };
+    /** 宿主指令中可直接作为“工具名”的命令（兼容 {command:'zoom'} 一类简写） */
+    var HOST_TOOLS = { wl: 1, zoom: 1, pan: 1, length: 1, angle: 1, rect: 1, ellipse: 1 };
     PvViewer.prototype.applyHostCommand = function (d) {
         var p = this.activePane();
         if (!p) return;
-        var tool = d.tool || (d.command === 'tool' ? d.value : '');
+        var cmd = d.command || d.action || '';
+        // 工具：支持 {tool:'zoom'}、{command:'tool',value:'zoom'} 与 {command:'zoom'} 三种写法
+        var tool = d.tool || (cmd === 'tool' ? d.value : '') || (HOST_TOOLS[cmd] ? cmd : '');
         if (tool) { this.setTool(tool); return; }
-        if (d.command === 'preset') { this.setPreset(d.preset || d.value || ''); return; }
+        if (cmd === 'preset') { this.setPreset(d.preset || d.value || ''); return; }
         if (!p.hasImage()) return;
-        if (d.command === 'fit') { p.fit(); return; }
-        if (d.command === 'oneone') { this._paneAction(p, 'oneone'); return; }
-        if (d.command === 'reset') {
+        if (cmd === 'fit') { p.fit(); return; }
+        if (cmd === 'oneone') { this._paneAction(p, 'oneone'); return; }
+        if (cmd === 'reset') {
             // 等价双击左侧序列缩略图：重置为该视图默认状态（重载 + 默认窗 + 适应窗口）
             var gi = this.indexOf(p.st.uid), si = p.st.si;
             if (gi >= 0) this.setSeriesOnActive(gi, si, true);
             p.setStatus('已重置为该视图默认状态'); return;
         }
-        if (d.command === 'rotate') { this._paneAction(p, 'rotate-cw'); return; }
-        if (d.command === 'flip') { this._paneAction(p, 'flip-h'); return; }
-        if (d.command === 'invert') { this._paneAction(p, 'invert'); return; }
+        if (cmd === 'rotate') { this._paneAction(p, 'rotate-cw'); return; }
+        if (cmd === 'flip') { this._paneAction(p, 'flip-h'); return; }
+        if (cmd === 'invert') { this._paneAction(p, 'invert'); return; }
     };
 
     /** 键盘快捷键绑定（阅片器专属；输入框内不拦截） */
