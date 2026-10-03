@@ -35,13 +35,17 @@
 
     /* ---------------- 模态框 ---------------- */
     var currentMask = null;
+    var currentCancel = null;   // confirm / alert 的「取消」回调：非按钮方式关闭时调用，避免 Promise 悬挂
 
     function close() {
         if (!currentMask) return;
         var mask = currentMask;
+        var cancel = currentCancel;
         currentMask = null;
+        currentCancel = null;
         mask.parentNode && mask.parentNode.removeChild(mask);
         document.removeEventListener('keydown', onKey);
+        if (typeof cancel === 'function') { try { cancel(); } catch (e) {} }
     }
     function onKey(e) { if (e.key === 'Escape') close(); }
 
@@ -133,6 +137,8 @@
                     { label: opts.okText || '确定', cls: opts.danger ? 'pv-btn-danger' : 'pv-btn-primary', onClick: function () { resolve(true); } }
                 ]
             });
+            // Esc / 点遮罩 / 关闭按钮等非按钮关闭：按「取消」处理
+            currentCancel = function () { resolve(false); };
         });
     }
     function alertOpts(opts) {
@@ -143,6 +149,7 @@
                 body: '<p class="pv-modal-msg">' + esc(opts.message || '') + '</p>',
                 actions: [{ label: '知道了', cls: 'pv-btn-primary', onClick: function () { resolve(true); } }]
             });
+            currentCancel = function () { resolve(true); };
         });
     }
 
