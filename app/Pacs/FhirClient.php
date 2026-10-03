@@ -28,6 +28,8 @@ class PvFhirClient {
     private static $lastStatus = 0;
     /** 机构名称缓存（FHIR Organization.name） */
     private static $hospital = null;
+    /** 请求级检索结果缓存（同一请求内避免对同一关键词重复取数） */
+    private static $searchCache = array();
 
     public static function isConfigured() {
         return self::base() !== '';
@@ -68,6 +70,13 @@ class PvFhirClient {
      *   · 检查：优先 ImagingStudy?patient=；否则用 Encounter?patient=（门诊就诊记录）。
      */
     public static function search($keyword = '') {
+        $ck = (string)$keyword;
+        if (array_key_exists($ck, self::$searchCache)) return self::$searchCache[$ck];
+        return self::$searchCache[$ck] = self::searchUncached($keyword);
+    }
+
+    /** 实际检索实现（带请求级记忆化，见 search） */
+    private static function searchUncached($keyword = '') {
         self::$lastError = '';
         if (!self::isConfigured()) {
             throw new RuntimeException('未配置门诊系统 FHIR 接口地址');
@@ -551,7 +560,7 @@ class PvFhirClient {
         $age = self::ageText($birth);
         /* modality 可能是 R4 的单个 CodeableConcept，也可能是数组（部分实现用 R5 风格），兼容两者 */
         $modality = self::codeOf(isset($im['modality'][0]) ? $im['modality'][0] : (isset($im['modality']) ? $im['modality'] : array()));
-        $uid = (string)$im['id'];
+        $uid = isset($im['id']) ? (string)$im['id'] : '';
         $acc = self::accessionOf($im);
         if ($acc === '') $acc = 'ACC' . preg_replace('/\D/', '', $uid);
         $started = isset($im['started']) ? (string)$im['started'] : '';
