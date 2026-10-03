@@ -10,10 +10,6 @@
     var PRESETS = global.PvPresets;
     var PANE_ACTS = { 'rotate-cw': 1, 'rotate-ccw': 1, 'flip-h': 1, 'flip-v': 1, 'invert': 1, 'clear': 1, 'fit': 1, 'oneone': 1, 'prev': 1, 'next': 1, 'zoom-in': 1, 'zoom-out': 1 };
 
-    /* 序列操作痕迹（缩放/平移/窗值/变换/测量/帧 + 关联布局），会话内按序列保留 */
-    var SERIES_LS = 'pacs_series_v1';
-    function loadSeriesMap() { try { return JSON.parse(sessionStorage.getItem(SERIES_LS)) || {}; } catch (e) { return {}; } }
-
     /* 键盘快捷键映射（不在界面展示，避免臃肿；按 ? 查看说明） */
     var KEY_TOOLS = { w: 'wl', z: 'zoom', p: 'pan', l: 'length', a: 'angle', r: 'rect', e: 'ellipse' };
     var KEY_ACTS = { f: 'fit', i: 'invert', h: 'flip-h', v: 'flip-v', c: 'clear', d: 'dicom-info', s: 'save-image' };
@@ -21,13 +17,6 @@
 
     var clamp = PvRender.clamp;   // 复用通用钳位助手
     var esc = PvUI.esc;           // 复用通用转义助手
-    /** 图标渲染：命中统一 SVG 图标库则用 SVG，否则按文本/emoji（如预设窗）显示 */
-    function iconHtml(name) {
-        if (global.PvIcons && global.PvIcons[name]) {
-            return '<span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + global.PvIcons[name] + '</svg></span>';
-        }
-        return '<span class="ic">' + name + '</span>';
-    }
 
     /* ============================================================
      * PvViewer —— 工作区控制器
@@ -53,7 +42,7 @@
         this.sidebar = new PvSidebar(this.seriesListEl);
         this.ws = { studies: [] };
         // 序列操作痕迹（会话内按序列保留）；访客每次进入均为全新状态，不读取/写入 sessionStorage
-        this.seriesMap = this.guest ? {} : loadSeriesMap();
+        this.seriesMap = this.guest ? {} : (global.PvViewerSession ? global.PvViewerSession.loadSeriesMap() : {});
         this.panes = [];
         this.active = 0;
         this.tool = 'wl';
@@ -174,88 +163,6 @@
         });
         html += '</tbody></table></div>';
         window.PvModal.open({ title: '键盘快捷键', size: 'lg', body: html });
-    };
-
-    /* ---------- 查看影像报告（FHIR DiagnosticReport） ---------- */
-    PvViewer.prototype.showReport = function () {
-        if (!window.PvModal) return;
-        var p = this.activePane();
-        var d = (p && p.data() && p.data().data) || null;
-        if (!d || !d.study) { if (window.PvUI) PvUI.toast('请先打开一个检查', 'err'); return; }
-        var pInfo = d.patient || {}, s = d.study || {};
-        var uid = s.study_uid || '';
-        var self = this;
-        var m = window.PvModal.open({
-            title: '影像检查报告',
-            size: 'lg',
-            body: '<div class="pv-report"><div class="pv-report-loading">正在加载报告…</div></div>',
-            actions: [{ label: '关闭', cls: 'pv-btn-ghost' }],
-            onOpen: function (h) { self._loadReport(h.body, pInfo, s, uid); }
-        });
-        if (window.PvApi && PvApi.log) PvApi.log('report', (pInfo.name || '') + ' / ' + (s.modality || '') + ' / ' + (s.description || ''));
-        return m;
-    };
-    PvViewer.prototype._loadReport = function (bodyEl, pInfo, s, uid) {
-        var self = this;
-        var done = function (rep) { bodyEl.innerHTML = self.reportHtml(pInfo, s, rep || { available: false }); };
-        if (window.PvApi && PvApi.report) {
-            PvApi.report(uid, pInfo.patient_id || '', {
-                modality: s.modality || '', study_date: s.study_date || '', title: s.description || ''
-            }).then(function (j) {
-                done((j && j.code === 200 && j.data) ? j.data : null);
-            }).catch(function () { done(null); });
-        } else { done(null); }
-    };
-    PvViewer.prototype.reportHtml = function (p, s, rep) {
-        var item = function (label, val) {
-            val = (val === undefined || val === null) ? '' : String(val).trim();
-            if (val === '') return '';
-            return '<div class="pv-report-item"><span>' + esc(label) + '</span><b>' + esc(val) + '</b></div>';
-        };
-        var meta = item('患者姓名', p.name) + item('性别', p.gender) + item('年龄', p.age)
-            + item('患者号', p.patient_id) + item('门诊号', p.outpatient_no)
-            + item('检查号', s.accession_no) + item('检查项目', s.description)
-            + item('检查时间', s.study_date);
-
-        var statusText = rep.available ? (rep.status_text || '') : '';
-        var st = rep.status || '';
-        var stCls = (st === 'final' || st === 'amended' || st === 'corrected') ? 'ok'
-            : ((st === 'cancelled') ? 'off' : 'warn');
-        var statusBadge = statusText !== ''
-            ? '<span class="pv-report-status ' + stCls + '">' + esc(statusText) + '</span>' : '';
-        var reportNo = (rep.report_no || '').trim() !== '' ? '<span class="pv-report-no">报告号 ' + esc(rep.report_no) + '</span>' : '';
-        var corner = (reportNo !== '' || statusBadge !== '')
-            ? '<div class="pv-report-corner">' + statusBadge + reportNo + '</div>' : '';
-
-        var sec = function (title, val) {
-            val = (val === undefined || val === null) ? '' : String(val).trim();
-            if (val === '') return '';
-            return '<div class="pv-report-sec"><h4>' + esc(title) + '</h4><div class="pv-report-text">' + esc(val).replace(/\n/g, '<br>') + '</div></div>';
-        };
-        var body = rep.available
-            ? (sec('检查所见', rep.findings) + sec('检查诊断', rep.conclusion) + sec('临床诊断', rep.clinical_diagnosis))
-            : '';
-        if (body === '') {
-            body = '<div class="pv-report-empty">'
-                + '<div class="pv-report-empty-t">' + (rep.available ? '报告正文尚未填写' : '该检查暂无影像报告') + '</div>'
-                + '<div class="pv-report-empty-s">' + (rep.available ? '报告可能仍在书写中，请稍后重试。' : '报告由门诊/ RIS 系统出具后，可在此查看；亦可联系检查科室。') + '</div>'
-                + '</div>';
-        }
-        var footItems = item('开单医生', rep.apply_doctor) + item('开单科室', rep.apply_dept)
-            + item('报告医生', rep.report_doctor) + item('报告时间', rep.issued);
-        var foot = footItems !== '' ? '<div class="pv-report-foot">' + footItems + '</div>' : '';
-        var pdfBtn = ('pdf_url' in rep && rep.pdf_url) ? '<a class="pv-btn pv-btn-ghost pv-btn-sm" href="' + esc(rep.pdf_url) + '" target="_blank" rel="noopener">查看 PDF 报告</a>' : '';
-
-        return '<div class="pv-report"><div class="pv-report-doc">'
-            + '<div class="pv-report-title">'
-            + '<div class="pv-report-hosp">' + esc(this.about && (this.about.report_hospital || this.about.hospital) ? (this.about.report_hospital || this.about.hospital) : '') + '</div>'
-            + '<h2>影像检查报告</h2>'
-            + corner + '</div>'
-            + '<div class="pv-report-meta">' + meta + '</div>'
-            + '<div class="pv-report-body">' + body + '</div>'
-            + foot
-            + (pdfBtn ? '<div class="pv-report-pdf">' + pdfBtn + '</div>' : '')
-            + '</div></div>';
     };
 
     /* ---------- 布局 ---------- */
@@ -529,36 +436,6 @@
         var p = this.activePane(); if (p) p.setStatus('');
     };
 
-    /* ---------- 序列操作痕迹（缩放/平移/窗值/测量/帧 + 关联布局） ---------- */
-    PvViewer.prototype._skey = function (uid, sid) { return uid + '|' + sid; };
-    PvViewer.prototype.seriesState = function (uid, sid) {
-        if (!uid || sid == null) return null;
-        return this.seriesMap[this._skey(uid, sid)] || null;
-    };
-    PvViewer.prototype.savePaneState = function (pane) {
-        var ser = pane && pane.curSeries();
-        if (!pane || !pane.st.uid || !ser) return;
-        var key = this._skey(pane.st.uid, ser.series_id);
-        var rec = this.seriesMap[key] || {};
-        rec.view = pane.captureView();
-        this.seriesMap[key] = rec;
-        this._persistSeriesMap();
-    };
-    PvViewer.prototype.clearStudySeriesState = function (uid) {
-        if (!uid) return;
-        var pre = uid + '|';
-        for (var k in this.seriesMap) { if (k.indexOf(pre) === 0) delete this.seriesMap[k]; }
-        this._persistSeriesMap();
-    };
-    PvViewer.prototype.clearAllSeriesState = function () {
-        this.seriesMap = {};
-        this._persistSeriesMap();
-    };
-    PvViewer.prototype._persistSeriesMap = function () {
-        if (this.guest) return;
-        try { sessionStorage.setItem(SERIES_LS, JSON.stringify(this.seriesMap)); } catch (e) {}
-    };
-
     /**
      * 在「激活窗格」载入序列（不改动布局：多视图下点序列即载入到当前激活分栏，便于对比）。
      * fresh=true 时重置该序列的操作痕迹（双击）。
@@ -574,33 +451,6 @@
             return;
         }
         ap.setSeries(st.uid, si, {});
-    };
-
-    /* ---------- 会话记忆 ---------- */
-    /** 合并高频写入（翻帧滚动等）到一次 sessionStorage 落盘 */
-    PvViewer.prototype.persist = function () {
-        var self = this;
-        if (this._persistTimer) clearTimeout(this._persistTimer);
-        this._persistTimer = setTimeout(function () { self._persistTimer = null; self.persistNow(); }, 150);
-    };
-    PvViewer.prototype.persistNow = function () {
-        if (this.guest) return;   // 访客不落盘会话状态
-        try {
-            var state = {
-                layout: this.layout, active: this.active,
-                studies: this.ws.studies.map(function (x) { return { uid: x.uid, collapsed: !!x.collapsed }; }),
-                panes: this.panes.map(function (p) { return { uid: p.st.uid, si: p.st.si, fi: p.st.fi }; })
-            };
-            sessionStorage.setItem('pacs_workspace_v1', JSON.stringify(state));
-        } catch (e) {}
-    };
-    PvViewer.prototype.loadState = function () {
-        if (this.guest) return null;   // 访客不做会话恢复
-        try { return JSON.parse(sessionStorage.getItem('pacs_workspace_v1')); } catch (e) { return null; }
-    };
-    PvViewer.prototype.clearState = function () {
-        if (this._persistTimer) { clearTimeout(this._persistTimer); this._persistTimer = null; }
-        try { sessionStorage.removeItem('pacs_workspace_v1'); } catch (e) {}
     };
 
     /* ---------- 日志 ---------- */
@@ -641,61 +491,6 @@
         var link = window.PvNav ? window.PvNav.route('viewer', { uid: uid }) : '';
         var done = function (ok) { if (p) p.setStatus((ok === false ? '复制失败，请手动复制：' : '已复制阅片直链：') + link); };
         PvUI.copy(link).then(done, function () { done(false); });
-    };
-
-    /* ---------- 右键菜单（作用于激活窗格） ---------- */
-    PvViewer.prototype._ctxItem = function (o) {
-        if (o.sep) return '<div class="pv-ctx-sep"></div>';
-        var arrow = o.sub ? '<span class="arrow">▶</span>' : '';
-        var sub = o.sub ? '<div class="pv-ctx-sub">' + o.sub.map(this._ctxItem.bind(this)).join('') + '</div>' : '';
-        var attrs = '';
-        if (o.tool) attrs += ' data-tool="' + o.tool + '"';
-        if (o.act) attrs += ' data-act="' + o.act + '"';
-        if (o.preset) attrs += ' data-preset="' + o.preset + '"';
-        var icon = o.icon ? iconHtml(o.icon) : '';
-        return '<div class="pv-ctx-item"' + attrs + '>' + icon + '<span class="lb">' + esc(o.label) + '</span>' + arrow + sub + '</div>';
-    };
-    PvViewer.prototype.openCtxMenu = function (cx, cy) {
-        var el = this.ctxEl; if (!el) return;
-        var p = this.activePane();
-        var hasImage = !!(p && p.hasImage());
-        var items;
-        if (!hasImage) {
-            items = [{ label: '关于', icon: 'about', act: 'about' }];
-        } else {
-            items = [
-                { label: '预设窗', icon: 'preset', sub: [{ label: '软组织窗 (400/40)', preset: 'soft', icon: '🟫' }, { label: '肺窗 (1500/-600)', preset: 'lung', icon: '🫁' }, { label: '骨窗 (2000/350)', preset: 'bone', icon: '🦴' }, { label: '默认窗 (2500/250)', preset: 'full', icon: '🖼' }] },
-                { label: '缩放', icon: 'zoom', tool: 'zoom' }, { label: '平移', icon: 'pan', tool: 'pan' }, { label: '使用窗口', icon: 'wl', tool: 'wl' },
-                { label: '原图 1:1', icon: 'oneone', act: 'oneone' }, { sep: true },
-                { label: '测量', icon: 'measure', sub: [{ label: '测距（mm）', tool: 'length', icon: 'length' }, { label: '测角（°）', tool: 'angle', icon: 'angle' }, { label: '矩形 ROI', tool: 'rect', icon: 'rect' }, { label: '椭圆 ROI', tool: 'ellipse', icon: 'ellipse' }, { sep: true }, { label: '清除标注', act: 'clear', icon: 'clear' }] },
-                { label: '变换', icon: 'transform', sub: [{ label: '逆时针 90°', act: 'rotate-ccw', icon: 'rotate-ccw' }, { label: '顺时针 90°', act: 'rotate-cw', icon: 'rotate-cw' }, { label: '水平镜像', act: 'flip-h', icon: 'flip-h' }, { label: '垂直镜像', act: 'flip-v', icon: 'flip-v' }, { label: '正负片反色', act: 'invert', icon: 'invert' }] },
-                { sep: true }, { label: '关于', icon: 'about', act: 'about' }
-            ];
-        }
-        el.innerHTML = items.map(this._ctxItem.bind(this)).join('');
-        el.classList.add('open');
-        var w = el.offsetWidth, h = el.offsetHeight;
-        el.style.left = Math.max(8, Math.min(cx, window.innerWidth - w - 8)) + 'px';
-        el.style.top = Math.max(8, Math.min(cy, window.innerHeight - h - 8)) + 'px';
-    };
-    PvViewer.prototype.closeCtxMenu = function () { if (this.ctxEl) this.ctxEl.classList.remove('open'); };
-    PvViewer.prototype._bindCtxMenu = function () {
-        var self = this, el = this.ctxEl; if (!el) return;
-        el.addEventListener('click', function (e) {
-            var it = e.target.closest ? e.target.closest('.pv-ctx-item') : null;
-            if (!it) return;
-            if (it.querySelector('.pv-ctx-sub')) return;
-            var tool = it.getAttribute('data-tool'), act = it.getAttribute('data-act'), preset = it.getAttribute('data-preset');
-            if (tool) self.setTool(tool);
-            else if (act) self.doAction(act);
-            else if (preset) self.setPreset(preset);
-            self.closeCtxMenu();
-        });
-        this._ctxDoc = function (ev) { if (el.classList.contains('open') && !el.contains(ev.target)) self.closeCtxMenu(); };
-        this._ctxViewport = function () { self.closeCtxMenu(); };
-        document.addEventListener('pointerdown', this._ctxDoc, true);
-        window.addEventListener('resize', this._ctxViewport);
-        window.addEventListener('scroll', this._ctxViewport, true);
     };
 
     /* ---------- 关闭全部 / 分隔条 / 禁用右击 ---------- */

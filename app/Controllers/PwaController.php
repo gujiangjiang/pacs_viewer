@@ -80,6 +80,9 @@ class PvPwaController {
             $asset . '/js/modules/dicom-worker.js' . $ver,
             $asset . '/js/modules/scroll.js' . $ver,
             $asset . '/js/modules/pane.js' . $ver, $asset . '/js/viewer.js' . $ver,
+            $asset . '/js/modules/viewer-report.js' . $ver,
+            $asset . '/js/modules/viewer-ctxmenu.js' . $ver,
+            $asset . '/js/modules/viewer-session.js' . $ver,
         );
         ?>
 /* Service Worker — PACS 影像浏览器 */
