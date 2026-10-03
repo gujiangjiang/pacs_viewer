@@ -237,7 +237,11 @@ function pvw_csrf() {
 function pvw_csrf_check() {
     $t = isset($_POST['_csrf']) ? (string)$_POST['_csrf'] : '';
     if ($t === '' || empty($_SESSION['pv_csrf']) || !hash_equals($_SESSION['pv_csrf'], $t)) {
-        pvw_json(403, '安全校验失败，请刷新页面重试');
+        // AJAX 请求返回 JSON；普通表单（登录 / 安装等）返回可读错误页，避免用户看到裸 JSON
+        if (pvw_is_ajax()) pvw_json(403, '安全校验失败，请刷新页面重试');
+        http_response_code(403);
+        pvw_view('error', array('message' => '安全校验失败，请刷新页面后重试'));
+        exit;
     }
 }
 
