@@ -72,10 +72,37 @@
         var self = this;
         var raf = window.requestAnimationFrame || function (fn) { return setTimeout(fn, 16); };
         this._onWinResize = function () {
+            if (!self.isAttached()) return;   // 被 SPA 隐藏期间无需重排重绘
             if (self._resizeRaf) return;
             self._resizeRaf = raf(function () { self._resizeRaf = null; self.panes.forEach(function (p) { p.resize(); p.render(); }); });
         };
         window.addEventListener('resize', this._onWinResize);
+    };
+    /** 阅片器根节点当前是否在文档中（SPA 保活时可能被暂时摘下） */
+    PvViewer.prototype.isAttached = function () {
+        if (!this.root) return false;
+        return this.root.isConnected !== undefined ? this.root.isConnected : document.body.contains(this.root);
+    };
+    /**
+     * 被 SPA 切到其他页面时调用：中止后台预取、释放连接，避免拖慢其他页面；
+     * 已解码的首帧仍保留在内存，返回时可瞬时重现。
+     */
+    PvViewer.prototype.onHide = function () {
+        var self = this;
+        this.panes.forEach(function (p) {
+            if (p && p._abortFetches) p._abortFetches();
+            if (self.savePaneState) self.savePaneState(p);   // 落盘当前序列的操作痕迹
+            if (p && p.shedFrames) p.shedFrames();           // 收缩内存，仅保留当前帧
+        });
+        if (this.persistNow) this.persistNow();
+    };
+    /** 重新显示时调用：同步尺寸与重绘，并续接当前序列预取 */
+    PvViewer.prototype.onShow = function () {
+        this.panes.forEach(function (p) { p.resize(); p.render(); });
+        this.renderSidebar();
+        var p = this.activePane();
+        var ser = p && p.curSeries && p.curSeries();
+        if (p && ser && p.prefetch) p.prefetch(ser);
     };
     /** 页面卸载前立即落盘，避免防抖窗口内丢失最后的会话状态 */
     PvViewer.prototype._bindPersistFlush = function () {
@@ -121,6 +148,7 @@
     PvViewer.prototype._bindKeys = function () {
         var self = this;
         this._onKey = function (e) {
+            if (!self.isAttached()) return;   // 非激活页（被 SPA 隐藏）不响应快捷键
             if (e.metaKey || e.ctrlKey || e.altKey) return;
             var t = e.target;
             if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
@@ -314,6 +342,7 @@
             this.ws.studies[idx].collapsed = false;
             if (p) p.setSeries(uid, 0);
             this.renderSidebar();
+            this.sidebar.scrollToSeries(uid, 0);   // 自动滚动定位到该检查序列
             if (p) p.setStatus('该检查已在影像视图中打开，已定位');
             return;
         }
@@ -328,6 +357,8 @@
             self.ws.studies.forEach(function (x, k) { x.collapsed = (k !== self.ws.studies.length - 1); });
             var a = self.activePane(); if (a) a.setSeries(uid, 0);
             self.panes.forEach(function (pp) { if (pp !== a) { pp.updateTitle(); pp.updateScrollbar(); pp.render(); } });
+            self.renderSidebar();
+            self.sidebar.scrollToSeries(uid, 0);   // 新打开的检查自动滚动到序列栏顶部
             self.logEvent('read');
             if (a) a.setStatus('');
         }).catch(function () { if (p0) p0.setStatus('网络请求失败'); });
@@ -509,7 +540,9 @@
         this.filmstripEl.style.flexBasis = w + 'px';
         this.filmstripEl.style.width = w + 'px';
         this.sidebarWidth = w;
-        this.panes.forEach(function (p) { p.resize(); p.render(); });
+        // 有 ResizeObserver 时由窗格自行响应尺寸变化并同步重绘，避免此处重复
+        // resize/render 与观察器回调叠加导致拖动分栏时右侧影像闪烁。
+        if (!window.ResizeObserver) this.panes.forEach(function (p) { p.resize(); p.render(); });
     };
     PvViewer.prototype.restoreSidebarWidth = function () {
         try { var w = parseInt(sessionStorage.getItem('pacs_sidebar_w'), 10); if (w >= 120 && w <= 480) this.applySidebarWidth(w); } catch (e) {}
@@ -574,7 +607,9 @@
                 guest: !!data.guest, hostOrigin: data.hostOrigin || ''
             });
         },
-        destroy: function () { if (instance) { try { instance.destroy(); } catch (e) {} instance = null; } }
+        destroy: function () { if (instance) { try { instance.destroy(); } catch (e) {} instance = null; } },
+        /** 供 SPA 保活复用：返回当前阅片器实例（未创建时为 null） */
+        peek: function () { return instance; }
     };
     global.PvViewer = PvViewer;
 })(window);

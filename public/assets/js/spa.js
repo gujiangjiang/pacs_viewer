@@ -24,6 +24,16 @@
     var STATIC_PAGES = { search: 1, viewer: 1 };
     var pageCache = {};   // page -> 片段数据（含 html/css/js/data）
 
+    // 阅片器保活：切到其他页面时不销毁，仅把根节点摘下暂存；返回时原样挂回并复用
+    // 已解码帧缓存，从而瞬时恢复，避免重新取像 / 重新解码造成的整屏空白卡顿。
+    var keptViewer = null;         // 暂存的 [data-pv="app"] 根节点
+    var keptInstance = null;       // 对应的 PvViewer 实例
+    var viewerMeta = null;         // 阅片壳层元数据（title/bodyClass/active/css）
+    // 首屏即阅片页（如直链）：记录初始壳层元数据，供返回时恢复
+    if (boot.page === 'viewer') {
+        viewerMeta = { title: document.title, bodyClass: document.body.className, active: 'viewer', css: null };
+    }
+
     // 资源去重：按「路径」归一化（忽略 ?v= 版本查询），避免同一文件被重复注入
     function assetKey(url) { return String(url || '').replace(/[?#].*$/, ''); }
 
@@ -96,10 +106,45 @@
         }
     }
 
+    /** 取当前阅片器实例（保活复用） */
+    function viewerPeek() {
+        return (global.PvPages && global.PvPages.viewer && global.PvPages.viewer.peek) ? global.PvPages.viewer.peek() : null;
+    }
+    /** 离开影像查看：摘下根节点暂存，中止后台预取，但不销毁（保留已解码帧） */
+    function detachViewer() {
+        if (keptViewer) return;
+        var node = main ? main.querySelector('[data-pv="app"]') : null;
+        if (!node) return;
+        keptViewer = node;
+        keptInstance = viewerPeek();
+        if (keptInstance && keptInstance.onHide) { try { keptInstance.onHide(); } catch (e) {} }
+        if (node.parentNode) node.parentNode.removeChild(node);
+    }
+    /** 返回影像查看：挂回暂存节点并复用实例；无暂存则返回 false（走正常加载） */
+    function reattachViewer() {
+        if (!keptViewer || !main) return false;
+        if (viewerMeta) {
+            ensureCss(viewerMeta.css);
+            if (viewerMeta.title) document.title = viewerMeta.title;
+            document.body.className = viewerMeta.bodyClass || '';
+            setActiveNav(viewerMeta.active);
+        }
+        main.innerHTML = '';
+        main.appendChild(keptViewer);
+        currentPage = 'viewer';
+        var inst = keptInstance || viewerPeek();
+        if (inst && inst.onShow) { try { inst.onShow(); } catch (e) {} }
+        return true;
+    }
+
     /** 渲染一个页面片段（不发起后端请求） */
     function apply(res) {
         if (!main) return;
         ensureCss(res.css);
+        if (res.page === 'viewer') {
+            viewerMeta = { title: res.title, bodyClass: res.bodyClass, active: res.active, css: res.css };
+            if (reattachViewer()) return;   // 命中保活实例：直接用，不再重建
+        }
         main.innerHTML = res.html;
         if (res.title) document.title = res.title;
         document.body.className = res.bodyClass || '';
@@ -157,11 +202,31 @@
 
         var withParams = hasParams(params);
 
-        // 已在当前静态页：重复点击同一标签直接忽略（避免无谓重渲染）
+        // 已在当前静态页：重复点击同一标签直接忽略（避免无谓重渲染）；
+        // 但影像查看带参（打开指定检查）时仍需续接打开，不能忽略。
         if (!opts.force && !withParams && page === currentPage && isStatic(page)) return;
 
-        // 释放当前页面资源（含中止阅片器在途预取），避免占用连接
-        if (currentPage && currentPage !== page) { teardown(currentPage); currentPage = null; }
+        // 释放当前页面资源；影像查看改为「保活」：仅摘下暂存，不销毁，返回时瞬时恢复
+        if (currentPage && currentPage !== page) {
+            if (currentPage === 'viewer') detachViewer();
+            else teardown(currentPage);
+            currentPage = null;
+        }
+
+        // 影像查看：已在当前页且带参 → 直接续接打开（无需重建整页）
+        if (page === 'viewer' && currentPage === 'viewer' && withParams) {
+            var inst0 = viewerPeek();
+            if (inst0 && inst0.openStudy) { inst0.openStudy(params.uid, params.mode || 'append'); return; }
+        }
+
+        // 影像查看：命中保活实例 → 原样挂回，零后端请求、零重建、保留已解码影像
+        if (page === 'viewer' && keptViewer) {
+            if (reattachViewer()) {
+                var inst1 = keptInstance || viewerPeek();
+                if (withParams && inst1 && inst1.openStudy) inst1.openStudy(params.uid, params.mode || 'append');
+                return;
+            }
+        }
 
         // 静态页命中缓存（且无参数）：纯前端切换，零后端请求、零遮罩、零延迟
         if (!withParams && isStatic(page) && pageCache[page]) { apply(pageCache[page]); return; }

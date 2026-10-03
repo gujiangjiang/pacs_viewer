@@ -159,6 +159,28 @@
         }
     };
 
+    /**
+     * 将指定检查的序列滚动定位到序列栏顶部。
+     * 尽量把该序列移到可见区顶部；若其下方内容不足（已接近列表底部），
+     * 浏览器会自然把滚动条停在最大位置，即“至少往上移”，无需手动寻找。
+     * @param {string} uid 检查 UID
+     * @param {number} [si] 序列序号（缺省 0）
+     */
+    PvSidebar.prototype.scrollToSeries = function (uid, si) {
+        if (!this.el || !uid) return;
+        var gi = -1;
+        for (var i = 0; i < this.studies.length; i++) {
+            if (this.studies[i] && this.studies[i].uid === uid) { gi = i; break; }
+        }
+        if (gi < 0) return;
+        var th = this.el.querySelector('.pv-thumb[data-g="' + gi + '"][data-s="' + (si || 0) + '"]');
+        if (!th) return;
+        var cRect = this.el.getBoundingClientRect(), tRect = th.getBoundingClientRect();
+        var delta = tRect.top - cRect.top;
+        if (Math.abs(delta) < 0.5) return;
+        this.el.scrollTop += delta;   // 越界时浏览器自动钳位，实现“尽量上移”
+    };
+
     /** 仅更新激活高亮（不重建 DOM，缩略图保持显示） */
     PvSidebar.prototype._applyActive = function () {
         var ref = this.activeRef || {}, self = this;

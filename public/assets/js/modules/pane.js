@@ -61,7 +61,9 @@
         this._bindScrollbar();
         this.resize();
         var self = this;
-        if (window.ResizeObserver) { this._ro = new ResizeObserver(function () { self.resize(); self._scheduleRender(); }); this._ro.observe(this.stage); }
+        // 尺寸变化时同步重绘（ResizeObserver 回调发生在绘制前），
+        // 若改为延迟到下一帧，会出现「画布已清空但尚未重绘」的空白闪烁。
+        if (window.ResizeObserver) { this._ro = new ResizeObserver(function () { self.resize(); self.render(); }); this._ro.observe(this.stage); }
     }
 
     PvPane.prototype.destroy = function () {
@@ -122,7 +124,10 @@
         var box = this.stage.getBoundingClientRect();
         var w = Math.max(2, Math.floor(box.width)), h = Math.max(2, Math.floor(box.height));
         this.cssW = w; this.cssH = h;
-        this.canvas.width = Math.floor(w * this.dpr); this.canvas.height = Math.floor(h * this.dpr);
+        // 仅在尺寸真正变化时重设画布：避免拖动分栏时反复清空画布造成闪烁
+        var bw = Math.floor(w * this.dpr), bh = Math.floor(h * this.dpr);
+        if (this.canvas.width !== bw) this.canvas.width = bw;
+        if (this.canvas.height !== bh) this.canvas.height = bh;
         this.canvas.style.width = w + 'px'; this.canvas.style.height = h + 'px';
         this.updateScrollbar();
     };
@@ -209,6 +214,21 @@
             var f = this._frames[keys[i]];
             if (f && f.status === 'ok') { delete this._frames[keys[i]]; removed++; }
         }
+    };
+
+    /**
+     * 仅保留当前显示的帧 / 实例，释放其余已解码大对象。
+     * 供 SPA 保活、切到其他页面时收缩内存；返回时会重新预取邻近帧，
+     * 而当前帧仍在缓存中，因此可瞬时重绘、无空白卡顿。
+     */
+    PvPane.prototype.shedFrames = function () {
+        var s = this.curSeries(); if (!s) return;
+        var keepF = this._frameKey(s, this.st.fi);
+        var loc = this._frameLoc(s, this.st.fi);
+        var keepI = this._instKey(s, loc.ii);
+        var self = this;
+        Object.keys(this._frames).forEach(function (k) { if (k !== keepF) delete self._frames[k]; });
+        Object.keys(this._instances).forEach(function (k) { if (k !== keepI) delete self._instances[k]; });
     };
 
     /** 解码实例缓存上限控制（多帧实例较大，限制保留实例数） */
