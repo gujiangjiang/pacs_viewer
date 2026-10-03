@@ -53,17 +53,11 @@ $pvGuest = !empty($guest);   // 链接访客阅片：无登录、仅影像查看
 </head>
 <body class="<?php echo pvw_e(isset($bodyClass) ? $bodyClass : ''); ?>">
 <header class="pv-topbar<?php echo $pvGuest ? ' pv-topbar-guest' : ''; ?>">
-    <?php if ($pvGuest) { ?>
-    <span class="pv-brand pv-brand-guest">
-        <img class="pv-logo" src="<?php echo pvw_e(PvPwaController::iconUrl(96)); ?>" width="40" height="40" alt="">
-        <span class="pv-brand-name"><?php echo pvw_e($site); ?></span>
-    </span>
-    <?php } else { ?>
-    <a class="pv-brand" href="<?php echo pvw_e(pvw_url('search')); ?>" data-nav="search">
-        <img class="pv-logo" src="<?php echo pvw_e(PvPwaController::iconUrl(96)); ?>" width="40" height="40" alt="">
+    <a class="pv-brand pv-brand-refresh<?php echo $pvGuest ? ' pv-brand-guest' : ''; ?>" id="pvBrand"
+       href="<?php echo pvw_e(pvw_url('')); ?>" title="点击软刷新当前页面">
+        <img class="pv-logo" src="<?php echo pvw_e(PvPwaController::iconUrl(96)); ?>" width="40" height="40" alt="" draggable="false">
         <span class="pv-brand-name"><?php echo pvw_e($site); ?></span>
     </a>
-    <?php } ?>
     <nav class="pv-nav" id="pvNav">
         <?php if ($pvGuest) { ?>
         <a class="active" href="<?php echo pvw_e(pvw_url('viewer')); ?>" data-nav="viewer">影像查看</a>

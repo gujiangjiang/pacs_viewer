@@ -279,4 +279,19 @@
     }
 
     global.PvNav = { go: go, refresh: refresh, route: route, current: function () { return currentPage; } };
+
+    /* ---------- 左上角品牌：整体可点击，软刷新当前页面 ---------- */
+    function softRefresh() {
+        // 访客阅片直链：SPA 刷新会丢失 uid，改用整页刷新以保留直链参数
+        if (boot.guest) { global.location.reload(); return; }
+        if (global.PvNav && global.PvNav.refresh) { global.PvNav.refresh(); return; }
+        global.location.reload();
+    }
+    (function bindBrand() {
+        var brand = document.getElementById('pvBrand');
+        if (!brand) return;
+        brand.addEventListener('click', function (e) { e.preventDefault(); softRefresh(); });
+        brand.addEventListener('contextmenu', function (e) { e.preventDefault(); });   // 禁止右击
+        brand.addEventListener('dragstart', function (e) { e.preventDefault(); });     // 禁止拖拽
+    })();
 })(window);

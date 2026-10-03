@@ -38,7 +38,13 @@ code { background: #1e293b; padding: 1px 5px; border-radius: 4px; font-size: 12p
 }
 .pv-brand { display: flex; align-items: center; gap: 9px; color: #e2e8f0; font-weight: 700; }
 .pv-brand:hover { text-decoration: none; }
-.pv-logo { width: 40px; height: 40px; border-radius: 10px; display: block; }
+/* 左上角品牌（图标 + 名称）作为整体：可点击软刷新，不显示文本/指针光标，禁用选择与拖拽 */
+.pv-brand-refresh {
+    cursor: default; -webkit-user-select: none; user-select: none;
+    -webkit-user-drag: none; border-radius: 10px; padding: 2px 4px; margin: -2px -4px;
+}
+.pv-brand-refresh:active { opacity: .82; }
+.pv-logo { width: 40px; height: 40px; border-radius: 10px; display: block; -webkit-user-drag: none; }
 .pv-nav { display: flex; gap: 4px; }
 .pv-nav a { padding: 6px 14px; border-radius: 7px; color: var(--pv-txt2); font-size: 13px; }
 .pv-nav a:hover { background: #1e293b; color: #fff; text-decoration: none; }
