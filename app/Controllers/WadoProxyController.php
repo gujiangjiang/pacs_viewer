@@ -39,13 +39,7 @@ class PvWadoProxyController {
         $body = self::extractDicom($r['body']);
         // 远端可能返回 text/plain 错误或空内容：校验 DICM 魔数，避免把错误文本当作影像下发给前端
         if (substr($body, 128, 4) !== 'DICM') self::fail(502, '远端未返回有效 DICOM 影像（请检查 DICOMweb 接口与鉴权）');
-        if (!headers_sent()) {
-            header('Content-Type: application/dicom');
-            header('Content-Length: ' . strlen($body));
-            header('Cache-Control: private, max-age=86400');
-        }
-        echo $body;
-        exit;
+        PvHttp::sendBinary($body, 'application/dicom', 86400);
     }
 
     /** 若为 multipart/related（WADO-RS 可能返回），提取其中的 DICOM 字节流 */

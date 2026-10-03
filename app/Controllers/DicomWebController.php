@@ -260,13 +260,7 @@ class PvDicomWebController {
         } catch (Exception $e) {
             self::jsonError(404, $e->getMessage());
         }
-        if (!headers_sent()) {
-            header('Content-Type: application/dicom');
-            header('Content-Length: ' . strlen($r['binary']));
-            header('Cache-Control: private, max-age=86400');
-        }
-        echo $r['binary'];
-        exit;
+        PvHttp::sendBinary($r['binary'], 'application/dicom', 86400);
     }
 
     /** WADO-RS 渲染图（rendered）：返回小尺寸 PNG，供缩略图使用 */
@@ -278,13 +272,7 @@ class PvDicomWebController {
         } catch (Exception $e) {
             self::jsonError(404, $e->getMessage());
         }
-        if (!headers_sent()) {
-            header('Content-Type: ' . $r['content_type']);
-            header('Content-Length: ' . strlen($r['binary']));
-            header('Cache-Control: private, max-age=86400');
-        }
-        echo $r['binary'];
-        exit;
+        PvHttp::sendBinary($r['binary'], $r['content_type'], 86400);
     }
 
     /* ---------------- 工具 ---------------- */

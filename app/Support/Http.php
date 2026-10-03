@@ -37,4 +37,25 @@ class PvHttp {
         }
         return array('body' => $body, 'code' => $code);
     }
+
+    /**
+     * 统一下发二进制响应（DICOM / PNG 等），设置类型 / 长度 / 缓存，可选文件名。
+     * 发送后直接结束请求（与各调用点原有 `echo …; exit;` 行为一致）。
+     * @param string      $body
+     * @param string      $mime
+     * @param int         $cacheTtl 秒（<=0 不发送 Cache-Control）
+     * @param string|null $filename 内容处置文件名（null 表示不发送该头）
+     */
+    public static function sendBinary($body, $mime, $cacheTtl = 0, $filename = null) {
+        if (!headers_sent()) {
+            header('Content-Type: ' . ($mime !== '' ? $mime : 'application/octet-stream'));
+            header('Content-Length: ' . strlen((string)$body));
+            if ((int)$cacheTtl > 0) header('Cache-Control: private, max-age=' . (int)$cacheTtl);
+            if ($filename !== null && $filename !== '') {
+                header('Content-Disposition: inline; filename="' . str_replace('"', '', (string)$filename) . '"');
+            }
+        }
+        echo $body;
+        exit;
+    }
 }

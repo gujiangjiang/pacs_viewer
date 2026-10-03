@@ -115,13 +115,7 @@ class PvMockController {
         } catch (Exception $e) {
             self::textError(404, $e->getMessage());
         }
-        if (!headers_sent()) {
-            header('Content-Type: ' . $r['content_type']);
-            header('Content-Length: ' . strlen($r['binary']));
-            header('Cache-Control: private, max-age=86400');
-        }
-        echo $r['binary'];
-        exit;
+        PvHttp::sendBinary($r['binary'], $r['content_type'], 86400);
     }
 
     /** 输出 DICOM 字节流（不进入 JSON 封装，对通用前端完全透明） */
@@ -131,14 +125,7 @@ class PvMockController {
         } catch (Exception $e) {
             self::textError(404, $e->getMessage());
         }
-        if (!headers_sent()) {
-            header('Content-Type: ' . $r['content_type']);
-            header('Content-Length: ' . strlen($r['binary']));
-            header('Content-Disposition: inline; filename="' . str_replace('"', '', $r['filename']) . '"');
-            header('Cache-Control: private, max-age=86400');
-        }
-        echo $r['binary'];
-        exit;
+        PvHttp::sendBinary($r['binary'], $r['content_type'], 86400, $r['filename']);
     }
 
     /** 汇总 WADO-URI（studyUID/seriesUID/objectUID）与简洁参数（uid/series/instance） */
