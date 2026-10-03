@@ -746,35 +746,10 @@ class PvFhirClient {
         return $j;
     }
 
+    /** 复用统一 HTTP 助手（curl 优先 / file 回退），并记录响应状态码供鉴权识别 */
     private static function httpGet($url, $timeout, array $headers) {
-        self::$lastStatus = 0;
-        if (function_exists('curl_init')) {
-            $ch = curl_init($url);
-            curl_setopt_array($ch, array(
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => $timeout,
-                CURLOPT_CONNECTTIMEOUT => $timeout,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_HTTPHEADER => $headers,
-            ));
-            $raw = curl_exec($ch);
-            self::$lastStatus = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            if (PHP_VERSION_ID < 80500) curl_close($ch);   // 8.5 起 curl_close 已弃用
-            return $raw;
-        }
-        $ctx = stream_context_create(array('http' => array(
-            'method' => 'GET', 'timeout' => $timeout, 'ignore_errors' => true,
-            'header' => implode("\r\n", $headers) . "\r\n",
-        )));
-        $raw = @file_get_contents($url, false, $ctx);
-        /* PHP 8.5 起用新函数读取响应头，避免访问已弃用的 $http_response_header；
-         * 更早版本无此函数，状态码保持 0（此时仍可由 FHIR OperationOutcome 识别鉴权错误）。 */
-        if (function_exists('http_get_last_response_headers')) {
-            $headers = http_get_last_response_headers();
-            if (isset($headers[0]) && preg_match('#\s(\d{3})\s#', $headers[0], $m)) {
-                self::$lastStatus = (int)$m[1];
-            }
-        }
-        return $raw;
+        $r = PvHttp::get($url, $timeout, $headers);
+        self::$lastStatus = (int)$r['code'];
+        return $r['body'];
     }
 }
