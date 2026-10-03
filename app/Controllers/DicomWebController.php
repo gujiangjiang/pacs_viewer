@@ -256,7 +256,17 @@ class PvDicomWebController {
         $row = PvMockServer::findRow($studyUid);
         if (!$row) self::jsonError(404, '未找到该检查');
         try {
-            $r = PvMockServer::wadoByUids($studyUid, $seUid, $iuid);
+            if (self::matchRealSeries($row, $seUid)) {
+                // 真实序列：实例元数据声明每实例单帧（NumberOfFrames=1），字节流保持一致
+                $r = PvMockServer::wadoByUids($studyUid, $seUid, $iuid);
+            } else {
+                // 内置规划序列：实例元数据声明原生多帧，取像须按同一分帧规划输出多帧 DICOM，
+                // 否则客户端按元数据定位帧偏移会越界（表现为部分层面 HU / 灰度显示 NaN）。
+                $idx = self::seriesIndexByUid($row, $seUid);
+                if ($idx < 0) self::jsonError(404, '未找到该序列');
+                $inst = PvMockDicomTagBuilder::uidTailInt($iuid, 1);
+                $r = PvMockServer::wado(array('uid' => $studyUid, 'series' => $idx + 1, 'instance' => $inst));
+            }
         } catch (Exception $e) {
             self::jsonError(404, $e->getMessage());
         }

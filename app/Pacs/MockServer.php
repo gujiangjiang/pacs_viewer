@@ -219,9 +219,16 @@ class PvMockServer {
             if (isset($plan[$seriesNo - 1]['slice_count'])) $totalFrames = (int)$plan[$seriesNo - 1]['slice_count'];
         }
         if ($totalFrames > 0 && $instNo > $totalFrames) $instNo = $totalFrames;
+        $base = ($row['patient_id'] ? $row['patient_id'] : 'patient') . '_s' . $seriesNo . '_i' . $instNo . '.dcm';
+        /* 两级缓存：同一实例仅生成一次，避免每次取像都重新生成整幅像素（多帧序列下显著降低负载） */
+        $key = md5(implode('|', array('wadouid', PV_VERSION, $studyUid, $seriesUid, $instanceUid)));
+        $cached = PvMockCache::get($key);
+        if (is_string($cached) && $cached !== '') {
+            return array('binary' => $cached, 'content_type' => 'application/dicom', 'filename' => $base);
+        }
         $pixels = $gen->generateFrame(max(0, $instNo - 1), $totalFrames > 0 ? $totalFrames : null);
         $binary = self::buildDicom($row, $series, $seriesNo - 1, $instNo, $gen, $pixels, 1, $instNo - 1, $seriesUid, $instanceUid);
-        $base = ($row['patient_id'] ? $row['patient_id'] : 'patient') . '_s' . $seriesNo . '_i' . $instNo . '.dcm';
+        PvMockCache::set($key, $binary);
         return array('binary' => $binary, 'content_type' => 'application/dicom', 'filename' => $base);
     }
 
@@ -234,7 +241,14 @@ class PvMockServer {
         $seriesNo = PvMockDicomTagBuilder::uidTailInt($seriesUid, 1);
         $gen = PvMockDispatcher::generatorForSeriesIndex($modality, $desc, $studyUid, $seriesNo - 1);
         $size = 128;
+        /* 两级缓存：缩略图按序列生成一次后复用 */
+        $key = md5(implode('|', array('thumbuid', PV_VERSION, $studyUid, $seriesUid, $size)));
+        $cached = PvMockCache::get($key);
+        if (is_string($cached) && $cached !== '') {
+            return array('binary' => $cached, 'content_type' => 'image/png');
+        }
         $png = self::grayToPng($gen->generateThumbnailGray($size), $size);
+        PvMockCache::set($key, $png);
         return array('binary' => $png, 'content_type' => 'image/png');
     }
 
