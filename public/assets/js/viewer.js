@@ -37,7 +37,6 @@
         this.root = root;
         this.route = { uid: opts.uid || '', mode: opts.mode || 'append' };
         this.about = opts.about || {};
-        this.direct = opts.direct || '';
         this.guest = !!opts.guest;   // 链接访客模式：仅临时阅片，无登录 / 无搜索 / 无关闭
         this.studyLimit = this.guest ? 1 : clamp(parseInt(opts.limit, 10) || 5, 3, 10);
         if (root && root.classList) root.classList.toggle('pv-guest', this.guest);
@@ -772,7 +771,7 @@
             if (!root) return;
             if (instance) { try { instance.destroy(); } catch (e) {} instance = null; }
             instance = new PvViewer(root, {
-                uid: data.uid || '', mode: data.mode || 'append', direct: data.direct || '',
+                uid: data.uid || '', mode: data.mode || 'append',
                 limit: data.studyLimit || 5, about: data.about || {},
                 guest: !!data.guest
             });

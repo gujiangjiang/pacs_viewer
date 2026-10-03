@@ -15,7 +15,7 @@
     var selectedKey = null;
 
     var PAGE = 30;
-    var allItems = [], total = 0, hasMore = false, loading = false, query = '';
+    var allItems = [], total = 0, hasMore = false, query = '';
 
     // 列顺序：重要信息靠前
     var COLUMNS = [
@@ -438,7 +438,7 @@
         destroy: function () {
             if (input && onDocKey) input.removeEventListener('keydown', onDocKey);
             if (loader) { loader.destroy(); loader = null; }
-            allItems = []; total = 0; hasMore = false; loading = false;
+            allItems = []; total = 0; hasMore = false;
             input = btn = box = empty = meta = onDocKey = null;
         }
     };

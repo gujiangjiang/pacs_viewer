@@ -14,7 +14,6 @@ $pageData = array(
     'guestToken' => isset($guestToken) ? (string)$guestToken : '',
     'studyLimit' => $isGuest ? 1 : (int)PvSettings::get('viewer_study_limit', '5'),
     'isAdmin'    => $isGuest ? false : PvAuth::isAdmin(),
-    'direct'     => $uid !== '' ? pvw_url('viewer', array('uid' => $uid)) : '',
     'about'      => array(
         'name'     => PvSettings::get('site_title', 'PACS 影像浏览器'),
         'version'  => PV_VERSION,
