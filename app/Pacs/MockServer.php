@@ -346,10 +346,10 @@ class PvMockServer {
         $m['modality'] = $modality;
         $m['patient_name'] = isset($row['name']) ? $row['name'] : '';
         $m['patient_id'] = isset($row['patient_id']) ? $row['patient_id'] : '';
-        $m['patient_birth_date'] = self::toDa(isset($row['birth_date']) ? $row['birth_date'] : '');
-        $m['patient_sex'] = self::toSex(isset($row['gender']) ? $row['gender'] : '');
-        $m['study_date'] = self::toDa(isset($row['study_date']) ? $row['study_date'] : '');
-        $m['study_time'] = self::toTm(isset($row['study_date']) ? $row['study_date'] : '');
+        $m['patient_birth_date'] = PvDicom::da(isset($row['birth_date']) ? $row['birth_date'] : '', true);
+        $m['patient_sex'] = PvDicom::sex(isset($row['gender']) ? $row['gender'] : '');
+        $m['study_date'] = PvDicom::da(isset($row['study_date']) ? $row['study_date'] : '', true);
+        $m['study_time'] = PvDicom::tm(isset($row['study_date']) ? $row['study_date'] : '');
         $m['study_description'] = isset($row['description']) ? $row['description'] : '';
         $m['series_description'] = $series['description'];
         $m['accession_number'] = isset($row['accession_no']) ? $row['accession_no'] : '';
@@ -388,27 +388,6 @@ class PvMockServer {
         $parts = explode('.', trim((string)$uid));
         $last = end($parts);
         return preg_replace('/\D/', '', (string)$last);
-    }
-
-    private static function toDa($s) {
-        $s = trim((string)$s);
-        if ($s === '') return '';
-        $d = preg_replace('/[^0-9]/', '', substr($s, 0, 10));
-        return strlen($d) >= 8 ? substr($d, 0, 8) : $d;
-    }
-
-    private static function toTm($s) {
-        $s = trim((string)$s);
-        if (strlen($s) < 16) return '';
-        $t = preg_replace('/[^0-9]/', '', substr($s, 11, 8));
-        return strlen($t) >= 6 ? $t : '';
-    }
-
-    private static function toSex($s) {
-        $s = trim((string)$s);
-        if ($s === '男' || strtoupper($s) === 'M' || $s === '1') return 'M';
-        if ($s === '女' || strtoupper($s) === 'F' || $s === '2') return 'F';
-        return 'O';
     }
 
     /* ---------------- 内部工具 ---------------- */

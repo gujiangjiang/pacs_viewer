@@ -62,6 +62,7 @@ require_once PV_APP . '/Database.php';
 require_once PV_APP . '/Support/icons.php';
 require_once PV_APP . '/Support/Cache.php';
 require_once PV_APP . '/Support/Http.php';
+require_once PV_APP . '/Support/Dicom.php';
 require_once PV_APP . '/Settings.php';
 require_once PV_APP . '/Auth.php';
 require_once PV_APP . '/Guest.php';

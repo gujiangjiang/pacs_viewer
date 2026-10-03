@@ -336,11 +336,11 @@ class PvDicomWebController {
             '00100020' => array('vr' => 'LO', 'Value' => array((string)$row['patient_id'])),
             // 门诊号：DICOM 无专用标签，用 OtherPatientIDs 承载（本模拟服务约定）
             '00101000' => array('vr' => 'LO', 'Value' => array(isset($row['outpatient_no']) ? (string)$row['outpatient_no'] : '')),
-            '00100030' => array('vr' => 'DA', 'Value' => array(self::toDa($row['birth_date']))),
-            '00100040' => array('vr' => 'CS', 'Value' => array(self::toSex($row['gender']))),
+            '00100030' => array('vr' => 'DA', 'Value' => array(PvDicom::da($row['birth_date']))),
+            '00100040' => array('vr' => 'CS', 'Value' => array(PvDicom::sex($row['gender']))),
             '00080050' => array('vr' => 'SH', 'Value' => array((string)$row['accession_no'])),
-            '00080020' => array('vr' => 'DA', 'Value' => array(self::toDa($row['study_date']))),
-            '00080030' => array('vr' => 'TM', 'Value' => array(self::toTm($row['study_date']))),
+            '00080020' => array('vr' => 'DA', 'Value' => array(PvDicom::da($row['study_date']))),
+            '00080030' => array('vr' => 'TM', 'Value' => array(PvDicom::tm($row['study_date'], 6))),
             '00080060' => array('vr' => 'CS', 'Value' => array(strtoupper($row['modality']))),
             '00080061' => array('vr' => 'CS', 'Value' => array(strtoupper($row['modality']))),
             '00081030' => array('vr' => 'LO', 'Value' => array((string)$row['description'])),
@@ -358,23 +358,6 @@ class PvDicomWebController {
             case 'CORONAL':  return '1\\0\\0\\0\\0\\-1';
             default:         return '';
         }
-    }
-
-    private static function toDa($s) {
-        $d = preg_replace('/[^0-9]/', '', (string)$s);
-        return strlen($d) >= 8 ? substr($d, 0, 8) : '';
-    }
-    private static function toTm($s) {
-        $s = trim((string)$s);
-        if (strlen($s) < 16) return '';
-        $t = preg_replace('/[^0-9]/', '', substr($s, 11, 8));
-        return strlen($t) >= 6 ? substr($t, 0, 6) : '';
-    }
-    private static function toSex($s) {
-        $s = trim((string)$s);
-        if ($s === '男' || strtoupper($s) === 'M' || $s === '1') return 'M';
-        if ($s === '女' || strtoupper($s) === 'F' || $s === '2') return 'F';
-        return 'O';
     }
 
     /** 实例列表分页切片（limit=0 表示不限） */
