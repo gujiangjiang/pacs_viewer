@@ -384,6 +384,8 @@
     PvViewer.prototype.boot = function () {
         var self = this;
         var saved = this.loadState();
+        // 立即给出加载反馈，避免恢复期间看似空白卡住
+        var ap = this.activePane(); if (ap) ap.setStatus('正在恢复影像视图…');
         if (this.route.uid) {
             this.restoreStudies(saved, function () { self.openStudy(self.route.uid, self.route.mode); });
             return;
@@ -392,6 +394,7 @@
             if (!self.ws.studies.length) { self.showEmpty(); return; }
             // 窗格已由 restoreStudies→renderPanes 按痕迹渲染，勿再 renderAll（会重置缩放窗值）
             self.renderSidebar(); self.refreshControlState();
+            var p = self.activePane(); if (p) p.setStatus('');
         });
     };
     PvViewer.prototype.restoreStudies = function (saved, cb) {

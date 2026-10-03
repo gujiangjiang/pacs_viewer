@@ -187,8 +187,25 @@
             }
         }).catch(function () {});
     }
+    /**
+     * 后台预热「已打开检查」的数据：整页刷新后，阅片器实例需重新拉取各检查，
+     * 空闲时先把这些数据取回并落入 PvApi 的会话内缓存，点击「影像查看」即可秒开，
+     * 避免强制刷新后短暂整屏空白。
+     */
+    function warmWorkspace() {
+        if (!global.PvApi || !global.PvApi.study) return;
+        var st;
+        try { st = JSON.parse(global.sessionStorage.getItem('pacs_workspace_v1') || 'null'); } catch (e) { return; }
+        if (!st || !st.studies || !st.studies.length) return;
+        st.studies.forEach(function (s) {
+            var uid = s && s.uid;
+            if (!uid) return;
+            try { global.PvApi.study(uid).catch(function () {}); } catch (e) {}
+        });
+    }
     function warmStaticShells() {
         ['search', 'viewer'].forEach(prefetchShell);
+        warmWorkspace();
     }
     if (global.requestIdleCallback) {
         global.requestIdleCallback(function () { warmStaticShells(); }, { timeout: 1500 });
