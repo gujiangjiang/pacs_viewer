@@ -82,6 +82,12 @@ class PvQueryLogRepository {
         $offset = max(0, (int)$offset);
         return PvDatabase::q("SELECT * FROM query_log ORDER BY id DESC LIMIT " . $limit . " OFFSET " . $offset);
     }
+    /** 读取 id 大于 sinceId 的新日志（管理端「实时」增量拉取，最新在前） */
+    public static function since($sinceId, $limit = 50) {
+        $limit = max(1, min(200, (int)$limit));
+        $sinceId = max(0, (int)$sinceId);
+        return PvDatabase::q("SELECT * FROM query_log WHERE id > ? ORDER BY id DESC LIMIT " . $limit, array($sinceId));
+    }
     public static function count() {
         return (int)PvDatabase::val("SELECT COUNT(*) FROM query_log");
     }

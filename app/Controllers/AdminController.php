@@ -171,16 +171,19 @@ class PvAdminController {
         self::reply('日志保留设置已保存', true, PvQueryLogRepository::limits(), 'logs');
     }
 
-    /** 操作日志分页读取（管理端滚动加载） */
+    /** 操作日志分页读取（管理端滚动加载 / 实时增量） */
     public static function logs() {
         PvAuth::requireAdmin();
         $offset = max(0, (int)pvw_input('offset', 0));
         $limit = max(1, min(200, (int)pvw_input('limit', 30)));
-        $rows = PvQueryLogRepository::page($offset, $limit);
+        $sinceId = max(0, (int)pvw_input('since_id', 0));
+        // since_id>0：仅取比该 id 更新的日志（实时增量）；否则按偏移分页
+        $rows = $sinceId > 0 ? PvQueryLogRepository::since($sinceId, $limit) : PvQueryLogRepository::page($offset, $limit);
         $list = array();
         foreach ($rows as $l) {
             $act = isset($l['action']) ? (string)$l['action'] : 'search';
             $list[] = array(
+                'id' => (int)$l['id'],
                 'created_at' => (string)$l['created_at'],
                 'username' => (string)$l['username'],
                 'action' => $act,
@@ -195,7 +198,7 @@ class PvAdminController {
         pvw_json(200, 'success', array(
             'list' => $list,
             'total' => $total,
-            'has_more' => ($offset + count($list)) < $total,
+            'has_more' => ($sinceId <= 0) && (($offset + count($list)) < $total),
         ));
     }
 

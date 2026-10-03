@@ -8,7 +8,12 @@
 
 
 /* 卡片头部操作按钮组（设置 / 清空 / 刷新等） */
-.pv-card-actions { display: inline-flex; align-items: center; gap: 8px; }
+.pv-card-actions { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* 可切换的「实时」按钮：激活时高亮 */
+.pv-btn-toggle.active {
+    background: rgba(16,185,129,.16); border-color: var(--pv-acc); color: #6ee7b7;
+}
 
 /* 模态框内复选框行 */
 .pv-check { display: inline-flex; align-items: center; gap: 8px; color: var(--pv-txt); font-size: 13px; cursor: pointer; }
@@ -36,7 +41,7 @@
 .pv-logscroll .pv-table thead th { position: sticky; top: 0; z-index: 2; background: #0b0f17; }
 /* 固定布局 + 百分比列宽：列宽按比例稳定，不随内容长短跳动；
  * 容器过窄时在列表内部横向滚动（min-width 触发滚动条）。 */
-.pv-logscroll .pv-table { table-layout: fixed; width: 100%; min-width: 780px; }
+.pv-logscroll .pv-table { table-layout: fixed; width: 100%; min-width: 860px; }
 .pv-logscroll .pv-table th, .pv-logscroll .pv-table td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 详情列超长省略，悬浮 title 显示完整内容 */
 .pv-log-detail { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

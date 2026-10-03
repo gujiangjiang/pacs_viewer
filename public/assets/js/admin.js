@@ -135,18 +135,15 @@
                 });
             }
 
-            // 操作日志：滚动到底自动加载更多（复用通用 PvInfiniteScroll）
+            // 操作日志：滚动加载更多 + 刷新 + 实时增量更新
             (function () {
                 var scroll = document.getElementById('pvLogScroll');
                 var body = document.getElementById('pvLogBody');
-                if (!scroll || !body || !global.PvInfiniteScroll) return;
-                var total = parseInt(scroll.getAttribute('data-total'), 10) || 0;
-                var rendered = body.querySelectorAll('tr[data-row]').length;
-                if (total <= rendered) return;
+                if (!scroll || !body) return;
                 function esc(s) { return PvUI.esc(s == null ? '' : s); }
                 function rowHtml(l) {
                     var rc = (l.action === 'search') ? String(l.result_count == null ? 0 : l.result_count) : '—';
-                    return '<tr data-row="1"><td class="pv-dim">' + esc(l.created_at) + '</td>'
+                    return '<tr data-row="1" data-id="' + (parseInt(l.id, 10) || 0) + '"><td class="pv-dim">' + esc(l.created_at) + '</td>'
                         + '<td>' + esc(l.username) + '</td>'
                         + '<td><span class="pv-badge op-' + esc(l.action) + '">' + esc(l.action_name) + '</span></td>'
                         + '<td><span class="pv-log-detail" title="' + esc(l.detail) + '">' + esc(l.detail) + '</span></td>'
@@ -154,21 +151,93 @@
                         + '<td>' + esc(rc) + '</td>'
                         + '<td class="pv-dim">' + esc(l.ip) + '</td></tr>';
                 }
-                global.PvInfiniteScroll.create({
-                    container: scroll, list: scroll,
-                    offset: rendered, hasMore: true, pageSize: 30,
-                    sentinelClass: 'pv-more', moreText: '上拉加载更多…', endText: '',
-                    load: function (offset, limit) {
-                        var url = global.PvNav
-                            ? global.PvNav.route('admin/logs', { offset: offset, limit: limit })
-                            : ('?r=admin/logs&offset=' + offset + '&limit=' + limit);
-                        return PvUI.get(url).then(function (j) {
-                            if (!j || j.code !== 200) throw new Error((j && j.msg) || '加载失败');
-                            return j.data || {};
-                        });
-                    },
-                    append: function (list) { list.forEach(function (l) { body.insertAdjacentHTML('beforeend', rowHtml(l)); }); }
+                function logUrl(params) {
+                    return global.PvNav ? global.PvNav.route('admin/logs', params) : ('?r=admin/logs&' + paramStr(params));
+                }
+                function paramStr(p) { var a = []; for (var k in p) a.push(encodeURIComponent(k) + '=' + encodeURIComponent(p[k])); return a.join('&'); }
+                function currentTotal() { return parseInt(scroll.getAttribute('data-total'), 10) || 0; }
+                function setTotal(n) {
+                    scroll.setAttribute('data-total', n);
+                    var el = document.getElementById('pvLogCount');
+                    if (el) el.textContent = n;
+                }
+                function maxRowId() {
+                    var rows = body.querySelectorAll('tr[data-row][data-id]');
+                    var m = 0;
+                    Array.prototype.forEach.call(rows, function (r) { var v = parseInt(r.getAttribute('data-id'), 10) || 0; if (v > m) m = v; });
+                    return m;
+                }
+                function dropEmpty() { var e = body.querySelector('tr td[colspan]'); if (e && e.parentNode) e.parentNode.parentNode.removeChild(e.parentNode); }
+
+                // 滚动到底自动加载更多（复用通用 PvInfiniteScroll）
+                var loader = null;
+                function ensureLoader(offset, hasMore) {
+                    if (!global.PvInfiniteScroll) return;
+                    if (loader) { loader.destroy(); loader = null; }
+                    loader = global.PvInfiniteScroll.create({
+                        container: scroll, list: scroll,
+                        offset: offset, hasMore: hasMore, pageSize: 30,
+                        sentinelClass: 'pv-more', moreText: '上拉加载更多…', endText: '',
+                        load: function (off, limit) {
+                            return PvUI.get(logUrl({ offset: off, limit: limit })).then(function (j) {
+                                if (!j || j.code !== 200) throw new Error((j && j.msg) || '加载失败');
+                                return j.data || {};
+                            });
+                        },
+                        append: function (list) { list.forEach(function (l) { body.insertAdjacentHTML('beforeend', rowHtml(l)); }); }
+                    });
+                }
+                var rendered = body.querySelectorAll('tr[data-row]').length;
+                if (currentTotal() > rendered) ensureLoader(rendered, true);
+
+                // 刷新：重新拉取第一页并整体替换表格
+                function reloadFirstPage(showLoading) {
+                    if (showLoading && body) body.innerHTML = '<tr data-row="1"><td colspan="7" class="pv-dim" style="text-align:center">加载中…</td></tr>';
+                    return PvUI.get(logUrl({ offset: 0, limit: 30 })).then(function (j) {
+                        if (!j || j.code !== 200) { PvUI.toast((j && j.msg) || '加载失败', 'err'); return; }
+                        var list = (j.data && j.data.list) || [];
+                        var total = j.data && typeof j.data.total === 'number' ? j.data.total : list.length;
+                        body.innerHTML = list.length ? list.map(rowHtml).join('') : '<tr data-row="1"><td colspan="7" class="pv-dim" style="text-align:center">暂无记录</td></tr>';
+                        setTotal(total);
+                        ensureLoader(list.length, list.length < total);
+                    }).catch(function () { PvUI.toast('网络请求失败', 'err'); });
+                }
+
+                // 实时：仅拉取比当前最新 id 更新的日志，前插且不打断滚动加载
+                function poll() {
+                    var since = maxRowId();
+                    return PvUI.get(logUrl({ since_id: since, limit: 100 })).then(function (j) {
+                        if (!j || j.code !== 200) return;
+                        var list = (j.data && j.data.list) || [];
+                        if (!list.length) { if (j.data && typeof j.data.total === 'number') setTotal(j.data.total); return; }
+                        dropEmpty();
+                        body.insertAdjacentHTML('afterbegin', list.map(rowHtml).join(''));
+                        if (loader) loader.offset += list.length;
+                        if (j.data && typeof j.data.total === 'number') setTotal(j.data.total);
+                    }).catch(function () {});
+                }
+
+                var liveBtn = document.getElementById('pvLogLive');
+                function stopLive() {
+                    if (window.__pvLogLiveTimer) { clearInterval(window.__pvLogLiveTimer); window.__pvLogLiveTimer = null; }
+                    if (liveBtn) liveBtn.classList.remove('active');
+                }
+                function startLive() {
+                    stopLive();
+                    if (liveBtn) liveBtn.classList.add('active');
+                    poll();
+                    window.__pvLogLiveTimer = setInterval(poll, 5000);
+                }
+                if (liveBtn) liveBtn.addEventListener('click', function () {
+                    if (liveBtn.classList.contains('active')) stopLive(); else startLive();
                 });
+                var refreshBtn = document.getElementById('pvLogRefresh');
+                if (refreshBtn) refreshBtn.addEventListener('click', function () { reloadFirstPage(true); });
+                // 切换到其他页签时停止实时轮询，避免无谓请求
+                Array.prototype.forEach.call(document.querySelectorAll('.pv-tab'), function (t) {
+                    t.addEventListener('click', function () { if (t.getAttribute('data-tab') !== 'logs') stopLive(); });
+                });
+                global.__pvLogStopLive = stopLive;   // 供页面销毁时清理
             })();
 
             // 外部接口：DICOM / PACS 连通性测试（当前输入）
@@ -197,6 +266,8 @@
                 try { global.PvPages.mock.init({}); } catch (e) { if (global.console) console.error(e); }
             }
         },
-        destroy: function () {}
+        destroy: function () {
+            if (global.__pvLogStopLive) { try { global.__pvLogStopLive(); } catch (e) {} global.__pvLogStopLive = null; }
+        }
     };
 })(window);
