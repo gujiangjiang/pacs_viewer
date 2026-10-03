@@ -134,70 +134,22 @@
                 });
             })();
 
-            function formVal(name) {
-                var el = document.querySelector('[name="' + name + '"]');
-                return el ? el.value : '';
-            }
-
             // 外部接口：DICOM / PACS 连通性测试（当前输入）
-            var btn = document.getElementById('pvTestPacs');
-            var out = document.getElementById('pvTestResult');
-            if (btn && out) {
-                btn.addEventListener('click', function () {
-                    btn.disabled = true;
-                    out.className = 'pv-test-result';
-                    out.textContent = '测试中…';
-                    PvUI.post(PvNav.route('api/pacs/test'), {
-                        pacs_endpoint: formVal('pacs_endpoint'),
-                        pacs_api_key: formVal('pacs_api_key'),
-                        pacs_timeout: formVal('pacs_timeout')
-                    }).then(function (j) {
-                        btn.disabled = false;
-                        if (j && j.code === 200) {
-                            out.className = 'pv-test-result ok';
-                            var d = j.data || {};
-                            out.textContent = '✓ 接口可用 · ' + (d.name || '') + (d.mode ? ' · 模式 ' + d.mode : '') + (d.institution ? ' · 机构 ' + d.institution : '');
-                        } else {
-                            out.className = 'pv-test-result err';
-                            out.textContent = '✗ ' + ((j && j.msg) || '测试失败');
-                        }
-                    }).catch(function () {
-                        btn.disabled = false;
-                        out.className = 'pv-test-result err';
-                        out.textContent = '✗ 网络请求失败';
-                    });
-                });
-            }
+            PvUI.bindConnTest({
+                btn: 'pvTestPacs', out: 'pvTestResult', route: 'api/pacs/test',
+                fields: ['pacs_endpoint', 'pacs_api_key', 'pacs_timeout'],
+                okText: function (d) { return '接口可用 · ' + (d.name || '') + (d.mode ? ' · 模式 ' + d.mode : '') + (d.institution ? ' · 机构 ' + d.institution : ''); }
+            });
 
             // 外部接口：FHIR R4 连通性测试（当前输入）
-            var fhirBtn = document.getElementById('pvFhirTestMain');
-            var fhirOut = document.getElementById('pvFhirResultMain');
-            if (fhirBtn && fhirOut) {
-                fhirBtn.addEventListener('click', function () {
-                    fhirBtn.disabled = true; fhirOut.className = 'pv-test-result'; fhirOut.textContent = '测试中…';
-                    PvUI.post(PvNav.route('api/fhir/test'), {
-                        fhir_endpoint: formVal('fhir_endpoint'),
-                        fhir_api_key: formVal('fhir_api_key'),
-                        fhir_timeout: formVal('fhir_timeout')
-                    }).then(function (j) {
-                        fhirBtn.disabled = false;
-                        if (j && j.code === 200) { fhirOut.className = 'pv-test-result ok'; fhirOut.textContent = '✓ 连接成功 · ' + ((j.data && (j.data.institution || j.data.name)) || 'FHIR'); }
-                        else { fhirOut.className = 'pv-test-result err'; fhirOut.textContent = '✗ ' + ((j && j.msg) || '连接失败'); }
-                    }).catch(function () { fhirBtn.disabled = false; fhirOut.className = 'pv-test-result err'; fhirOut.textContent = '✗ 网络请求失败'; });
-                });
-            }
+            PvUI.bindConnTest({
+                btn: 'pvFhirTestMain', out: 'pvFhirResultMain', route: 'api/fhir/test',
+                fields: ['fhir_endpoint', 'fhir_api_key', 'fhir_timeout'],
+                okText: function (d) { return '连接成功 · ' + ((d.institution || d.name) || 'FHIR'); }
+            });
 
             // 外部接口：左侧分栏切换（DICOM/PACS ↔ FHIR R4）
-            var extItems = document.querySelectorAll('.pv-split-item[data-ext]');
-            Array.prototype.forEach.call(extItems, function (item) {
-                item.addEventListener('click', function () {
-                    var key = item.getAttribute('data-ext');
-                    Array.prototype.forEach.call(extItems, function (b) { b.classList.toggle('active', b === item); });
-                    Array.prototype.forEach.call(document.querySelectorAll('[data-ext-pane]'), function (p) {
-                        p.classList.toggle('pv-hidden', p.getAttribute('data-ext-pane') !== key);
-                    });
-                });
-            });
+            PvUI.bindSplit({ navSelector: '.pv-split-item[data-ext]', paneSelector: '[data-ext-pane]', attr: 'ext' });
 
             // 账号管理面板
             if (global.PvAdminUsers) global.PvAdminUsers.init(goTab);

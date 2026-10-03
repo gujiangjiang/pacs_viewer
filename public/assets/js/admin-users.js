@@ -70,19 +70,9 @@
     }
 
     function postThen(route, data, btn, okMsg) {
-        if (btn) btn.disabled = true;
-        PvUI.post(PvNav.route(route), data).then(function (j) {
-            if (btn) btn.disabled = false;
-            if (j && j.code === 200) {
-                PvModal.close();
-                PvUI.toast(j.msg || okMsg || '操作成功', 'ok');
-                if (goTabFn) goTabFn('users');
-            } else {
-                PvUI.toast((j && j.msg) || '操作失败', 'err');
-            }
-        }).catch(function () {
-            if (btn) btn.disabled = false;
-            PvUI.toast('网络请求失败', 'err');
+        return PvUI.postThen(route, data, {
+            btn: btn, okMsg: okMsg,
+            onOk: function () { PvModal.close(); if (goTabFn) goTabFn('users'); }
         });
     }
 

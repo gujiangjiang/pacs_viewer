@@ -207,6 +207,102 @@
         } catch (e) { return Promise.resolve(false); }
     }
 
+    /**
+     * 通用左右分栏导航：点击左栏项切换高亮与右栏面板显隐。
+     * @param {object} o
+     *   navSelector  左栏项选择器（项带 data-<attr>）
+     *   paneSelector 右栏面板选择器（面板带 data-<attr>-pane）
+     *   attr         属性名（如 'mp' / 'src' / 'ext'）
+     *   initial      初始选中值（缺省取首个项）
+     *   onChange     function(value) 切换回调（可选）
+     * @return {{select: function(string):void}|null}
+     */
+    function bindSplit(o) {
+        o = o || {};
+        var items = document.querySelectorAll(o.navSelector || '');
+        var panes = document.querySelectorAll(o.paneSelector || '');
+        if (!items.length) return null;
+        var navAttr = 'data-' + o.attr, paneAttr = 'data-' + o.attr + '-pane';
+        function select(val) {
+            Array.prototype.forEach.call(items, function (b) { b.classList.toggle('active', b.getAttribute(navAttr) === val); });
+            Array.prototype.forEach.call(panes, function (p) { p.classList.toggle('pv-hidden', p.getAttribute(paneAttr) !== val); });
+            if (typeof o.onChange === 'function') o.onChange(val);
+        }
+        Array.prototype.forEach.call(items, function (b) {
+            b.addEventListener('click', function () { select(b.getAttribute(navAttr)); });
+        });
+        var init = (o.initial !== undefined && o.initial !== null && o.initial !== '') ? o.initial : items[0].getAttribute(navAttr);
+        select(init);
+        return { select: select };
+    }
+
+    /**
+     * POST 后按 {code} 统一提示与回调，集中处理按钮禁用与异常。
+     * @param {string} route 路由（经 PvNav.route 构造）
+     * @param {object|FormData} data
+     * @param {object} [opts] { btn, okMsg, errMsg, silent, onOk(j), onError(j) }
+     */
+    function postThen(route, data, opts) {
+        opts = opts || {};
+        var url = global.PvNav ? global.PvNav.route(route) : route;
+        if (opts.btn) opts.btn.disabled = true;
+        return post(url, data).then(function (j) {
+            if (opts.btn) opts.btn.disabled = false;
+            if (j && j.code === 200) {
+                if (!opts.silent) toast(j.msg || opts.okMsg || '操作成功', 'ok');
+                if (typeof opts.onOk === 'function') opts.onOk(j);
+            } else {
+                if (!opts.silent) toast((j && j.msg) || opts.errMsg || '操作失败', 'err');
+                if (typeof opts.onError === 'function') opts.onError(j);
+            }
+            return j;
+        }).catch(function () {
+            if (opts.btn) opts.btn.disabled = false;
+            if (!opts.silent) toast('网络请求失败', 'err');
+            if (typeof opts.onError === 'function') opts.onError(null);
+            return null;
+        });
+    }
+
+    /**
+     * 绑定「测试连接」按钮：读取表单字段 POST，渲染成功 / 失败结果。
+     * @param {object} o
+     *   btn / out   按钮与结果元素（或元素 id）
+     *   route       测试接口路由
+     *   fields      参与提交的字段名数组
+     *   okText      function(data) → 成功文案（自动前置「✓ 」）；缺省「连接成功」
+     */
+    function bindConnTest(o) {
+        o = o || {};
+        var btn = typeof o.btn === 'string' ? document.getElementById(o.btn) : o.btn;
+        var out = typeof o.out === 'string' ? document.getElementById(o.out) : o.out;
+        if (!btn || !out) return;
+        btn.addEventListener('click', function () {
+            btn.disabled = true;
+            out.className = 'pv-test-result'; out.textContent = '测试中…';
+            var data = {};
+            (o.fields || []).forEach(function (name) {
+                var el = document.querySelector('[name="' + name + '"]');
+                data[name] = el ? el.value : '';
+            });
+            post(global.PvNav ? global.PvNav.route(o.route) : o.route, data).then(function (j) {
+                btn.disabled = false;
+                if (j && j.code === 200) {
+                    out.className = 'pv-test-result ok';
+                    var d = j.data || {};
+                    out.textContent = '✓ ' + (typeof o.okText === 'function' ? o.okText(d) : '连接成功');
+                } else {
+                    out.className = 'pv-test-result err';
+                    out.textContent = '✗ ' + ((j && j.msg) || '测试失败');
+                }
+            }).catch(function () {
+                btn.disabled = false;
+                out.className = 'pv-test-result err';
+                out.textContent = '✗ 网络请求失败';
+            });
+        });
+    }
+
     function bindAjaxForms(root) {
         var forms = (root || document).querySelectorAll('form[data-ajax-form]');
         Array.prototype.forEach.call(forms, function (form) {
@@ -234,5 +330,9 @@
     }
 
     global.PvModal = { open: open, close: close, confirm: confirmOpts, alert: alertOpts };
-    global.PvUI = { toast: toast, get: get, post: post, upload: upload, copy: copy, bindAjaxForms: bindAjaxForms, esc: esc };
+    global.PvUI = {
+        toast: toast, get: get, post: post, upload: upload, copy: copy,
+        bindAjaxForms: bindAjaxForms, esc: esc,
+        bindSplit: bindSplit, postThen: postThen, bindConnTest: bindConnTest
+    };
 })(window);

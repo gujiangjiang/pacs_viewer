@@ -51,14 +51,14 @@
             if (cu) cu.addEventListener('click', function () {
                 PvModal.confirm({ title: '清空上传文件', message: '确认删除全部上传文件及其记录？此操作不可恢复。', okText: '清空', danger: true }).then(function (ok) {
                     if (!ok) return;
-                    PvUI.post(route('api/storage/clear-uploads'), {}).then(function (j) { PvUI.toast((j && j.msg) || '操作结束', j && j.code === 200 ? 'ok' : 'err'); load(false); });
+                    PvUI.postThen('api/storage/clear-uploads', {}, { okMsg: '操作结束', errMsg: '操作结束', onOk: function () { load(false); }, onError: function () { load(false); } });
                 });
             });
             var cc = document.getElementById('pvStorageClearCache');
             if (cc) cc.addEventListener('click', function () {
                 PvModal.confirm({ title: '清空缓存区', message: '确认清空影像内存缓存？清空后再次打开影像会重新生成。', okText: '清空', danger: true }).then(function (ok) {
                     if (!ok) return;
-                    PvUI.post(route('api/storage/clear-cache'), {}).then(function (j) { PvUI.toast((j && j.msg) || '操作结束', j && j.code === 200 ? 'ok' : 'err'); load(false); });
+                    PvUI.postThen('api/storage/clear-cache', {}, { okMsg: '操作结束', errMsg: '操作结束', onOk: function () { load(false); }, onError: function () { load(false); } });
                 });
             });
 

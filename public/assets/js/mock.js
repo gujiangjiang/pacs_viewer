@@ -89,36 +89,20 @@
     }
     global.PvMockRefresh = function () { syncMockParams(); refreshMockStatus(); };
 
-    /** 模拟服务器左右两栏：左侧导航切换右侧面板 */
+    /** 模拟服务器左右两栏：左侧导航切换右侧面板（复用通用分栏助手） */
     function bindMpane() {
-        var items = document.querySelectorAll('.pv-split-item[data-mp]');
-        var panes = document.querySelectorAll('[data-mp-pane]');
-        if (!items.length) return;
-        function select(mp) {
-            Array.prototype.forEach.call(items, function (b) { b.classList.toggle('active', b.getAttribute('data-mp') === mp); });
-            Array.prototype.forEach.call(panes, function (p) { p.classList.toggle('pv-hidden', p.getAttribute('data-mp-pane') !== mp); });
-        }
-        Array.prototype.forEach.call(items, function (b) {
-            b.addEventListener('click', function () { select(b.getAttribute('data-mp')); });
-        });
-        select('status');
+        PvUI.bindSplit({ navSelector: '.pv-split-item[data-mp]', paneSelector: '[data-mp-pane]', attr: 'mp', initial: 'status' });
     }
 
     /** 患者数据来源（内置模拟 / FHIR）左右分栏切换，并写入隐藏字段 */
     function bindSource() {
-        var items = document.querySelectorAll('.pv-split-item[data-src]');
-        var panes = document.querySelectorAll('[data-src-pane]');
         var hidden = document.querySelector('[name="mock_patient_source"]');
-        if (!items.length) return;
-        function select(src) {
-            Array.prototype.forEach.call(items, function (b) { b.classList.toggle('active', b.getAttribute('data-src') === src); });
-            Array.prototype.forEach.call(panes, function (p) { p.classList.toggle('pv-hidden', p.getAttribute('data-src-pane') !== src); });
-            if (hidden) hidden.value = src;
-        }
-        Array.prototype.forEach.call(items, function (b) {
-            b.addEventListener('click', function () { select(b.getAttribute('data-src')); });
+        if (!document.querySelectorAll('.pv-split-item[data-src]').length) return;
+        PvUI.bindSplit({
+            navSelector: '.pv-split-item[data-src]', paneSelector: '[data-src-pane]', attr: 'src',
+            initial: hidden && hidden.value ? hidden.value : 'builtin',
+            onChange: function (src) { if (hidden) hidden.value = src; }
         });
-        select(hidden && hidden.value ? hidden.value : 'builtin');
     }
 
     function bindAnatomy() {
