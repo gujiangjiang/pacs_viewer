@@ -12,6 +12,9 @@ $pageData = array(
     'mode'       => $mode,
     'guest'      => $isGuest,
     'guestToken' => isset($guestToken) ? (string)$guestToken : '',
+    // 宿主来源：由嵌入方通过 ?host=<origin> 显式下发（如门诊一体化内嵌转发），
+    // 用于宿主 postMessage 指令桥的严格来源校验；未提供时回退「信任直接父窗口」。
+    'hostOrigin' => isset($_GET['host']) ? trim((string)$_GET['host']) : '',
     'studyLimit' => $isGuest ? 1 : (int)PvSettings::get('viewer_study_limit', '5'),
     'isAdmin'    => $isGuest ? false : PvAuth::isAdmin(),
     'about'      => array(
