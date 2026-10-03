@@ -89,7 +89,7 @@ class PvApiController {
                         foreach ($se['images'] as &$u) $u = $u . (strpos($u, '?') === false ? '?' : '&') . 'gtoken=' . $gt;
                         unset($u);
                     }
-                    if (!empty($se['thumbnail'])) $se['thumbnail'] .= '&gtoken=' . $gt;
+                    if (!empty($se['thumbnail'])) $se['thumbnail'] .= (strpos($se['thumbnail'], '?') === false ? '?' : '&') . 'gtoken=' . $gt;
                 }
                 unset($se);
             }
