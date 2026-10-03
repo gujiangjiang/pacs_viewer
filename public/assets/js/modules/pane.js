@@ -9,7 +9,6 @@
 
     var BASE = PvRender.BASE;
     var clamp = PvRender.clamp;   // 复用通用钳位助手
-    var esc = PvUI.esc;           // 复用通用转义助手
     var PRESETS = {
         soft: { ww: 400, wl: 40, label: '软组织窗' },
         lung: { ww: 1500, wl: -600, label: '肺窗' },
@@ -381,67 +380,6 @@
         return { x: x1 / (this.st.zoom * fh) + BASE / 2, y: y1 / (this.st.zoom * fv) + BASE / 2 };
     };
 
-    /* ---------- 标注 ---------- */
-    PvPane.prototype.drawAnnotations = function () {
-        var st = this.st, ctx = this.ctx;
-        ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-        var all = st.annos.slice();
-        if (st.draft) { var dd = this._draftView(); if (dd) all.push(dd); }
-        for (var i = 0; i < all.length; i++) this._drawAnno(ctx, all[i]);
-    };
-    PvPane.prototype._draftView = function () {
-        var d = this.st.draft; if (!d) return null;
-        var pts = d.fixed.slice();
-        if (d.hover && (d.type === 'length' || d.type === 'angle')) pts.push(d.hover);
-        return { type: d.type, pts: pts, color: '#facc15' };
-    };
-    PvPane.prototype._line = function (ctx, a, b, color) {
-        var A = this.imgToScreen(a.x, a.y), B = this.imgToScreen(b.x, b.y);
-        ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1.4; ctx.setLineDash([5, 4]);
-        ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillStyle = color;
-        [A, B].forEach(function (P) { ctx.beginPath(); ctx.arc(P.x, P.y, 3, 0, Math.PI * 2); ctx.fill(); });
-        ctx.restore();
-    };
-    PvPane.prototype._label = function (ctx, x, y, txt) {
-        ctx.save(); ctx.font = '12px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'rgba(0,0,0,.9)'; ctx.shadowBlur = 3;
-        var w = ctx.measureText(txt).width + 8;
-        ctx.fillStyle = 'rgba(16,185,129,.88)'; ctx.fillRect(x, y - 9, w, 18);
-        ctx.shadowBlur = 0; ctx.fillStyle = '#04140d'; ctx.fillText(txt, x + 4, y); ctx.restore();
-    };
-    PvPane.prototype._drawAnno = function (ctx, a) {
-        var color = a.color || '#10b981', ps = this.effectivePixelSpacing();
-        if (a.type === 'length' && a.pts.length >= 2) {
-            this._line(ctx, a.pts[0], a.pts[1], color);
-            var mm = PvMeasure.distMM(a.pts[0], a.pts[1], ps), px = Math.round(PvMeasure.distPx(a.pts[0], a.pts[1]));
-            var mid = this.imgToScreen((a.pts[0].x + a.pts[1].x) / 2, (a.pts[0].y + a.pts[1].y) / 2);
-            this._label(ctx, mid.x + 6, mid.y, mm.toFixed(1) + ' mm (' + px + ' px)');
-        } else if (a.type === 'angle' && a.pts.length >= 3) {
-            this._line(ctx, a.pts[0], a.pts[1], color); this._line(ctx, a.pts[1], a.pts[2], color);
-            var V = this.imgToScreen(a.pts[1].x, a.pts[1].y);
-            this._label(ctx, V.x + 8, V.y - 12, PvMeasure.angleDeg(a.pts[0], a.pts[1], a.pts[2]).toFixed(1) + '\u00b0');
-        } else if ((a.type === 'rect' || a.type === 'ellipse') && a.pts.length >= 2) {
-            var A = this.imgToScreen(a.pts[0].x, a.pts[0].y), B = this.imgToScreen(a.pts[1].x, a.pts[1].y);
-            var x = Math.min(A.x, B.x), y = Math.min(A.y, B.y), w = Math.abs(B.x - A.x), h = Math.abs(B.y - A.y);
-            ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1.4; ctx.setLineDash([5, 4]); ctx.beginPath();
-            if (a.type === 'rect') ctx.rect(x, y, w, h); else ctx.ellipse((A.x + B.x) / 2, (A.y + B.y) / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
-            ctx.stroke(); ctx.setLineDash([]);
-            if (a.stats) {
-                var lines = ['A: ' + a.stats.area.toFixed(1) + ' mm\u00b2', 'Mean: ' + a.stats.mean.toFixed(1) + (a.stats.hu ? ' HU' : '')];
-                var lx = x, ly = y + h + 14;
-                ctx.font = '11px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,.9)'; ctx.shadowBlur = 3;
-                lines.forEach(function (t, k) {
-                    ctx.fillStyle = 'rgba(16,185,129,.9)'; ctx.fillRect(lx, ly + k * 16 - 8, ctx.measureText(t).width + 8, 16);
-                    ctx.shadowBlur = 0; ctx.fillStyle = '#04140d'; ctx.fillText(t, lx + 4, ly + k * 16); ctx.shadowBlur = 3;
-                });
-            }
-            ctx.restore();
-        } else if (a.pts) {
-            a.pts.forEach(function (p) { var P = this.imgToScreen(p.x, p.y); ctx.save(); ctx.fillStyle = color; ctx.beginPath(); ctx.arc(P.x, P.y, 3, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }, this);
-        }
-    };
-
     /* ---------- 交互 ---------- */
     PvPane.prototype._rel = function (e) { var r = this.canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
     PvPane.prototype._bind = function () {
@@ -521,37 +459,6 @@
         this._zoomTo(st.zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12), pt.x, pt.y);
         this._scheduleRender();
     };
-    PvPane.prototype._addPoint = function (type, p) {
-        var st = this.st;
-        if (!st.draft || st.draft.type !== type) st.draft = { type: type, fixed: [], hover: null };
-        st.draft.fixed.push(p); st.draft.hover = null;
-        if (st.draft.fixed.length >= (type === 'length' ? 2 : 3)) {
-            st.annos.push({ type: type, pts: st.draft.fixed.slice(), color: '#10b981' });
-            st.draft = null;
-        }
-        this.render();
-    };
-    PvPane.prototype._roiStats = function (pts, type) {
-        var src = this.currentSource(); if (!src || src.kind !== 'raw') return null;
-        var raw = src.raw, size = BASE;
-        var x0 = clamp(Math.round(Math.min(pts[0].x, pts[1].x)), 0, size - 1);
-        var x1 = clamp(Math.round(Math.max(pts[0].x, pts[1].x)), 0, size - 1);
-        var y0 = clamp(Math.round(Math.min(pts[0].y, pts[1].y)), 0, size - 1);
-        var y1 = clamp(Math.round(Math.max(pts[0].y, pts[1].y)), 0, size - 1);
-        var cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, rx = Math.max(1, (x1 - x0) / 2), ry = Math.max(1, (y1 - y0) / 2);
-        var sum = 0, n = 0;
-        for (var y = y0; y <= y1; y++) {
-            for (var x = x0; x <= x1; x++) {
-                if (type === 'ellipse') { var dx = (x - cx) / rx, dy = (y - cy) / ry; if (dx * dx + dy * dy > 1) continue; }
-                sum += raw[y * size + x]; n++;
-            }
-        }
-        if (!n) return null;
-        var ps = this.effectivePixelSpacing();
-        return { area: n * ps * ps, mean: sum / n, hu: this.frameIsHU(), count: n };
-    };
-    PvPane.prototype.clearAnnos = function () { this.st.annos = []; this.st.draft = null; this.render(); };
-
     /* ---------- 帧 / 序列 ---------- */
     /** 当前序列的默认窗（与 applyDefaults 口径一致；已解码实例优先用 DICOM 自带窗） */
     PvPane.prototype.defaultWindow = function () {
@@ -643,57 +550,6 @@
         this.viewer.persist();
     };
 
-    /* ---------- 帧滚动条 ---------- */
-    PvPane.prototype.updateScrollbar = function () {
-        if (!this.scrollEl || !this.scrollTrack || !this.scrollThumb) return;
-        var n = this.frameCount();
-        if (n <= 1 || !this.hasImage()) { this.scrollEl.hidden = true; this.scrollEl.classList.remove('show-bubble'); return; }
-        this.scrollEl.hidden = false;
-        var trackH = this.scrollTrack.clientHeight || this.scrollEl.clientHeight || 1;
-        var thumbH = Math.max(28, Math.round(trackH / n));
-        if (thumbH > trackH) thumbH = trackH;
-        var maxTop = Math.max(0, trackH - thumbH);
-        this.scrollThumb.style.height = thumbH + 'px';
-        this.scrollThumb.style.top = Math.round(maxTop * (this.st.fi / (n - 1))) + 'px';
-    };
-    PvPane.prototype._bindScrollbar = function () {
-        var self = this, track = this.scrollTrack, thumb = this.scrollThumb;
-        if (!track) return;
-        this._sb = { dragging: false, startY: 0, startTop: 0, hideTimer: null };
-        function bubble(n, fi) {
-            if (!self.scrollBubble) return;
-            self.scrollBubble.textContent = (fi + 1) + ' / ' + n;
-            self.scrollBubble.style.top = (thumb.offsetTop + thumb.offsetHeight / 2) + 'px';
-            self.scrollEl.classList.add('show-bubble');
-        }
-        function scheduleHide() { clearTimeout(self._sb.hideTimer); self._sb.hideTimer = setTimeout(function () { self.scrollEl.classList.remove('show-bubble'); }, 900); }
-        function setFromY(clientY, fromThumb) {
-            var n = self.frameCount(); if (n <= 1) return;
-            var rect = track.getBoundingClientRect(), trackH = rect.height, thumbH = thumb.offsetHeight;
-            var maxTop = Math.max(0, trackH - thumbH), top;
-            if (fromThumb) top = Math.max(0, Math.min(maxTop, self._sb.startTop + (clientY - self._sb.startY)));
-            else top = Math.max(0, Math.min(maxTop, clientY - rect.top - thumbH / 2));
-            var fi = Math.round((maxTop > 0 ? top / maxTop : 0) * (n - 1));
-            self.setFrame(fi); bubble(n, fi); scheduleHide();
-        }
-        function onMove(e) { if (!self._sb.dragging) return; e.preventDefault(); setFromY(e.clientY, true); }
-        function onUp() {
-            if (!self._sb.dragging) return;
-            self._sb.dragging = false; self.scrollEl.classList.remove('dragging');
-            document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp);
-        }
-        track.addEventListener('pointerdown', function (e) {
-            e.preventDefault();
-            self.viewer.setActivePane(self.viewer.panes.indexOf(self));
-            if (e.target === thumb) {
-                self._sb.dragging = true; self._sb.startY = e.clientY; self._sb.startTop = thumb.offsetTop;
-                self.scrollEl.classList.add('dragging');
-                document.addEventListener('pointermove', onMove); document.addEventListener('pointerup', onUp);
-            } else setFromY(e.clientY, false);
-        });
-        track.addEventListener('mouseleave', function () { if (!self._sb.dragging) self.scrollEl.classList.remove('show-bubble'); });
-    };
-
     /* ---------- CT 值 ---------- */
     PvPane.prototype._setHU = function (text) {
         if (!this.huEl) return;
@@ -721,157 +577,6 @@
             try { var d = this.raw.getContext('2d').getImageData(x, y, 1, 1).data; this._setHU('灰度 ' + d[0] + '　(' + x + ', ' + y + ')'); }
             catch (err) { this._setHU('(' + x + ', ' + y + ')'); }
         }
-    };
-
-    /* ---------- 导出 ---------- */
-    PvPane.prototype.fileBase = function () {
-        var d = this.data(); d = d || {}; var data = d.data || {};
-        var p = data.patient || {}, s = data.study || {}, ser = this.curSeries() || {};
-        return [p.patient_id || 'patient', s.accession_no || s.study_uid || 'study', 'ser' + (ser.series_id || 1)]
-            .join('_').replace(/[^\w.-]+/g, '_');
-    };
-    PvPane.prototype._triggerDownload = function (url, filename) {
-        var a = document.createElement('a'); a.href = url; a.download = filename;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(function () { URL.revokeObjectURL(url); }, 1800);
-    };
-    PvPane.prototype._paintRaw = function (cx, raw) {
-        cx.putImageData(PvRender.window(raw, BASE, this.st.ww, this.st.wl, this.st.invert), 0, 0);
-    };
-    PvPane.prototype.exportFrameCanvas = function (fi) {
-        var self = this, ser = this.curSeries();
-        var cv = document.createElement('canvas'); cv.width = BASE; cv.height = BASE;
-        var cx = cv.getContext('2d'); cx.fillStyle = '#000'; cx.fillRect(0, 0, BASE, BASE);
-        if (!ser) return Promise.resolve(cv);
-        if (ser.format === 'dicom') {
-            var loc = this._frameLoc(ser, fi), ii = loc.ii, lf = loc.lf;
-            var cached = this._frames[this._frameKey(ser, fi)];
-            if (cached && cached.status === 'ok') { this._paintRaw(cx, cached.raw); return Promise.resolve(cv); }
-            var inst = this._instances[this._instKey(ser, ii)];
-            if (inst && inst.status === 'ok') { this._paintRaw(cx, PvRender.resample(inst.dec, BASE, lf)); return Promise.resolve(cv); }
-            var durl = ser.images && ser.images[ii];
-            if (!durl) return Promise.resolve(cv);
-            return fetch(durl, { credentials: 'same-origin' }).then(function (r) { return r.arrayBuffer(); })
-                .then(function (buf) { return PvDecoder.decode(buf, BASE, lf); })
-                .then(function (res) { self._paintRaw(cx, res.raw); return cv; })
-                .catch(function () { return cv; });
-        }
-        var src = ser.images && ser.images[fi];
-        if (!src) return Promise.resolve(cv);
-        return new Promise(function (resolve) {
-            var im = new Image();
-            im.onload = function () {
-                var raw = PvRender.imageToRaw(im, BASE, self.raw);
-                cx.drawImage(self.windowRaw(raw, self.st.ww, self.st.wl, self.st.invert), 0, 0);
-                resolve(cv);
-            };
-            im.onerror = function () { resolve(cv); };
-            im.src = src;
-        });
-    };
-    PvPane.prototype.saveImage = function () {
-        if (!this.hasImage()) return;
-        var self = this, name = this.fileBase() + '_im' + (this.st.fi + 1) + '.png';
-        try {
-            this.canvas.toBlob(function (blob) {
-                if (!blob) return;
-                self._triggerDownload(URL.createObjectURL(blob), name);
-                self.setStatus('已保存当前图像：' + name);
-                self.viewer.logEvent('download', '当前图像 ' + name);
-            }, 'image/png');
-        } catch (e) { this.setStatus('当前画面包含跨域内容，无法导出'); }
-    };
-    PvPane.prototype.saveSeries = function () {
-        if (!window.PvZip || !this.hasImage()) { this.setStatus('无可导出序列'); return; }
-        var self = this, n = this.frameCount(), base = this.fileBase();
-        this.setStatus('正在导出序列（0/' + n + '）…');
-        var chain = Promise.resolve(), files = [];
-        for (var i = 0; i < n; i++) {
-            (function (fi) {
-                chain = chain.then(function () {
-                    return self.exportFrameCanvas(fi).then(function (cv) {
-                        return new Promise(function (resolve) {
-                            cv.toBlob(function (blob) {
-                                files.push({ name: base + '_im' + (fi + 1) + '.png', data: blob });
-                                self.setStatus('正在导出序列（' + (fi + 1) + '/' + n + '）…');
-                                resolve();
-                            }, 'image/png');
-                        });
-                    });
-                });
-            })(i);
-        }
-        chain.then(function () { self.setStatus('正在打包 ZIP…'); return window.PvZip.create(files); })
-            .then(function (zip) {
-                self._triggerDownload(URL.createObjectURL(zip), base + '.zip');
-                self.setStatus('已导出序列：' + base + '.zip（' + n + ' 帧）');
-                self.viewer.logEvent('download', '序列 ZIP ' + base + '（' + n + ' 帧）');
-            }).catch(function () { self.setStatus('序列导出失败'); });
-    };
-
-    /** 导出当前序列的原始 DICOM 文档（完整 Part-10 字节流，打包为 ZIP） */
-    PvPane.prototype.saveDicom = function () {
-        var ser = this.curSeries();
-        if (!ser || ser.format !== 'dicom' || !ser.images || !ser.images.length) { this.setStatus('当前序列无 DICOM 影像可导出'); return; }
-        var self = this, urls = ser.images, n = urls.length, base = this.fileBase();
-        var nameFor = function (url, i) {
-            var m = /[?&]instance=([^&]+)/.exec(url);
-            return base + '_' + (m ? decodeURIComponent(m[1]) : ('im' + (i + 1))) + '.dcm';
-        };
-        var fetchOne = function (i) {
-            return fetch(urls[i], { credentials: 'same-origin' })
-                .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
-                .then(function (buf) { return { name: nameFor(urls[i], i), data: new Uint8Array(buf) }; });
-        };
-        this.setStatus('正在导出 DICOM（0/' + n + '）…');
-        var files = [], chain = Promise.resolve();
-        for (var i = 0; i < n; i++) {
-            (function (idx) {
-                chain = chain.then(function () {
-                    return fetchOne(idx).then(function (f) {
-                        files.push(f);
-                        self.setStatus('正在导出 DICOM（' + (idx + 1) + '/' + n + '）…');
-                    });
-                });
-            })(i);
-        }
-        chain.then(function () {
-            self.setStatus('正在打包 ZIP…');
-            return (window.PvZip && files.length) ? window.PvZip.create(files) : null;
-        }).then(function (zip) {
-            if (zip) {
-                self._triggerDownload(URL.createObjectURL(zip), base + '.dcm.zip');
-                self.setStatus('已导出 DICOM：' + base + '.dcm.zip（' + n + ' 个实例）');
-                self.viewer.logEvent('download', 'DICOM ZIP ' + base + '（' + n + ' 个实例）');
-            } else if (files.length) {
-                self._triggerDownload(URL.createObjectURL(new Blob([files[0].data], { type: 'application/dicom' })), files[0].name);
-                self.setStatus('已导出当前 DICOM：' + files[0].name);
-                self.viewer.logEvent('download', 'DICOM ' + files[0].name);
-            }
-        }).catch(function () { self.setStatus('DICOM 导出失败'); });
-    };
-
-    /* ---------- DICOM 详情 ---------- */
-    PvPane.prototype.showDicomInfo = function () {
-        if (!window.PvModal || !this.hasImage()) return;
-        var d = (this.data() || {}).data || {}, p = d.patient || {}, s = d.study || {}, ser = this.curSeries() || {};
-        var meta = d.meta || {}, isHU = this.frameIsHU(), count = this.frameCount();
-        var seriesUid = /^\d[\d.]*$/.test(s.study_uid || '') ? (s.study_uid + '.' + (ser.series_id || 1))
-            : ('1.2.826.0.1.3680043.8.498.' + (ser.seed || ser.series_id || '1'));
-        var section = function (title, rows) {
-            var h = '<div class="pv-dicom-sec"><h4>' + esc(title) + '</h4><table class="pv-dicom-table">';
-            rows.forEach(function (r) { if (r[1] === undefined || r[1] === null || r[1] === '') return; h += '<tr><th>' + esc(r[0]) + '</th><td>' + esc(r[1]) + '</td></tr>'; });
-            return h + '</table></div>';
-        };
-        var seriesList = (d.series || []).map(function (x) { return 'Ser ' + x.series_id + ' · ' + (x.description || '') + '（' + (x.slice_count || 0) + ' 帧）'; }).join('；');
-        var html = '<div class="pv-dicom">' +
-            section('患者信息 (Patient)', [['PatientName（姓名）', p.name], ['PatientID（患者号）', p.patient_id], ['PatientBirthDate（出生日期）', p.birth_date], ['PatientSex（性别）', p.gender], ['Age（年龄）', p.age], ['OutpatientNo（门诊号）', p.outpatient_no]]) +
-            section('检查信息 (Study)', [['StudyInstanceUID', s.study_uid], ['AccessionNumber（检查号）', s.accession_no], ['StudyDate（检查时间）', s.study_date], ['Modality（模态）', s.modality], ['StudyDescription（检查项目）', s.description], ['InstitutionName（机构）', s.institution], ['StationName（设备）', s.station_name], ['ReferringDept（申请科室）', s.apply_dept], ['ReferringPhysician（申请医生）', s.apply_doctor], ['NumberOfSeries（序列数）', (d.series || []).length]]) +
-            section('序列信息 (Series)', [['SeriesNumber（序列号）', ser.series_id], ['SeriesInstanceUID', seriesUid], ['SeriesDescription（序列描述）', ser.description], ['ImageOrientation（方位）', ser.orientation], ['NumberOfFrames（帧数）', count], ['SliceThickness（层厚）', ser.slice_thickness != null ? ser.slice_thickness : s.slice_thickness], ['PixelSpacing（像素间距）', ser.pixel_spacing], ['SeriesList（本检查序列）', seriesList]]) +
-            section('当前图像 (Instance)', [['InstanceNumber（帧号）', (this.st.fi + 1) + ' / ' + count], ['Rows × Columns（矩阵）', (ser.rows || 512) + ' × ' + (ser.columns || 512)], ['BitsAllocated（位深）', ser.bits_allocated || 16], ['PhotometricInterpretation', 'MONOCHROME2'], ['RescaleIntercept / Slope', (ser.rescale_intercept != null ? ser.rescale_intercept : '0') + ' / ' + (ser.rescale_slope != null ? ser.rescale_slope : '1')], ['WindowWidth / WindowCenter', Math.round(this.st.ww) + ' / ' + Math.round(this.st.wl)], ['PixelRepresentation（是否 HU）', isHU ? '有符号（HU）' : '无符号'], ['Zoom / Rotation', Math.round(this.st.zoom * 100) + '% / ' + (((this.st.rot % 360) + 360) % 360) + '°'], ['Flip（镜像）', (this.st.flipH ? 'H' : '') + (this.st.flipV ? 'V' : '') || 'N'], ['Annotations（标注数）', this.st.annos.length]]) +
-            section('数据来源', [['Source（来源）', meta.source], ['Mode（接口模式）', meta.mode], ['Format（影像格式）', ser.format === 'dicom' ? '标准 DICOM（WADO-URI）' : '图像文件']]) + '</div>';
-        window.PvModal.open({ title: 'DICOM 详情 · ' + (s.accession_no || s.study_uid || ''), size: 'lg', body: html });
-        this.viewer.logEvent('dicom');
     };
 
     global.PvPane = PvPane;
