@@ -39,8 +39,8 @@
         var label = make('span', 'pv-select-label');
         var caret = make('span', 'pv-select-caret'); caret.innerHTML = CHEV;
         btn.appendChild(label); btn.appendChild(caret);
-        var menu = make('div', 'pv-select-menu');
-        wrap.appendChild(btn); wrap.appendChild(menu);
+        var menu = make('div', 'pv-select-menu');   // 打开时挂到 body，避免被祖先 overflow 裁剪
+        wrap.appendChild(btn);
         sel.parentNode.insertBefore(wrap, sel.nextSibling);
 
         function build() {
@@ -60,20 +60,42 @@
             wrap.classList.toggle('is-disabled', dis);
             btn.disabled = dis;
         }
+        function position() {
+            if (!menu.classList.contains('open')) return;
+            var r = btn.getBoundingClientRect(), gap = 6;
+            menu.style.width = Math.round(r.width) + 'px';
+            menu.style.left = Math.round(r.left) + 'px';
+            menu.style.top = Math.round(r.bottom + gap) + 'px';
+            var w = menu.offsetWidth, h = menu.offsetHeight;
+            var vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+            var left = r.left, top = r.bottom + gap;
+            if (left + w > vw - 8) left = Math.max(8, vw - 8 - w);
+            if (top + h > vh - 8) { var a = r.top - gap - h; top = a >= 8 ? a : Math.max(8, vh - 8 - h); }
+            menu.style.left = Math.round(left) + 'px';
+            menu.style.top = Math.round(top) + 'px';
+        }
         function open() {
-            if (sel.disabled) return;
+            if (sel.disabled || menu.classList.contains('open')) return;
             build();
+            document.body.appendChild(menu);
             wrap.classList.add('open');
-            menu.style.minWidth = btn.getBoundingClientRect().width + 'px';
+            menu.classList.add('open');
+            position();
             document.addEventListener('pointerdown', onDoc, true);
             document.addEventListener('keydown', onKey, true);
+            window.addEventListener('resize', position);
+            window.addEventListener('scroll', position, true);
             var cur = menu.querySelector('.pv-select-opt.selected');
             if (cur && menu.scrollHeight > menu.clientHeight) menu.scrollTop = Math.max(0, cur.offsetTop - menu.clientHeight / 2);
         }
         function close() {
             wrap.classList.remove('open');
+            menu.classList.remove('open');
+            if (menu.parentNode) menu.parentNode.removeChild(menu);
             document.removeEventListener('pointerdown', onDoc, true);
             document.removeEventListener('keydown', onKey, true);
+            window.removeEventListener('resize', position);
+            window.removeEventListener('scroll', position, true);
         }
         function pick(v) {
             sel.value = v;
@@ -83,7 +105,7 @@
             close();
             btn.focus();
         }
-        function onDoc(e) { if (!wrap.contains(e.target)) close(); }
+        function onDoc(e) { if (wrap.contains(e.target) || menu.contains(e.target)) return; close(); }
         function onKey(e) {
             if (e.key === 'Escape') { close(); return; }
             if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter' && e.key !== ' ') return;
@@ -122,8 +144,8 @@
         var text = make('span', 'pv-date-text');
         var ico = make('span', 'pv-date-ico'); ico.innerHTML = CAL;
         field.appendChild(text); field.appendChild(ico);
-        var pop = make('div', 'pv-date-pop');
-        wrap.appendChild(field); wrap.appendChild(pop);
+        var pop = make('div', 'pv-date-pop');   // 打开时挂到 body，避免被祖先 overflow 裁剪
+        wrap.appendChild(field);
         input.parentNode.insertBefore(wrap, input.nextSibling);
 
         var view = new Date();
@@ -162,15 +184,36 @@
                 });
             });
         }
-        function onDoc(e) { if (!wrap.contains(e.target)) close(); }
+        function position() {
+            if (!pop.classList.contains('open')) return;
+            var r = field.getBoundingClientRect(), gap = 6;
+            var w = pop.offsetWidth, h = pop.offsetHeight;
+            var vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+            var left = r.left, top = r.bottom + gap;
+            if (left + w > vw - 8) left = Math.max(8, vw - 8 - w);
+            if (top + h > vh - 8) { var a = r.top - gap - h; top = a >= 8 ? a : Math.max(8, vh - 8 - h); }
+            pop.style.left = Math.round(left) + 'px';
+            pop.style.top = Math.round(top) + 'px';
+        }
+        function onDoc(e) { if (wrap.contains(e.target) || pop.contains(e.target)) return; close(); }
         function open() {
-            if (input.disabled) return;
-            sync(); render(); wrap.classList.add('open');
+            if (input.disabled || pop.classList.contains('open')) return;
+            sync(); render();
+            document.body.appendChild(pop);
+            wrap.classList.add('open');
+            pop.classList.add('open');
+            position();
             document.addEventListener('pointerdown', onDoc, true);
+            window.addEventListener('resize', position);
+            window.addEventListener('scroll', position, true);
         }
         function close() {
             wrap.classList.remove('open');
+            pop.classList.remove('open');
+            if (pop.parentNode) pop.parentNode.removeChild(pop);
             document.removeEventListener('pointerdown', onDoc, true);
+            window.removeEventListener('resize', position);
+            window.removeEventListener('scroll', position, true);
         }
         field.addEventListener('click', function (e) {
             e.stopPropagation();
