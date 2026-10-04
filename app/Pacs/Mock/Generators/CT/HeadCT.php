@@ -93,7 +93,6 @@ class PvMockHeadCT extends PvMockAbstractGenerator {
         /* 颅底结构（p < 0.32 渐隐）：脑干、小脑、岩骨、蝶鞍 */
         $baseAmp = 1.0 - $G::smoothstep(0.18, 0.36, $p);
         if ($baseAmp > 0.01) {
-            $bs = 1.0 - $G::smoothstep(0.0, 0.10, abs($G::ellipseField($nx, $ny, 0.5, 0.615, 0.055, 0.075)));
             if ($G::ellipseField($nx, $ny, 0.5, 0.615, 0.055, 0.075) < 0) {
                 $hu = $hu * (1.0 - $baseAmp) + (32.0 + 5.0 * $grain) * $baseAmp;     // 脑干
             }

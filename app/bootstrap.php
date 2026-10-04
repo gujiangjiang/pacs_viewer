@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '1.2.5');
+define('PV_VERSION', '1.2.6');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -275,7 +275,7 @@ function pvw_page($name, array $data = array()) {
     extract($data, EXTR_SKIP);
     // 布局元数据默认值（视图内可覆盖）
     $page = isset($page) ? $page : '';
-    $pageTitle = '';
+    if (!isset($pageTitle)) $pageTitle = '';
     $active = isset($active) ? $active : '';
     $bodyClass = isset($bodyClass) ? $bodyClass : '';
     $extraCss = array(); $extraJs = array(); $pageData = array();

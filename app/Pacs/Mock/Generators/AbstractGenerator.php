@@ -38,16 +38,26 @@ abstract class PvMockAbstractGenerator implements PvMockSliceGeneratorInterface,
     protected $seed = 'mock';
     protected $noise;                        // 各生成器的 Perlin 噪声源
 
+    /** 允许经 configure() 覆盖的属性白名单（避免拼写错误静默创建动态属性） */
+    protected static $configKeys = array(
+        'modality', 'orientation', 'seriesDescription', 'bodyPartExamined',
+        'frameCount', 'rows', 'cols', 'sliceThickness', 'spacingBetweenSlices',
+        'rowSpacing', 'colSpacing', 'bitsAllocated', 'bitsStored', 'highBit',
+        'pixelRepresentation', 'samplesPerPixel', 'photometric',
+        'windowCenter', 'windowWidth', 'rescaleIntercept', 'rescaleSlope',
+    );
+
     /**
      * 统一配置：按需覆盖生成器属性。
-     * - 传入键为属性名（modality / frameCount / rowSpacing …）时直接赋值；
-     * - 特殊键 `noise`：其值作为种子，构建 64×64 Perlin 噪声源。
+     * - 传入键为白名单属性名（modality / frameCount / rowSpacing …）时直接赋值；
+     * - 特殊键 `noise`：其值作为种子，构建 64×64 Perlin 噪声源；
+     * - 未在白名单内的键忽略，避免拼写错误静默写入动态属性。
      * 供各子类构造函数消除重复的属性赋值样板。
      */
     protected function configure(array $cfg) {
         foreach ($cfg as $key => $val) {
             if ($key === 'noise') { $this->noise = PvMockProceduralNoise::perlin2D($val, 64); continue; }
-            $this->$key = $val;
+            if (in_array($key, self::$configKeys, true)) $this->$key = $val;
         }
     }
 

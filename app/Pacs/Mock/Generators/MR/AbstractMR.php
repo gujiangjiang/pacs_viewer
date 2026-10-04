@@ -27,7 +27,6 @@ abstract class PvMockAbstractMR extends PvMockAbstractGenerator {
     abstract protected function initMR();
 
     protected function isT2() { return $this->weight === 'T2'; }
-    public function getWeight() { return $this->weight; }
 
     protected function encodePixel($value) {
         $v = (int)round($value);
@@ -39,9 +38,9 @@ abstract class PvMockAbstractMR extends PvMockAbstractGenerator {
     /** 组织信号：按权重返回 [脑脊液, 白质, 灰质, 脂肪, 骨皮质] */
     protected function tissueSignals() {
         if ($this->isT2()) {
-            return array('csf' => 1380, 'wm' => 520, 'gm' => 780, 'fat' => 900, 'bone' => 80, 'edema' => 1250);
+            return array('csf' => 1380, 'wm' => 520, 'gm' => 780, 'fat' => 900, 'bone' => 80);
         }
-        return array('csf' => 120, 'wm' => 1050, 'gm' => 760, 'fat' => 1350, 'bone' => 70, 'edema' => 1500);
+        return array('csf' => 120, 'wm' => 1050, 'gm' => 760, 'fat' => 1350, 'bone' => 70);
     }
 
     public function getModalitySpecificTags() {

@@ -325,15 +325,4 @@ class PvMockCache {
     private static function diskTtl() {
         return self::ttlSeconds();
     }
-
-    private static function parseSize($s) {
-        $s = trim((string)$s);
-        if ($s === '') return 0;
-        $unit = strtoupper(substr($s, -1));
-        $n = (int)$s;
-        if ($unit === 'G') return $n * 1073741824;
-        if ($unit === 'M') return $n * 1048576;
-        if ($unit === 'K') return $n * 1024;
-        return $n;
-    }
 }
