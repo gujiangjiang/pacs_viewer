@@ -87,6 +87,7 @@
     border-radius: 8px; background: #0f172a; color: var(--pv-txt2); cursor: pointer; font-size: 12px;
 }
 .pv-closeall:hover { background: rgba(239,68,68,.14); color: #fecaca; border-color: rgba(239,68,68,.4); }
+.pv-closeall[hidden] { display: none; }
 .pv-thumb {
     position: relative; margin: 0 0 10px; padding: 4px; border: 2px solid transparent;
     border-radius: 9px; background: #0b0f17; cursor: pointer; overflow: hidden;

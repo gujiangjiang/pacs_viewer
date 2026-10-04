@@ -331,9 +331,13 @@
         var p = this.activePane();
         var hasImage = !!(p && p.hasImage());
         var multi = hasImage && p.frameCount() > 1;
+        var hasStudies = this.ws.studies.length > 0;
         var keepActs = { 'toggle-sidebar': 1, 'about': 1, 'back': 1 };
         Array.prototype.forEach.call(bar.querySelectorAll('[data-pv-tool]'), function (b) { b.disabled = !hasImage; });
-        Array.prototype.forEach.call(bar.querySelectorAll('[data-pv-menu]'), function (b) { b.disabled = (!hasImage && b.getAttribute('data-pv-menu') !== 'layout'); });
+        Array.prototype.forEach.call(bar.querySelectorAll('[data-pv-menu]'), function (b) {
+            // 布局：无已打开检查时禁用（空分栏无意义）；其余菜单：无影像时禁用
+            b.disabled = (b.getAttribute('data-pv-menu') === 'layout') ? !hasStudies : !hasImage;
+        });
         Array.prototype.forEach.call(bar.querySelectorAll('[data-pv-act]'), function (b) {
             var a = b.getAttribute('data-pv-act');
             if (keepActs[a]) { b.disabled = false; return; }
@@ -342,6 +346,7 @@
             b.disabled = !hasImage;
         });
         if (!hasImage) Array.prototype.forEach.call(bar.querySelectorAll('[data-pv-tool]'), function (b) { b.classList.remove('active'); });
+        if (this.closeAllEl) this.closeAllEl.hidden = !hasStudies;   // 空序列栏时隐藏「关闭全部」
     };
     PvViewer.prototype.afterPaneLoad = function (p) {
         this.renderSidebar();
@@ -470,6 +475,7 @@
     };
     PvViewer.prototype.showEmpty = function () {
         this.ws.studies = [];
+        if (this.layout !== '1') this.setLayout('1', false);   // 影像清空后恢复单视图
         this.panes.forEach(function (p) { p.st.uid = ''; p.st.si = 0; p.st.fi = 0; p.st.annos = []; p.updateTitle(); p.updateScrollbar(); p.render(); });
         this.renderSidebar();
         this.syncToolbar();
@@ -480,6 +486,7 @@
     PvViewer.prototype.closeAll = function () {
         this.ws.studies = [];
         this.clearAllSeriesState();
+        if (this.layout !== '1') this.setLayout('1', false);   // 影像清空后恢复单视图
         this.panes.forEach(function (p) { p.st.uid = ''; p.st.si = 0; p.st.fi = 0; p.st.annos = []; p.st.draft = null; p.updateTitle(); p.updateScrollbar(); p.render(); });
         this.clearState();
         this.renderSidebar();
