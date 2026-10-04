@@ -336,10 +336,91 @@
         });
     }
 
+    /* ---------------- 站内路由 / 实时轮询 / 模态提交 ---------------- */
+
+    /** 站内路由 URL（优先复用 PvNav.route；不可用时按 PV_BOOT.home 兜底） */
+    function route(r, params) {
+        if (global.PvNav && global.PvNav.route) return global.PvNav.route(r, params);
+        var home = boot.home || '/';
+        var url = home + (home.indexOf('?') < 0 ? '?' : '&') + 'r=' + encodeURIComponent(r);
+        params = params || {};
+        for (var k in params) {
+            if (params[k] === undefined || params[k] === null || params[k] === '') continue;
+            url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+        }
+        return url;
+    }
+
+    /**
+     * 「实时」轮询开关：点击按钮在「运行 / 停止」间切换，运行中加入 active 类。
+     * @param {Element}  btn 触发按钮
+     * @param {Function} tick 每次轮询执行的函数
+     * @param {number}   [ms] 轮询间隔（毫秒，默认 5000）
+     * @return {{start:Function, stop:Function, isOn:Function}}
+     */
+    function liveToggle(btn, tick, ms) {
+        var timer = null;
+        function isOn() { return !!timer; }
+        function stop() {
+            if (timer) { clearInterval(timer); timer = null; }
+            if (btn) btn.classList.remove('active');
+        }
+        function run() { try { tick(); } catch (e) {} }
+        function start() {
+            stop();
+            if (btn) btn.classList.add('active');
+            run();
+            timer = setInterval(run, ms || 5000);
+        }
+        if (btn) btn.addEventListener('click', function () { if (isOn()) stop(); else start(); });
+        return { start: start, stop: stop, isOn: isOn };
+    }
+
+    /**
+     * 模态框内异步提交：保存时 POST，成功后关闭并按需回调。
+     * @param {object} o { title, body, okText, danger, route, getData(), onOk(j), onError(j), onOpen }
+     *   getData 返回 false 表示校验未通过、保持打开。
+     * @return {object} 与 PvModal.open 相同的句柄
+     */
+    function modalSubmit(o) {
+        o = o || {};
+        return open({
+            title: o.title || '编辑',
+            body: o.body || '',
+            size: o.size || '',
+            actions: [
+                { label: o.cancelText || '取消', cls: 'pv-btn-ghost' },
+                {
+                    label: o.okText || '保存', cls: o.danger ? 'pv-btn-danger' : 'pv-btn-primary', close: false,
+                    onClick: function () {
+                        var data = typeof o.getData === 'function' ? o.getData() : (o.getData || {});
+                        if (data === false) return false;
+                        post(route(o.route), data).then(function (j) {
+                            if (j && j.code === 200) {
+                                toast(j.msg || o.okMsg || '操作成功', 'ok');
+                                close();
+                                if (typeof o.onOk === 'function') o.onOk(j);
+                            } else {
+                                toast((j && j.msg) || o.errMsg || '操作失败', 'err');
+                                if (typeof o.onError === 'function') o.onError(j);
+                            }
+                        }).catch(function () {
+                            toast('网络请求失败', 'err');
+                            if (typeof o.onError === 'function') o.onError(null);
+                        });
+                        return false;   // 由回调决定关闭
+                    }
+                }
+            ],
+            onOpen: o.onOpen
+        });
+    }
+
     global.PvModal = { open: open, close: close, confirm: confirmOpts, alert: alertOpts };
     global.PvUI = {
         toast: toast, get: get, post: post, upload: upload, copy: copy,
         bindAjaxForms: bindAjaxForms, esc: esc,
-        bindSplit: bindSplit, postThen: postThen, bindConnTest: bindConnTest
+        bindSplit: bindSplit, postThen: postThen, bindConnTest: bindConnTest,
+        route: route, liveToggle: liveToggle, modalSubmit: modalSubmit
     };
 })(window);
