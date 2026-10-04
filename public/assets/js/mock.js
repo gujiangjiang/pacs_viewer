@@ -12,33 +12,139 @@
         el.textContent = '来源：' + (map[src] || src || '内置仿真数据');
     }
 
-    function renderPatients(list) {
-        var box = document.getElementById('pvMockPatients');
-        var empty = document.getElementById('pvMockEmpty');
+    /* ---------- 患者预览：固定框内滚动 + 动态分页加载 ---------- */
+    var MOCK_PAGE = 20;
+    var mockLoader = null;
+    var mockLoaded = 0, mockTotal = 0, mockHasMore = false, mockQuery = '';
+    var mockResizeHandler = null;
+
+    /** 单个患者卡片 */
+    function patientCard(p) {
+        var el = document.createElement('div');
+        el.className = 'pv-mock-patient';
+        var exams = (p.exams || []).map(function (e) {
+            return '<span title="' + PvUI.esc(e.accession_no || '') + '">' + PvUI.esc(e.modality) + ' · ' + PvUI.esc(e.description) + '</span>';
+        }).join('');
+        el.innerHTML =
+            '<div class="pv-mock-patient-head"><b>' + PvUI.esc(p.name) + '</b>' +
+            '<span class="pv-dim">' + PvUI.esc(p.gender) + ' / ' + PvUI.esc(p.age || '—') + '</span></div>' +
+            '<div class="pv-mock-patient-meta">患者号：' + PvUI.esc(p.patient_id) +
+            '　门诊号：' + PvUI.esc(p.outpatient_no || '—') + '<br>检查数：' + (p.exams ? p.exams.length : 0) + '</div>' +
+            '<div class="pv-mock-exam">' + exams + '</div>';
+        return el;
+    }
+
+    function appendPatients(list) {
+        var grid = document.getElementById('pvMockPatients');
+        if (!grid) return;
+        (list || []).forEach(function (p) { grid.appendChild(patientCard(p)); });
+    }
+
+    /** 结果统计 + 空白占位显隐（并同步框高） */
+    function updatePatientsMeta() {
         var meta = document.getElementById('pvMockResultMeta');
-        if (!box) return;
-        box.innerHTML = '';
-        if (!list || !list.length) {
-            empty.style.display = '';
-            meta.style.display = 'none';
-            return;
+        var empty = document.getElementById('pvMockEmpty');
+        if (empty) empty.style.display = mockTotal > 0 ? 'none' : '';
+        if (meta) {
+            if (mockTotal > 0) {
+                meta.style.display = '';
+                meta.textContent = '共 ' + mockTotal + ' 位患者（仅显示已缴费、已登记的检查，已加载 ' + mockLoaded + (mockHasMore ? '，向下滚动加载更多' : '') + '）';
+            } else {
+                meta.style.display = 'none';
+                var t = empty && empty.querySelector('.pv-empty-title');
+                if (t) t.textContent = mockQuery ? '未找到匹配的患者' : '点击「检索患者」查看模拟服务器中的患者与检查';
+            }
         }
-        empty.style.display = 'none';
-        meta.style.display = '';
-        meta.textContent = '共 ' + list.length + ' 位患者（仅显示已缴费、已登记的检查）';
-        list.forEach(function (p) {
-            var el = document.createElement('div');
-            el.className = 'pv-mock-patient';
-            var exams = (p.exams || []).map(function (e) {
-                return '<span title="' + PvUI.esc(e.accession_no || '') + '">' + PvUI.esc(e.modality) + ' · ' + PvUI.esc(e.description) + '</span>';
-            }).join('');
-            el.innerHTML =
-                '<div class="pv-mock-patient-head"><b>' + PvUI.esc(p.name) + '</b>' +
-                '<span class="pv-dim">' + PvUI.esc(p.gender) + ' / ' + PvUI.esc(p.age || '—') + '</span></div>' +
-                '<div class="pv-mock-patient-meta">患者号：' + PvUI.esc(p.patient_id) +
-                '　门诊号：' + PvUI.esc(p.outpatient_no || '—') + '<br>检查数：' + (p.exams ? p.exams.length : 0) + '</div>' +
-                '<div class="pv-mock-exam">' + exams + '</div>';
-            box.appendChild(el);
+        fitMockScroll();
+    }
+
+    /** 拉取一页患者 */
+    function fetchPatients(offset) {
+        return getJson('api/mock/patients', { q: mockQuery, limit: MOCK_PAGE, offset: offset }).then(function (j) {
+            if (!j || j.code !== 200) throw new Error((j && j.msg) || '检索失败');
+            return j.data || {};
+        });
+    }
+
+    /** 重置预览（销毁加载器 / 清空列表）；keepKeyword=false 时同时清空关键词 */
+    function resetMockPatients(keepKeyword) {
+        if (mockLoader) { mockLoader.destroy(); mockLoader = null; }
+        mockLoaded = 0; mockTotal = 0; mockHasMore = false;
+        var grid = document.getElementById('pvMockPatients'); if (grid) grid.innerHTML = '';
+        var meta = document.getElementById('pvMockResultMeta'); if (meta) { meta.textContent = ''; meta.style.display = 'none'; }
+        var empty = document.getElementById('pvMockEmpty'); if (empty) empty.style.display = '';
+        if (!keepKeyword) {
+            mockQuery = '';
+            var kw = document.getElementById('pvMockKeyword'); if (kw) kw.value = '';
+        }
+    }
+    function clearMockPatients() { resetMockPatients(false); }
+
+    /** 建立「滚动到底」加载器（结果列表在框内滚动） */
+    function createPatientsLoader() {
+        if (mockLoader) { mockLoader.destroy(); mockLoader = null; }
+        if (!global.PvInfiniteScroll) return;
+        mockLoader = global.PvInfiniteScroll.create({
+            container: document.getElementById('pvMockScroll'),
+            list: document.getElementById('pvMockScroll'),
+            offset: mockLoaded, hasMore: mockHasMore, pageSize: MOCK_PAGE,
+            sentinelClass: 'pv-more', moreText: '加载更多患者…', endText: '',
+            load: function (off) {
+                return fetchPatients(off).then(function (d) {
+                    return { list: d.list || [], has_more: !!d.has_more, total: d.total };
+                });
+            },
+            append: function (list) { appendPatients(list); },
+            onState: function (ld) {
+                mockLoaded = ld.offset;
+                mockHasMore = !!ld.hasMore;
+                if (typeof ld.total === 'number') mockTotal = ld.total;
+                updatePatientsMeta();
+            }
+        });
+    }
+
+    /** 将滚动框高度锚定到页脚上方（固定间距），随窗口尺寸动态变化 */
+    function fitMockScroll() {
+        var scroll = document.getElementById('pvMockScroll');
+        if (!scroll || !scroll.offsetParent) return;   // 不可见时不计算
+        var footer = document.querySelector('.pv-footer');
+        if (!footer) return;
+        // 扣除框下方各级容器的内/外边距，确保框底始终与页脚保持固定间距、不溢出
+        var card = scroll.closest ? scroll.closest('.pv-card') : null;
+        var main = document.getElementById('pvMain');
+        var below = 0;
+        if (card) {
+            var cs = window.getComputedStyle(card);
+            below += (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.marginBottom) || 0);
+        }
+        if (main) below += parseFloat(window.getComputedStyle(main).paddingBottom) || 0;
+        var bottom = footer.getBoundingClientRect().top;
+        var top = scroll.getBoundingClientRect().top;
+        scroll.style.height = Math.max(160, Math.floor(bottom - top - below - 18)) + 'px';
+    }
+
+    /** 执行检索（重置到第一页） */
+    function runPatientSearch(btn) {
+        var kw = document.getElementById('pvMockKeyword');
+        mockQuery = kw ? kw.value : '';
+        resetMockPatients(true);
+        if (btn) { btn.disabled = true; btn.textContent = '检索中…'; }
+        fetchPatients(0).then(function (d) {
+            if (btn) { btn.disabled = false; btn.textContent = '检索患者'; }
+            mockTotal = typeof d.total === 'number' ? d.total : (d.list || []).length;
+            mockHasMore = !!d.has_more;
+            appendPatients(d.list || []);
+            mockLoaded = (d.list || []).length;
+            updateSource(d.source);
+            if (d.fhir_error) PvUI.toast('FHIR 获取失败：' + d.fhir_error, 'err');
+            updatePatientsMeta();
+            createPatientsLoader();
+        }).catch(function (e) {
+            if (btn) { btn.disabled = false; btn.textContent = '检索患者'; }
+            mockTotal = 0; mockHasMore = false;
+            updatePatientsMeta();
+            PvUI.toast(e && e.message ? e.message : '检索失败', 'err');
         });
     }
 
@@ -54,18 +160,6 @@
                 });
             });
         });
-    }
-
-    /** 清空患者预览（离开该子页时调用）：还原为初始空白，避免残留上次检索结果 */
-    function clearMockPatients() {
-        var box = document.getElementById('pvMockPatients');
-        var kw = document.getElementById('pvMockKeyword');
-        var meta = document.getElementById('pvMockResultMeta');
-        var empty = document.getElementById('pvMockEmpty');
-        if (box) box.innerHTML = '';
-        if (kw) kw.value = '';
-        if (meta) { meta.textContent = ''; meta.style.display = 'none'; }
-        if (empty) empty.style.display = 'none';
     }
 
     /** 启停联动：禁用时隐藏参数区 */
@@ -102,8 +196,11 @@
     function bindMpane() {
         PvUI.bindSplit({
             navSelector: '.pv-split-item[data-mp]', paneSelector: '[data-mp-pane]', attr: 'mp', initial: 'status',
-            // 离开「患者查询」子页即清空预览，避免残留上次检索
-            onChange: function (val) { if (val !== 'patients') clearMockPatients(); }
+            // 离开「患者查询」子页即清空预览；进入时按页脚锚定框高
+            onChange: function (val) {
+                if (val === 'patients') setTimeout(fitMockScroll, 0);
+                else clearMockPatients();
+            }
         });
     }
 
@@ -164,10 +261,17 @@
             bindMpane();
             bindSource();
             bindAnatomy();
-            // 切换到其他页签（离开模拟服务器）时清空患者预览
+            // 切换到其他页签（离开模拟服务器）时清空患者预览；切回时按页脚重新锚定框高
             Array.prototype.forEach.call(document.querySelectorAll('.pv-tab'), function (t) {
-                t.addEventListener('click', function () { if (t.getAttribute('data-tab') !== 'mock') clearMockPatients(); });
+                t.addEventListener('click', function () {
+                    if (t.getAttribute('data-tab') !== 'mock') clearMockPatients();
+                    else setTimeout(fitMockScroll, 0);
+                });
             });
+            // 视口尺寸变化时重新锚定滚动框高度
+            if (mockResizeHandler) window.removeEventListener('resize', mockResizeHandler);
+            mockResizeHandler = function () { fitMockScroll(); };
+            window.addEventListener('resize', mockResizeHandler);
             var pvEn = document.getElementById('pvMockEnabled');
             if (pvEn) pvEn.addEventListener('change', function () { syncMockParams(); refreshMockStatus(); });
             syncMockParams();
@@ -212,25 +316,14 @@
             var sbtn = document.getElementById('pvMockSearch');
             var skw = document.getElementById('pvMockKeyword');
             if (sbtn && skw) {
-                var run = function () {
-                    sbtn.disabled = true; sbtn.textContent = '检索中…';
-                    getJson('api/mock/patients', { q: skw.value }).then(function (j) {
-                        sbtn.disabled = false; sbtn.textContent = '检索患者';
-                        if (j && j.code === 200) {
-                            renderPatients(j.data.list || []);
-                            updateSource(j.data.source);
-                            if (j.data.fhir_error) PvUI.toast('FHIR 获取失败：' + j.data.fhir_error, 'err');
-                        }
-                        else { renderPatients([]); PvUI.toast((j && j.msg) || '检索失败', 'err'); }
-                    }).catch(function () {
-                        sbtn.disabled = false; sbtn.textContent = '检索患者';
-                        PvUI.toast('网络请求失败', 'err');
-                    });
-                };
+                var run = function () { runPatientSearch(sbtn); };
                 sbtn.addEventListener('click', run);
                 skw.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); run(); } });
             }
         },
-        destroy: function () {}
+        destroy: function () {
+            clearMockPatients();
+            if (mockResizeHandler) { window.removeEventListener('resize', mockResizeHandler); mockResizeHandler = null; }
+        }
     };
 })(window);

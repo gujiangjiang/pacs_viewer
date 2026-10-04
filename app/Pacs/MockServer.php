@@ -87,8 +87,13 @@ class PvMockServer {
         return array_keys($out);
     }
 
-    /** 供管理界面预览：按患者聚合（患者 + 其检查） */
-    public static function patients($keyword = '') {
+    /**
+     * 供管理界面预览：按患者聚合（患者 + 其检查），默认最新检查的患者排在最前。
+     * @param int $limit  返回上限（0 表示不限）
+     * @param int $offset 起始偏移
+     * @return array {list, total, has_more}
+     */
+    public static function patients($keyword = '', $limit = 0, $offset = 0) {
         $patients = array();
         foreach (self::rows($keyword) as $r) {
             $key = $r['patient_id'];
@@ -100,18 +105,39 @@ class PvMockServer {
                     'age'           => $r['age'],
                     'outpatient_no' => isset($r['outpatient_no']) ? $r['outpatient_no'] : '',
                     'exams'         => array(),
+                    '_latest'       => '',
                 );
             }
+            $when = isset($r['study_date']) ? (string)$r['study_date'] : '';
+            if ($when > $patients[$key]['_latest']) $patients[$key]['_latest'] = $when;
             $patients[$key]['exams'][] = array(
                 'study_uid'   => $r['study_uid'],
                 'accession_no'=> isset($r['accession_no']) ? $r['accession_no'] : '',
                 'modality'    => $r['modality'],
                 'description' => $r['description'],
-                'study_date'  => isset($r['study_date']) ? $r['study_date'] : '',
+                'study_date'  => $when,
                 'status'      => isset($r['status']) ? $r['status'] : 'completed',
             );
         }
-        return array_values($patients);
+        // 默认最新检查的患者排在最前（study_date 为可比字符串）
+        uasort($patients, function ($a, $b) {
+            if ($a['_latest'] === $b['_latest']) return 0;
+            return ($a['_latest'] < $b['_latest']) ? 1 : -1;
+        });
+        $list = array();
+        foreach ($patients as $p) { unset($p['_latest']); $list[] = $p; }
+        $total = count($list);
+        $offset = max(0, (int)$offset);
+        $limit = (int)$limit;
+        $hasMore = false;
+        if ($limit > 0) {
+            $page = array_slice($list, $offset, $limit);
+            $hasMore = ($offset + count($page)) < $total;
+            $list = $page;
+        } elseif ($offset > 0) {
+            $list = array_slice($list, $offset);
+        }
+        return array('list' => $list, 'total' => $total, 'has_more' => $hasMore);
     }
 
     /* ---------------- 对外 API ---------------- */

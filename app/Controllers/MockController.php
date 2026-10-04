@@ -75,17 +75,20 @@ class PvMockController {
         ));
     }
 
-    /** 患者预览（已缴费、已登记） */
+    /** 患者预览（已缴费、已登记）：分页返回，默认最新检查在前 */
     public static function patients() {
         PvAuth::requireAdmin();
         @set_time_limit(30);
         $kw = (string)pvw_input('q');
+        $limit = max(0, min(200, (int)pvw_input('limit', 0)));
+        $offset = max(0, (int)pvw_input('offset', 0));
         try {
-            $list = PvMockServer::patients($kw);
+            $res = PvMockServer::patients($kw, $limit, $offset);
             pvw_json(200, 'success', array(
                 'source'     => PvMockServer::source(),
-                'list'       => $list,
-                'total'      => count($list),
+                'list'       => $res['list'],
+                'total'      => (int)$res['total'],
+                'has_more'   => (bool)$res['has_more'],
                 'fhir_error' => PvMockServer::fhirError(),
             ));
         } catch (Exception $e) {

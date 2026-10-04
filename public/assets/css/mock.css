@@ -24,7 +24,11 @@
 .pv-page-admin .pv-searchbox { display: flex; gap: 10px; padding: 6px 0 12px; }
 .pv-page-admin .pv-search-input { flex: 1 1 auto; }
 .pv-result-meta { font-size: 13px; color: var(--pv-txt2); margin: 4px 2px 10px; }
-.pv-mock-patients { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; margin-top: 8px; }
+/* 患者预览：固定于页脚上方的滚动框，内部网格滚动并动态加载 */
+.pv-mock-scroll { overflow: auto; border: 1px solid var(--pv-line); border-radius: 10px; padding: 12px; margin-top: 8px; }
+.pv-mock-scroll .pv-more { text-align: center; padding: 12px; font-size: 12px; color: var(--pv-txt2); }
+.pv-mock-scroll .pv-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; min-height: 160px; }
+.pv-mock-patients { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
 .pv-mock-patient { background: #0b0f17; border: 1px solid var(--pv-line); border-radius: 10px; padding: 12px 14px; }
 .pv-mock-patient-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .pv-mock-patient-head b { color: #f1f5f9; font-size: 15px; }

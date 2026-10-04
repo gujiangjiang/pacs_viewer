@@ -254,6 +254,9 @@
         destroy: function () {
             if (global.__pvLogStopLive) { try { global.__pvLogStopLive(); } catch (e) {} global.__pvLogStopLive = null; }
             if (global.__pvStorageStop) { try { global.__pvStorageStop(); } catch (e) {} global.__pvStorageStop = null; }
+            if (global.PvPages && global.PvPages.mock && typeof global.PvPages.mock.destroy === 'function') {
+                try { global.PvPages.mock.destroy(); } catch (e) {}
+            }
         }
     };
 })(window);

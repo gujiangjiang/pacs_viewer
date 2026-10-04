@@ -252,10 +252,12 @@ $pvPartText = $pvPartList ? implode('、', $pvPartList) : '未启用任何部位
                 <button type="button" id="pvMockSearch" class="pv-btn pv-btn-primary">检索患者</button>
             </form>
             <div id="pvMockResultMeta" class="pv-result-meta" style="display:none"></div>
-            <div id="pvMockPatients" class="pv-mock-patients"></div>
-            <div id="pvMockEmpty" class="pv-empty" style="display:none">
-                <div class="pv-empty-ico">🧪</div>
-                <div class="pv-empty-title">点击「检索患者」查看模拟服务器中的患者与检查</div>
+            <div id="pvMockScroll" class="pv-mock-scroll">
+                <div id="pvMockPatients" class="pv-mock-patients"></div>
+                <div id="pvMockEmpty" class="pv-empty">
+                    <div class="pv-empty-ico">🧪</div>
+                    <div class="pv-empty-title">点击「检索患者」查看模拟服务器中的患者与检查</div>
+                </div>
             </div>
         </div>
 
