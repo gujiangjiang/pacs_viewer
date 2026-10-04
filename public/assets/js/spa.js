@@ -321,4 +321,13 @@
         brand.addEventListener('contextmenu', function (e) { e.preventDefault(); });   // 禁止右击
         brand.addEventListener('dragstart', function (e) { e.preventDefault(); });     // 禁止拖拽
     })();
+
+    /* 顶部导航（患者查询 / 影像查看 / 管理设置）等同按钮：仅可点击，禁止拖拽与右击 */
+    (function bindNav() {
+        var nav = document.getElementById('pvNav');
+        if (!nav) return;
+        var hit = function (e) { return e.target && e.target.closest ? e.target.closest('a[data-nav]') : null; };
+        nav.addEventListener('dragstart', function (e) { if (hit(e)) e.preventDefault(); });
+        nav.addEventListener('contextmenu', function (e) { if (hit(e)) e.preventDefault(); });
+    })();
 })(window);

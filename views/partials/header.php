@@ -61,12 +61,12 @@ $pvGuest = !empty($guest);   // 链接访客阅片：无登录、仅影像查看
     </a>
     <nav class="pv-nav" id="pvNav">
         <?php if ($pvGuest) { ?>
-        <a class="active" href="<?php echo pvw_e(pvw_url('viewer')); ?>" data-nav="viewer">影像查看</a>
+        <a class="active" href="<?php echo pvw_e(pvw_url('viewer')); ?>" data-nav="viewer" draggable="false">影像查看</a>
         <?php } else { ?>
-        <a class="<?php echo $pvActive === 'search' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('search')); ?>" data-nav="search">患者查询</a>
-        <a class="<?php echo $pvActive === 'viewer' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('viewer')); ?>" data-nav="viewer">影像查看</a>
+        <a class="<?php echo $pvActive === 'search' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('search')); ?>" data-nav="search" draggable="false">患者查询</a>
+        <a class="<?php echo $pvActive === 'viewer' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('viewer')); ?>" data-nav="viewer" draggable="false">影像查看</a>
         <?php if ($pvUser && $pvUser['role'] === 'admin') { ?>
-        <a class="<?php echo $pvActive === 'admin' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('admin')); ?>" data-nav="admin">管理设置</a>
+        <a class="<?php echo $pvActive === 'admin' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('admin')); ?>" data-nav="admin" draggable="false">管理设置</a>
         <?php } ?>
         <?php } ?>
     </nav>
