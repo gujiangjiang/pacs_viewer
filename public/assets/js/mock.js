@@ -16,7 +16,6 @@
     var MOCK_PAGE = 20;
     var mockLoader = null;
     var mockLoaded = 0, mockTotal = 0, mockHasMore = false, mockQuery = '';
-    var mockResizeHandler = null;
 
     /** 单个患者卡片 */
     function patientCard(p) {
@@ -55,7 +54,6 @@
                 if (t) t.textContent = mockQuery ? '未找到匹配的患者' : '点击「检索患者」查看模拟服务器中的患者与检查';
             }
         }
-        fitMockScroll();
     }
 
     /** 拉取一页患者 */
@@ -102,26 +100,6 @@
                 updatePatientsMeta();
             }
         });
-    }
-
-    /** 将滚动框高度锚定到页脚上方（固定间距），随窗口尺寸动态变化 */
-    function fitMockScroll() {
-        var scroll = document.getElementById('pvMockScroll');
-        if (!scroll || !scroll.offsetParent) return;   // 不可见时不计算
-        var footer = document.querySelector('.pv-footer');
-        if (!footer) return;
-        // 扣除框下方各级容器的内/外边距，确保框底始终与页脚保持固定间距、不溢出
-        var card = scroll.closest ? scroll.closest('.pv-card') : null;
-        var main = document.getElementById('pvMain');
-        var below = 0;
-        if (card) {
-            var cs = window.getComputedStyle(card);
-            below += (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.marginBottom) || 0);
-        }
-        if (main) below += parseFloat(window.getComputedStyle(main).paddingBottom) || 0;
-        var bottom = footer.getBoundingClientRect().top;
-        var top = scroll.getBoundingClientRect().top;
-        scroll.style.height = Math.max(160, Math.floor(bottom - top - below - 18)) + 'px';
     }
 
     /** 执行检索（重置到第一页） */
@@ -196,11 +174,8 @@
     function bindMpane() {
         PvUI.bindSplit({
             navSelector: '.pv-split-item[data-mp]', paneSelector: '[data-mp-pane]', attr: 'mp', initial: 'status',
-            // 离开「患者查询」子页即清空预览；进入时按页脚锚定框高
-            onChange: function (val) {
-                if (val === 'patients') setTimeout(fitMockScroll, 0);
-                else clearMockPatients();
-            }
+            // 离开「患者查询」子页即清空预览（框体高度由 CSS flex 锚定页脚，无需计算）
+            onChange: function (val) { if (val !== 'patients') clearMockPatients(); }
         });
     }
 
@@ -261,17 +236,10 @@
             bindMpane();
             bindSource();
             bindAnatomy();
-            // 切换到其他页签（离开模拟服务器）时清空患者预览；切回时按页脚重新锚定框高
+            // 切换到其他页签（离开模拟服务器）时清空患者预览
             Array.prototype.forEach.call(document.querySelectorAll('.pv-tab'), function (t) {
-                t.addEventListener('click', function () {
-                    if (t.getAttribute('data-tab') !== 'mock') clearMockPatients();
-                    else setTimeout(fitMockScroll, 0);
-                });
+                t.addEventListener('click', function () { if (t.getAttribute('data-tab') !== 'mock') clearMockPatients(); });
             });
-            // 视口尺寸变化时重新锚定滚动框高度
-            if (mockResizeHandler) window.removeEventListener('resize', mockResizeHandler);
-            mockResizeHandler = function () { fitMockScroll(); };
-            window.addEventListener('resize', mockResizeHandler);
             var pvEn = document.getElementById('pvMockEnabled');
             if (pvEn) pvEn.addEventListener('change', function () { syncMockParams(); refreshMockStatus(); });
             syncMockParams();
@@ -321,9 +289,6 @@
                 skw.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); run(); } });
             }
         },
-        destroy: function () {
-            clearMockPatients();
-            if (mockResizeHandler) { window.removeEventListener('resize', mockResizeHandler); mockResizeHandler = null; }
-        }
+        destroy: function () { clearMockPatients(); }
     };
 })(window);

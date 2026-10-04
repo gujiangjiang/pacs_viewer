@@ -87,3 +87,24 @@
 
 /* 外部分栏项上的「必填 / 补充」标签 */
 .pv-split-tag { font-size: 10px; font-weight: 600; color: var(--pv-acc); border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; margin-left: 4px; }
+
+/* ---------- 管理页：主区不整体滚动，各页签内部滚动 ----------
+ * 使「操作日志」「患者预览」等列表框可在框内滚动、填至页脚上方，
+ * 不因内容过多而拉长整页产生页面级滚动。 */
+.pv-page-admin .pv-main { overflow: hidden; display: flex; flex-direction: column; }
+.pv-page-admin .pv-tabs { flex: 0 0 auto; }
+.pv-page-admin .pv-tabpane.active { flex: 1 1 auto; min-height: 0; overflow: auto; }
+
+/* 操作日志：内容框填至页脚上方，仅表体内部滚动 */
+.pv-page-admin .pv-tabpane[data-pane="logs"].active { overflow: hidden; display: flex; flex-direction: column; }
+.pv-page-admin .pv-tabpane[data-pane="logs"] .pv-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; margin-bottom: 0; }
+.pv-page-admin .pv-logscroll { flex: 1 1 auto; min-height: 0; max-height: none; }
+
+/* 模拟服务器：患者预览框填至页脚上方，框内滚动分页 */
+.pv-page-admin .pv-tabpane[data-pane="mock"].active { overflow: auto; display: flex; flex-direction: column; }
+.pv-page-admin .pv-tabpane[data-pane="mock"] .pv-alert-info { flex: 0 0 auto; }
+.pv-page-admin .pv-tabpane[data-pane="mock"] > .pv-split { flex: 1 1 auto; min-height: 0; align-items: stretch; }
+.pv-page-admin .pv-tabpane[data-pane="mock"] > .pv-split > .pv-split-body { display: flex; flex-direction: column; min-height: 0; }
+.pv-page-admin .pv-card[data-mp-pane="patients"]:not(.pv-hidden) {
+    flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; margin-bottom: 0;
+}
