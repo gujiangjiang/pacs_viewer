@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v1.2.9-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v1.2.10-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 PHP 网站，用于 DICOM / PACS 接口联调测试。
 > 拥有自己的代码库、数据库、账号与文档体系，与任何宿主系统零耦合。
@@ -113,6 +113,7 @@
 │   ├── Pacs/                 #   PacsClient(远程接口) + DemoPacs(内置仿真)
 │   │                         #   + FhirClient(门诊 FHIR) + MockServer(模拟服务器)
 │   ├── Services/             #   StudyService(检查聚合) / IconRenderer(代码绘制图标) / UploadStore(上传存储)
+│   ├── Support/              #   通用助手：icons / Http / Cache / Dicom(值规范化) / Assets(前端资源清单) / Number
 │   ├── Controllers/          #   认证 / 安装 / 检索 / 阅片 / 管理 / 模拟服务器 / PWA / 上传 / DICOMweb
 │   └── Repositories/         #   账号 / 操作日志
 ├── views/                    # 页面模板（auth / install / search / viewer / admin / mock / error）
