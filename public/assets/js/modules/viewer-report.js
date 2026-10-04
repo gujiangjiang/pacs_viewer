@@ -24,7 +24,7 @@
             actions: [{ label: '关闭', cls: 'pv-btn-ghost' }],
             onOpen: function (h) { self._loadReport(h.body, pInfo, s, uid); }
         });
-        if (window.PvApi && PvApi.log) PvApi.log('report', (pInfo.name || '') + ' / ' + (s.modality || '') + ' / ' + (s.description || ''));
+        self.logEvent('report');
         return m;
     };
 
