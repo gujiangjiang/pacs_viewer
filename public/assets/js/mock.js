@@ -56,6 +56,18 @@
         });
     }
 
+    /** 清空患者预览（离开该子页时调用）：还原为初始空白，避免残留上次检索结果 */
+    function clearMockPatients() {
+        var box = document.getElementById('pvMockPatients');
+        var kw = document.getElementById('pvMockKeyword');
+        var meta = document.getElementById('pvMockResultMeta');
+        var empty = document.getElementById('pvMockEmpty');
+        if (box) box.innerHTML = '';
+        if (kw) kw.value = '';
+        if (meta) { meta.textContent = ''; meta.style.display = 'none'; }
+        if (empty) empty.style.display = 'none';
+    }
+
     /** 启停联动：禁用时隐藏参数区 */
     function syncMockParams() {
         var en = document.getElementById('pvMockEnabled');
@@ -88,7 +100,11 @@
 
     /** 模拟服务器左右两栏：左侧导航切换右侧面板（复用通用分栏助手） */
     function bindMpane() {
-        PvUI.bindSplit({ navSelector: '.pv-split-item[data-mp]', paneSelector: '[data-mp-pane]', attr: 'mp', initial: 'status' });
+        PvUI.bindSplit({
+            navSelector: '.pv-split-item[data-mp]', paneSelector: '[data-mp-pane]', attr: 'mp', initial: 'status',
+            // 离开「患者查询」子页即清空预览，避免残留上次检索
+            onChange: function (val) { if (val !== 'patients') clearMockPatients(); }
+        });
     }
 
     /** 患者数据来源（内置模拟 / FHIR）左右分栏切换，并写入隐藏字段 */
@@ -148,6 +164,10 @@
             bindMpane();
             bindSource();
             bindAnatomy();
+            // 切换到其他页签（离开模拟服务器）时清空患者预览
+            Array.prototype.forEach.call(document.querySelectorAll('.pv-tab'), function (t) {
+                t.addEventListener('click', function () { if (t.getAttribute('data-tab') !== 'mock') clearMockPatients(); });
+            });
             var pvEn = document.getElementById('pvMockEnabled');
             if (pvEn) pvEn.addEventListener('change', function () { syncMockParams(); refreshMockStatus(); });
             syncMockParams();
