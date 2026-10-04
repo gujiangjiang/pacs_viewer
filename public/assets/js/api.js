@@ -72,8 +72,9 @@
             });
         },
         ping:   function () { return get('ping', {}); },
-        /** 记录操作日志（读片 / 下载 / 阅读 DICOM），失败静默 */
+        /** 记录操作日志（读片 / 下载 / 阅读 DICOM），失败静默；访客无登录态直接跳过，避免 401 误跳登录页 */
         log: function (action, detail) {
+            if (boot.guest) return Promise.resolve(null);
             var fd = new FormData();
             fd.append('_csrf', boot.csrf || '');
             fd.append('action', action || '');
