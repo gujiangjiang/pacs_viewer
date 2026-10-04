@@ -165,8 +165,8 @@ class PvAdminController {
     public static function logSettings() {
         PvAuth::requireAdmin();
         pvw_csrf_check();
-        PvSettings::set('log_max_count', self::cleanPositiveInt(pvw_input('log_max_count')));
-        PvSettings::set('log_max_days', self::cleanPositiveInt(pvw_input('log_max_days')));
+        PvSettings::set('log_max_count', PvNumber::positiveInt(pvw_input('log_max_count')));
+        PvSettings::set('log_max_days', PvNumber::positiveInt(pvw_input('log_max_days')));
         PvQueryLogRepository::enforceLimits();   // 保存后立即按新上限清理
         self::reply('日志保留设置已保存', true, PvQueryLogRepository::limits(), 'logs');
     }
@@ -260,9 +260,9 @@ class PvAdminController {
         pvw_csrf_check();
         PvSettings::set('cache_apcu_enabled', ((string)pvw_input('cache_apcu_enabled') === '1') ? '1' : '0');
         PvSettings::set('cache_disk_enabled', ((string)pvw_input('cache_disk_enabled') === '1') ? '1' : '0');
-        PvSettings::set('cache_max_bytes', self::mbToBytes(pvw_input('cache_max_mb')));
-        PvSettings::set('cache_disk_max_bytes', self::mbToBytes(pvw_input('cache_disk_max_mb')));
-        PvSettings::set('cache_max_days', self::cleanPositiveInt(pvw_input('cache_max_days')));
+        PvSettings::set('cache_max_bytes', PvNumber::mbToBytes(pvw_input('cache_max_mb')));
+        PvSettings::set('cache_disk_max_bytes', PvNumber::mbToBytes(pvw_input('cache_disk_max_mb')));
+        PvSettings::set('cache_max_days', PvNumber::positiveInt(pvw_input('cache_max_days')));
         PvMockCache::enforceLimits();   // 保存后立即执行开关与上限
         self::reply('缓存设置已保存', true, PvMockCache::stats(), 'storage');
     }
@@ -278,22 +278,6 @@ class PvAdminController {
             'diskMaxMb'   => $mb(PvSettings::get('cache_disk_max_bytes', '')),
             'maxDays'     => $days > 0 ? (string)$days : '',
         );
-    }
-
-    /** 正整数（>0）校验：留空或非法均返回空串（表示不限制） */
-    private static function cleanPositiveInt($v) {
-        $v = trim((string)$v);
-        if ($v === '' || !is_numeric($v)) return '';
-        $n = (int)$v;
-        return $n > 0 ? (string)$n : '';
-    }
-
-    /** MB 数值 → 字节（留空 / 非法 / 非正数均返回空串，表示不限制） */
-    private static function mbToBytes($mb) {
-        $mb = trim((string)$mb);
-        if ($mb === '' || !is_numeric($mb)) return '';
-        $bytes = (int)round((float)$mb * 1048576);
-        return $bytes > 0 ? (string)$bytes : '';
     }
 
     /** 上传自定义站点 / PWA 图标（覆盖代码绘制的默认图标） */

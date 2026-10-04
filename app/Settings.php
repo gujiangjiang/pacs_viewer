@@ -22,12 +22,8 @@ class PvSettings {
 
     public static function set($key, $value) {
         self::load();
-        $exists = PvDatabase::val("SELECT COUNT(*) FROM settings WHERE skey=?", array($key));
-        if ($exists) {
-            PvDatabase::exec("UPDATE settings SET svalue=? WHERE skey=?", array((string)$value, $key));
-        } else {
-            PvDatabase::exec("INSERT INTO settings(skey,svalue) VALUES(?,?)", array($key, (string)$value));
-        }
+        // skey 为主键：单语句 upsert，省去先查后写
+        PvDatabase::exec("INSERT OR REPLACE INTO settings(skey,svalue) VALUES(?,?)", array((string)$key, (string)$value));
         self::$cache[$key] = (string)$value;
     }
 

@@ -14,6 +14,20 @@
 
 ---
 
+## [1.2.7] - 2026-10-04
+
+### 变更
+- **值规范化与授权助手收敛（无行为变化）**：
+  - `DicomWebController` 的性别 / 日期匹配改用 `PvDicom::sexCode()` / `PvDicom::dateMatch()`；
+  - `DicomWebClient` 的年龄 / 日期时间解析改用 `PvDicom::ageText()` /
+    `formatDicomDate()` / `formatDicomTime()`，移除重复私有实现；
+  - `AdminController` 的容量 / 条数清洗改用 `PvNumber`，移除重复私有方法；
+  - 新增 `PvMockServer::accessGranted()` 统一「已登录或密钥」判定，
+    `MockController` 与 `DicomWebController` 复用。
+- **设置写入单语句化**：`PvSettings::set()` 改为 `INSERT OR REPLACE`，省去先查后写。
+
+---
+
 ## [1.2.6] - 2026-10-04
 
 ### 变更

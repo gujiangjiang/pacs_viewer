@@ -51,6 +51,11 @@ class PvMockServer {
         return $k !== '' && is_string($key) && hash_equals($k, $key);
     }
 
+    /** 访问授权：已登录用户，或携带正确的对外接口密钥（二选一） */
+    public static function accessGranted($key) {
+        return PvAuth::check() || self::checkKey($key);
+    }
+
     /** 判断给定接口地址是否指向本模拟服务器（DICOMweb /dicom-web） */
     public static function isSelfEndpoint($url) {
         $path = parse_url((string)$url, PHP_URL_PATH);

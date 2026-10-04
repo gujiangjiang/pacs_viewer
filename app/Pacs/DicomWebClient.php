@@ -218,8 +218,8 @@ class PvDicomWebClient {
     private static function mapStudyRow($res) {
         $sex = self::val('00100040', $res);
         $gender = ($sex === 'M') ? '男' : (($sex === 'F') ? '女' : ($sex !== '' ? $sex : '未知'));
-        $birth = self::fmtDate(self::val('00100030', $res));
-        $age = self::ageOf($birth, self::val('00101010', $res));   // 优先 PatientAge(0010,1010)，否则由出生日期推算
+        $birth = PvDicom::formatDicomDate(self::val('00100030', $res));
+        $age = PvDicom::ageText($birth, self::val('00101010', $res));   // 优先 PatientAge(0010,1010)，否则由出生日期推算
         $mod = self::val('00080061', $res);                      // ModalitiesInStudy
         if ($mod === '') $mod = self::val('00080060', $res);     // Modality
         $seriesCnt = self::val('00201206', $res);                // NumberOfStudyRelatedSeries
@@ -236,7 +236,7 @@ class PvDicomWebClient {
             'accession_no' => self::val('00080050', $res),
             'modality' => strtoupper($mod),
             'description' => self::val('00081030', $res),
-            'study_date' => trim(self::fmtDate(self::val('00080020', $res)) . ' ' . self::fmtTime(self::val('00080030', $res))),
+            'study_date' => trim(PvDicom::formatDicomDate(self::val('00080020', $res)) . ' ' . PvDicom::formatDicomTime(self::val('00080030', $res))),
             'institution' => self::val('00080080', $res),
             'station_name' => self::val('00081010', $res),
             'apply_dept' => '',
@@ -252,27 +252,4 @@ class PvDicomWebClient {
         return $row;
     }
 
-    /** 年龄：优先 DICOM PatientAge(0010,1010，如 062Y)；否则由出生日期推算（xx岁） */
-    private static function ageOf($birth, $ageTag) {
-        $ageTag = strtoupper(trim((string)$ageTag));
-        if ($ageTag !== '' && preg_match('/^(\d+)([YMWD])$/', $ageTag, $m)) {
-            if ($m[2] === 'Y') return (int)$m[1] . '岁';
-        }
-        $d = preg_replace('/\D/', '', (string)$birth);
-        if (strlen($d) < 8) return '';
-        $t = strtotime(substr($d, 0, 4) . '-' . substr($d, 4, 2) . '-' . substr($d, 6, 2));
-        if (!$t) return '';
-        $y = (int)floor((time() - $t) / (365.25 * 86400));
-        return ($y > 0 && $y < 130) ? ($y . '岁') : '';
-    }
-
-    private static function fmtDate($d) {
-        $d = preg_replace('/\D/', '', (string)$d);
-        return strlen($d) >= 8 ? substr($d, 0, 4) . '-' . substr($d, 4, 2) . '-' . substr($d, 6, 2) : '';
-    }
-    private static function fmtTime($t) {
-        $t = preg_replace('/\D/', '', (string)$t);
-        if (strlen($t) < 4) return '';
-        return substr($t, 0, 2) . ':' . substr($t, 2, 2) . (strlen($t) >= 6 ? ':' . substr($t, 4, 2) : '');
-    }
 }

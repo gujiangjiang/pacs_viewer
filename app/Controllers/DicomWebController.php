@@ -18,7 +18,7 @@ class PvDicomWebController {
      */
     public static function handle($path = null) {
         if (!PvMockServer::enabled()) { self::jsonError(403, '内置模拟 PACS 服务器未启用'); }
-        if (!PvAuth::check() && !PvMockServer::checkKey(self::requestKey())) {
+        if (!PvMockServer::accessGranted(self::requestKey())) {
             self::jsonError(403, '模拟服务器密钥校验失败');
         }
         if ($path === null) {
@@ -78,39 +78,13 @@ class PvDicomWebController {
             if ($pid !== '' && stripos($row['patient_id'], $pid) === false) continue;
             if ($acc !== '' && stripos((string)(isset($row['accession_no']) ? $row['accession_no'] : ''), $acc) === false) continue;
             if ($name !== '' && mb_stripos($row['name'], $name, 0, 'UTF-8') === false) continue;
-            if ($sex !== '' && self::sexCode(isset($row['gender']) ? $row['gender'] : '') !== $sex) continue;
+            if ($sex !== '' && PvDicom::sexCode(isset($row['gender']) ? $row['gender'] : '') !== $sex) continue;
             if ($modList && !in_array(strtoupper((string)(isset($row['modality']) ? $row['modality'] : '')), $modList, true)) continue;
-            if ($sdate !== '' && !self::dateMatch(isset($row['study_date']) ? $row['study_date'] : '', $sdate)) continue;
+            if ($sdate !== '' && !PvDicom::dateMatch(isset($row['study_date']) ? $row['study_date'] : '', $sdate)) continue;
             $out[] = self::studyResource($row);
         }
         if ($limit > 0) $out = array_slice($out, $offset, $limit);
         self::json($out);
-    }
-
-    /** 性别归一化为 DICOM PatientSex（M/F/O） */
-    private static function sexCode($g) {
-        $g = strtoupper(trim((string)$g));
-        if ($g === '男' || $g === 'M' || $g === 'MALE' || $g === '1') return 'M';
-        if ($g === '女' || $g === 'F' || $g === 'FEMALE' || $g === '2') return 'F';
-        return 'O';
-    }
-
-    /** StudyDate 匹配：支持单个 YYYYMMDD 或范围 YYYYMMDD-YYYYMMDD */
-    private static function dateMatch($studyDate, $range) {
-        $d = preg_replace('/\D/', '', substr((string)$studyDate, 0, 10));
-        if (strlen($d) < 8) return false;
-        $d = substr($d, 0, 8);
-        $range = preg_replace('/[^0-9\-]/', '', $range);
-        if (strpos($range, '-') !== false) {
-            list($a, $b) = array_pad(explode('-', $range, 2), 2, '');
-            $a = substr(preg_replace('/\D/', '', $a), 0, 8);
-            $b = substr(preg_replace('/\D/', '', $b), 0, 8);
-            if ($a !== '' && $d < $a) return false;
-            if ($b !== '' && $d > $b) return false;
-            return true;
-        }
-        $one = substr(preg_replace('/\D/', '', $range), 0, 8);
-        return $one === '' ? true : ($d === $one);
     }
 
     private static function studyMeta($uid) {
