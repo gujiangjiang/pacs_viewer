@@ -529,7 +529,7 @@
     PvViewer.prototype.confirmExit = function () {
         if (this.guest) return;   // 访客不允许关闭（无关闭按钮）
         var self = this;
-        var go = function () { self.closeAll(); try { sessionStorage.removeItem('pacs_search_v1'); } catch (e) {} if (window.PvNav) window.PvNav.go('search'); };
+        var go = function () { self.closeAll(); if (window.PvUI) PvUI.clearSessionState(); if (window.PvNav) window.PvNav.go('search'); };
         if (!this.ws.studies.length) { go(); return; }
         if (window.PvModal) {
             PvModal.confirm({ title: '关闭影像查看', message: '关闭将清空全部已打开的检查与检索记录，并返回患者查询，确认关闭？', okText: '关闭', danger: true })

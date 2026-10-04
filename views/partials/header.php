@@ -74,7 +74,7 @@ $pvGuest = !empty($guest);   // 链接访客阅片：无登录、仅影像查看
         <?php if ($pvUser && !$pvGuest) { ?>
         <span class="pv-user-name"><?php echo pvw_e($pvUser['display_name'] !== '' ? $pvUser['display_name'] : $pvUser['username']); ?><?php echo $pvUser['role'] === 'admin' ? ' · 管理员' : ''; ?></span>
         <a class="pv-btn pv-btn-ghost pv-btn-sm" href="<?php echo pvw_e(pvw_url('logout')); ?>" data-no-nav="1"
-           onclick="try{sessionStorage.removeItem('pacs_workspace_v1');sessionStorage.removeItem('pacs_search_v1');sessionStorage.removeItem('pacs_sidebar_w')}catch(e){}">退出</a>
+           onclick="try{if(window.PvUI)PvUI.clearSessionState();}catch(e){}">退出</a>
         <?php } ?>
     </div>
 </header>

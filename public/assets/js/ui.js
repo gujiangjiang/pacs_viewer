@@ -416,11 +416,29 @@
         });
     }
 
+    /**
+     * 清空会话内与本账号相关的临时状态（退出登录 / 切换账号时调用）。
+     * 检索关键词与结果、已打开工作区、序列操作痕迹均存于 sessionStorage，
+     * 同一标签页内不随登录态自动失效，必须显式清理，避免换账号后残留上一账号数据。
+     */
+    function clearSessionState() {
+        try {
+            var keys = [
+                'pacs_search_v1', 'pacs_search_v2', 'pacs_search_v3',   // 检索（含历史版本）
+                'pacs_workspace_v1',                                    // 已打开检查工作区
+                'pacs_series_v1',                                       // 序列操作痕迹
+                'pacs_sidebar_w'                                        // 序列栏宽度
+            ];
+            for (var i = 0; i < keys.length; i++) sessionStorage.removeItem(keys[i]);
+        } catch (e) {}
+    }
+
     global.PvModal = { open: open, close: close, confirm: confirmOpts, alert: alertOpts };
     global.PvUI = {
         toast: toast, get: get, post: post, upload: upload, copy: copy,
         bindAjaxForms: bindAjaxForms, esc: esc,
         bindSplit: bindSplit, postThen: postThen, bindConnTest: bindConnTest,
-        route: route, liveToggle: liveToggle, modalSubmit: modalSubmit
+        route: route, liveToggle: liveToggle, modalSubmit: modalSubmit,
+        clearSessionState: clearSessionState
     };
 })(window);
