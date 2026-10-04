@@ -19,6 +19,16 @@
  *   loader.reset({ offset, hasMore });   // 列表被重置（重新检索）后调用
  *   loader.reattach();                    // 调用方重建了列表 DOM 后重新挂哨兵
  *   loader.destroy();
+ *
+ * 另提供高层封装 create/paged()：站内列表接口统一返回 {code,msg,data:{list,has_more,total}}，
+ * paged() 内聚「取数归一化 + 失败提示 + 状态回调」，进一步消除各列表页的重复样板：
+ *   var loader = PvInfiniteScroll.paged({
+ *       container: scrollEl, list: scrollEl, pageSize: 30, offset: 0, hasMore: true,
+ *       request: function (offset, size) { return PvUI.get(url); },   // 标准 {code,msg,data}
+ *       append : function (list) { ... },                              // 渲染新增数据
+ *       onState: function (s) { ... },                                 // {offset, hasMore, total}
+ *       onError: function (msg) { ... }
+ *   });
  * ============================================================ */
 (function (global) {
     'use strict';
@@ -28,6 +38,7 @@
         this.opts = opts;
         this.offset = Math.max(0, parseInt(opts.offset, 10) || 0);
         this.hasMore = opts.hasMore !== false;
+        this.total = (typeof opts.total === 'number') ? opts.total : null;
         this.loading = false;
         this.destroyed = false;
         this.sentinel = null;
@@ -77,6 +88,7 @@
                 if (typeof self.opts.append === 'function') self.opts.append(list, res);
                 self.offset += list.length;
                 self.hasMore = !!res.has_more;
+                if (typeof res.total === 'number') self.total = res.total;
                 self.loading = false;
                 if (self.io) { self.io.disconnect(); self.io = null; }
                 self._place();                       // 追加完成后重新放回哨兵（兼容 append 重建列表的情况）
@@ -114,7 +126,43 @@
         if (this.sentinel && this.sentinel.parentNode) this.sentinel.parentNode.removeChild(this.sentinel);
     };
 
+    /**
+     * 高层便捷封装：统一「取数 → 归一化 → 追加 → 状态回调」，适配站内标准接口响应。
+     * @param {object} o
+     *   container, list, pageSize, offset, hasMore, sentinelClass, moreText, endText,
+     *   loadingText, errorText, rootMargin
+     *   request(offset, pageSize) → Promise<{code,msg,data:{list,has_more,total}}>
+     *   append(list, data)、onState({offset,hasMore,total})、onError(msg)
+     * @return {Infinite}
+     */
+    function paged(o) {
+        o = o || {};
+        var size = o.pageSize || 30;
+        return new Infinite({
+            container: o.container, list: o.list, pageSize: size,
+            offset: o.offset, hasMore: o.hasMore, total: o.total,
+            sentinelClass: o.sentinelClass, moreText: o.moreText, endText: o.endText,
+            loadingText: o.loadingText, errorText: o.errorText, rootMargin: o.rootMargin,
+            load: function (offset) {
+                return Promise.resolve(o.request(offset, size)).then(function (j) {
+                    if (!j || j.code !== 200) {
+                        var msg = (j && j.msg) || o.errorMsg || '加载失败';
+                        if (typeof o.onError === 'function') o.onError(msg);
+                        throw new Error(msg);
+                    }
+                    var d = j.data || {};
+                    return { list: d.list || [], has_more: !!d.has_more, total: d.total };
+                });
+            },
+            append: function (list, res) { if (typeof o.append === 'function') o.append(list, res); },
+            onState: function (ld) {
+                if (typeof o.onState === 'function') o.onState({ offset: ld.offset, hasMore: ld.hasMore, total: ld.total });
+            }
+        });
+    }
+
     global.PvInfiniteScroll = {
-        create: function (opts) { return new Infinite(opts); }
+        create: function (opts) { return new Infinite(opts); },
+        paged: paged
     };
 })(window);

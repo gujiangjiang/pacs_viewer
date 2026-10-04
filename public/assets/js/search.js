@@ -148,33 +148,27 @@
     function resetLoader() {
         if (loader) loader.destroy();
         if (!global.PvInfiniteScroll) { loader = null; return; }
-        loader = global.PvInfiniteScroll.create({
+        loader = global.PvInfiniteScroll.paged({
             container: box, list: box,
             offset: allItems.length, hasMore: hasMore, pageSize: PAGE,
             sentinelClass: 'pv-more', moreText: '加载更多…', endText: '',
-            load: function (offset) {
-                var opts = { limit: PAGE, offset: offset };
+            request: function (offset, size) {
+                var opts = { limit: size, offset: offset };
                 var f = currentFilters();
                 for (var k in f) if (f[k]) opts[k] = f[k];
-                return PvApi.search(query, opts).then(function (j) {
-                    if (!j || j.code !== 200) throw new Error((j && j.msg) || '加载失败');
-                    var d = j.data || {};
-                    return { list: d.list || [], has_more: !!d.has_more, total: d.total };
-                }).catch(function (e) {
-                    PvUI.toast(e && e.message ? e.message : '加载失败', 'err');
-                    throw e;
-                });
+                return PvApi.search(query, opts);
             },
             append: function (list) {
                 list.forEach(function (s) { allItems.push(s); });
                 renderAll();
             },
-            onState: function (ld) {
-                hasMore = ld.hasMore;
-                if (typeof ld.total === 'number') total = ld.total;
+            onState: function (st) {
+                hasMore = st.hasMore;
+                if (typeof st.total === 'number') total = st.total;
                 setMeta();
                 saveState();
-            }
+            },
+            onError: function (msg) { PvUI.toast(msg, 'err'); }
         });
     }
 

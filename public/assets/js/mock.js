@@ -56,12 +56,9 @@
         }
     }
 
-    /** 拉取一页患者 */
-    function fetchPatients(offset) {
-        return getJson('api/mock/patients', { q: mockQuery, limit: MOCK_PAGE, offset: offset }).then(function (j) {
-            if (!j || j.code !== 200) throw new Error((j && j.msg) || '检索失败');
-            return j.data || {};
-        });
+    /** 请求一页患者（返回站点标准接口结构，供高层分页封装归一化） */
+    function requestPatients(offset) {
+        return getJson('api/mock/patients', { q: mockQuery, limit: MOCK_PAGE, offset: offset });
     }
 
     /** 重置预览（销毁加载器 / 清空列表）；keepKeyword=false 时同时清空关键词 */
@@ -82,23 +79,20 @@
     function createPatientsLoader() {
         if (mockLoader) { mockLoader.destroy(); mockLoader = null; }
         if (!global.PvInfiniteScroll) return;
-        mockLoader = global.PvInfiniteScroll.create({
+        mockLoader = global.PvInfiniteScroll.paged({
             container: document.getElementById('pvMockScroll'),
             list: document.getElementById('pvMockScroll'),
             offset: mockLoaded, hasMore: mockHasMore, pageSize: MOCK_PAGE,
             sentinelClass: 'pv-more', moreText: '加载更多患者…', endText: '',
-            load: function (off) {
-                return fetchPatients(off).then(function (d) {
-                    return { list: d.list || [], has_more: !!d.has_more, total: d.total };
-                });
-            },
+            request: function (off) { return requestPatients(off); },
             append: function (list) { appendPatients(list); },
-            onState: function (ld) {
-                mockLoaded = ld.offset;
-                mockHasMore = !!ld.hasMore;
-                if (typeof ld.total === 'number') mockTotal = ld.total;
+            onState: function (st) {
+                mockLoaded = st.offset;
+                mockHasMore = st.hasMore;
+                if (typeof st.total === 'number') mockTotal = st.total;
                 updatePatientsMeta();
-            }
+            },
+            onError: function (msg) { PvUI.toast(msg, 'err'); }
         });
     }
 
@@ -108,8 +102,15 @@
         mockQuery = kw ? kw.value : '';
         resetMockPatients(true);
         if (btn) { btn.disabled = true; btn.textContent = '检索中…'; }
-        fetchPatients(0).then(function (d) {
+        requestPatients(0).then(function (j) {
             if (btn) { btn.disabled = false; btn.textContent = '检索患者'; }
+            if (!j || j.code !== 200) {
+                mockTotal = 0; mockHasMore = false;
+                updatePatientsMeta();
+                PvUI.toast((j && j.msg) || '检索失败', 'err');
+                return;
+            }
+            var d = j.data || {};
             mockTotal = typeof d.total === 'number' ? d.total : (d.list || []).length;
             mockHasMore = !!d.has_more;
             appendPatients(d.list || []);
@@ -118,11 +119,11 @@
             if (d.fhir_error) PvUI.toast('FHIR 获取失败：' + d.fhir_error, 'err');
             updatePatientsMeta();
             createPatientsLoader();
-        }).catch(function (e) {
+        }).catch(function () {
             if (btn) { btn.disabled = false; btn.textContent = '检索患者'; }
             mockTotal = 0; mockHasMore = false;
             updatePatientsMeta();
-            PvUI.toast(e && e.message ? e.message : '检索失败', 'err');
+            PvUI.toast('网络请求失败', 'err');
         });
     }
 

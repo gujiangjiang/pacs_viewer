@@ -171,17 +171,13 @@
                 function ensureLoader(offset, hasMore) {
                     if (!global.PvInfiniteScroll) return;
                     if (loader) { loader.destroy(); loader = null; }
-                    loader = global.PvInfiniteScroll.create({
+                    loader = global.PvInfiniteScroll.paged({
                         container: scroll, list: scroll,
                         offset: offset, hasMore: hasMore, pageSize: 30,
                         sentinelClass: 'pv-more', moreText: '上拉加载更多…', endText: '',
-                        load: function (off, limit) {
-                            return PvUI.get(logUrl({ offset: off, limit: limit })).then(function (j) {
-                                if (!j || j.code !== 200) throw new Error((j && j.msg) || '加载失败');
-                                return j.data || {};
-                            });
-                        },
-                        append: function (list) { list.forEach(function (l) { body.insertAdjacentHTML('beforeend', rowHtml(l)); }); }
+                        request: function (off, limit) { return PvUI.get(logUrl({ offset: off, limit: limit })); },
+                        append: function (list) { list.forEach(function (l) { body.insertAdjacentHTML('beforeend', rowHtml(l)); }); },
+                        onError: function (msg) { PvUI.toast(msg, 'err'); }
                     });
                 }
                 var rendered = body.querySelectorAll('tr[data-row]').length;
