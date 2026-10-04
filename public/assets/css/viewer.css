@@ -226,3 +226,10 @@
 /* ---------- 链接访客阅片：隐藏关闭相关与多视图入口 ---------- */
 .pv-guest .pv-sg-close { display: none; }
 .pv-guest .pv-closeall { display: none; }
+
+/* ---------- 阅片灯：全屏纯白背光，点击任意区域退出 ---------- */
+.pv-lightbox {
+    position: fixed; inset: 0; z-index: 2000;
+    background: #ffffff; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}

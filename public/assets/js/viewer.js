@@ -301,7 +301,28 @@
         if (a === 'save-image') { var p3 = this.activePane(); if (p3) p3.saveImage(); return; }
         if (a === 'save-series') { var p4 = this.activePane(); if (p4) p4.saveSeries(); return; }
         if (a === 'save-dicom') { var p5 = this.activePane(); if (p5) p5.saveDicom(); return; }
+        if (a === 'lightbox') { this.toggleLightbox(); return; }
         if (a === 'shortcuts') { this.showShortcuts(); return; }
+    };
+
+    /* ---------- 阅片灯（全屏纯白背光，点击任意区域退出） ---------- */
+    PvViewer.prototype.toggleLightbox = function () {
+        if (this._lightboxEl) { this.closeLightbox(); return; }
+        var self = this;
+        var el = document.createElement('div');
+        el.className = 'pv-lightbox';
+        el.setAttribute('role', 'button');
+        el.setAttribute('title', '阅片灯模式：点击任意区域退出');
+        el.addEventListener('click', function () { self.closeLightbox(); });
+        document.body.appendChild(el);
+        this._lightboxEl = el;
+        this._onLightboxKey = function (e) { if (e.key === 'Escape') { e.preventDefault(); self.closeLightbox(); } };
+        document.addEventListener('keydown', this._onLightboxKey, true);
+    };
+    PvViewer.prototype.closeLightbox = function () {
+        if (this._onLightboxKey) { document.removeEventListener('keydown', this._onLightboxKey, true); this._onLightboxKey = null; }
+        if (this._lightboxEl && this._lightboxEl.parentNode) this._lightboxEl.parentNode.removeChild(this._lightboxEl);
+        this._lightboxEl = null;
     };
     PvViewer.prototype._paneAction = function (p, a) {
         var st = p.st;
@@ -604,6 +625,7 @@
     };
 
     PvViewer.prototype.destroy = function () {
+        this.closeLightbox();   // 移除可能残留的阅片灯浮层
         if (this._onHostMsg) { window.removeEventListener('message', this._onHostMsg); this._onHostMsg = null; }
         // 保存各窗格当前序列的操作痕迹，供再次进入时恢复
         var self = this;

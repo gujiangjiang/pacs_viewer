@@ -46,6 +46,7 @@ function pvw_icons() {
         'link'       => '<path d="M9 15l6-6"/><path d="M8.5 12 6.5 14a3 3 0 0 0 4 4l2-2"/><path d="M15.5 12l2-2a3 3 0 0 0-4-4l-2 2"/>',
         'save-image' => '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M4 17l5-5 3 3 3-3 5 5"/>',
         'save-series'=> '<path d="M12 3v10M8.5 9.5 12 13l3.5-3.5"/><path d="M5 16v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',
+        'lightbox'   => '<circle cx="12" cy="12" r="4.2"/><line x1="12" y1="2.5" x2="12" y2="5.5"/><line x1="12" y1="18.5" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="5.5" y2="12"/><line x1="18.5" y1="12" x2="21.5" y2="12"/><line x1="5.2" y1="5.2" x2="7.3" y2="7.3"/><line x1="16.7" y1="16.7" x2="18.8" y2="18.8"/><line x1="18.8" y1="5.2" x2="16.7" y2="7.3"/><line x1="7.3" y1="16.7" x2="5.2" y2="18.8"/>',
         // 通用 UI
         'chevron-down'  => '<polyline points="6 9 12 15 18 9"/>',
         'chevron-right' => '<polyline points="9 6 15 12 9 18"/>',
