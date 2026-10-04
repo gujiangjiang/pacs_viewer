@@ -7,10 +7,9 @@
     <span class="pv-footer-hosp"><?php echo pvw_e(pvw_hospital()); ?></span>
     <span class="pv-footer-dim">仅供 DICOM / PACS 接口联调测试</span>
 </footer>
-<script src="<?php echo pvw_asset('js/api.js'); ?>"></script>
-<script src="<?php echo pvw_asset('js/ui.js'); ?>"></script>
-<script src="<?php echo pvw_asset('js/spa.js'); ?>"></script>
-<script src="<?php echo pvw_asset('js/pwa.js'); ?>"></script>
+<?php foreach (PvAssets::commonJs() as $pvCommonJs) { ?>
+<script src="<?php echo pvw_asset('js/' . $pvCommonJs); ?>"></script>
+<?php } ?>
 <?php if (!empty($extraJs)) { foreach ((array)$extraJs as $j) { ?>
 <script src="<?php echo pvw_asset('js/' . $j); ?>"></script>
 <?php } } ?>

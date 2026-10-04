@@ -67,28 +67,9 @@ class PvPwaController {
         $cache = 'pacs-viewer-' . PV_VERSION;
         $imgCache = 'pacs-viewer-img-' . PV_VERSION;
         $ver = '?v=' . PV_VERSION;
-        $core = array(
-            $asset . '/css/base.css' . $ver, $asset . '/css/ui.css' . $ver, $asset . '/css/search.css' . $ver,
-            $asset . '/css/viewer.css' . $ver, $asset . '/css/admin.css' . $ver, $asset . '/css/mock.css' . $ver,
-            $asset . '/js/api.js' . $ver, $asset . '/js/ui.js' . $ver, $asset . '/js/spa.js' . $ver, $asset . '/js/pwa.js' . $ver,
-            $asset . '/js/search.js' . $ver, $asset . '/js/admin.js' . $ver,
-            $asset . '/js/admin-users.js' . $ver, $asset . '/js/admin-storage.js' . $ver, $asset . '/js/mock.js' . $ver,
-            $asset . '/js/modules/dicom.js' . $ver, $asset . '/js/modules/render.js' . $ver,
-            $asset . '/js/modules/osd.js' . $ver, $asset . '/js/modules/sidebar.js' . $ver,
-            $asset . '/js/modules/toolbar.js' . $ver, $asset . '/js/modules/measurements.js' . $ver,
-            $asset . '/js/modules/zip.js' . $ver, $asset . '/js/modules/decoder.js' . $ver,
-            $asset . '/js/modules/dicom-worker.js' . $ver,
-            $asset . '/js/modules/scroll.js' . $ver,
-            $asset . '/js/modules/pane.js' . $ver,
-            $asset . '/js/modules/pane-annotations.js' . $ver,
-            $asset . '/js/modules/pane-scrollbar.js' . $ver,
-            $asset . '/js/modules/pane-export.js' . $ver,
-            $asset . '/js/modules/pane-info.js' . $ver,
-            $asset . '/js/viewer.js' . $ver,
-            $asset . '/js/modules/viewer-report.js' . $ver,
-            $asset . '/js/modules/viewer-ctxmenu.js' . $ver,
-            $asset . '/js/modules/viewer-session.js' . $ver,
-        );
+        // 预缓存清单来自统一资源清单，避免与页面引入处重复维护
+        $core = array();
+        foreach (PvAssets::precache() as $rel) { $core[] = $asset . '/' . $rel . $ver; }
         ?>
 /* Service Worker — PACS 影像浏览器 */
 var CACHE = <?php echo json_encode($cache); ?>;

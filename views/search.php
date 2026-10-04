@@ -4,8 +4,8 @@ $page = 'search';
 $pageTitle = '患者查询';
 $active = 'search';
 $bodyClass = 'pv-page-search';
-$extraCss = array('search.css');
-$extraJs = array('modules/scroll.js', 'search.js');
+$extraCss = PvAssets::pageCss('search');
+$extraJs = PvAssets::pageJs('search');
 $pageData = array('mode' => $mode, 'source' => isset($source) ? $source : null, 'flash' => isset($flash) ? $flash : '', 'clearOnOpen' => !empty($clearOnOpen) ? 1 : 0, 'searchView' => isset($searchView) ? $searchView : 'table');
 $pvSrc = isset($source) ? $source : array('label' => '未配置 PACS 接口', 'state' => 'unset', 'fhir' => false);
 ?>

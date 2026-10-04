@@ -74,6 +74,9 @@
 - `public/assets/js/modules/` 前端按功能拆分：`render`（虚拟影像）、`osd`（水印）、
   `sidebar`（序列栏）、`toolbar`（工具栏）、`measurements`（测量）；
   `viewer.js` 仅做装配与画布管线编排。
+- 前端静态资源清单统一由 `app/Support/Assets.php`（`PvAssets`）维护：视图额外
+  CSS/JS、公共资源与 Service Worker 预缓存清单均取自此。**新增前端模块须在此登记**，
+  禁止在视图或 `PwaController` 另维护列表（顺序敏感：基础模块先于其扩展文件）。
 - `data/` 为运行时数据（SQLite + 会话），**禁止提交**（已 gitignore）。
 
 ## 部署路径自适应铁律

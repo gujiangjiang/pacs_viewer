@@ -29,8 +29,9 @@ $pvGuest = !empty($guest);   // 链接访客阅片：无登录、仅影像查看
 <link rel="icon" type="image/png" sizes="32x32" href="<?php echo pvw_e(PvPwaController::iconUrl(32)); ?>">
 <link rel="icon" type="image/png" sizes="16x16" href="<?php echo pvw_e(PvPwaController::iconUrl(16)); ?>">
 <link rel="apple-touch-icon" sizes="180x180" href="<?php echo pvw_e(PvPwaController::iconUrl(180)); ?>">
-<link rel="stylesheet" href="<?php echo pvw_asset('css/base.css'); ?>">
-<link rel="stylesheet" href="<?php echo pvw_asset('css/ui.css'); ?>">
+<?php foreach (PvAssets::commonCss() as $pvCommonCss) { ?>
+<link rel="stylesheet" href="<?php echo pvw_asset('css/' . $pvCommonCss); ?>">
+<?php } ?>
 <?php if (!empty($extraCss)) { foreach ((array)$extraCss as $c) { ?>
 <link rel="stylesheet" href="<?php echo pvw_asset('css/' . $c); ?>">
 <?php } } ?>
