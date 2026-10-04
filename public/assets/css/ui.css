@@ -23,7 +23,8 @@
 .pv-modal-x { border: 0; background: transparent; color: var(--pv-txt2); font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px; }
 .pv-modal-x:hover { color: #fff; }
 .pv-modal-body { padding: 18px; overflow: auto; flex: 1 1 auto; }
-.pv-modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--pv-line); flex: 0 0 auto; }
+.pv-modal-foot { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--pv-line); flex: 0 0 auto; }
+.pv-modal-note { margin-right: auto; color: var(--pv-txt2); font-size: 12px; line-height: 1.5; }
 .pv-modal .pv-field input, .pv-modal .pv-field select { max-width: none; }
 .pv-modal-msg { margin: 0; color: var(--pv-txt); line-height: 1.7; }
 

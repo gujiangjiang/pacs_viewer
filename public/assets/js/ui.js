@@ -81,6 +81,13 @@
 
         var foot = document.createElement('div');
         foot.className = 'pv-modal-foot';
+        // 页脚左侧注释（如免责声明），按钮仍靠右对齐
+        if (opts.footNote) {
+            var note = document.createElement('span');
+            note.className = 'pv-modal-note';
+            note.textContent = opts.footNote;
+            foot.appendChild(note);
+        }
         var actions = opts.actions || [{ label: '关闭', cls: 'pv-btn-ghost' }];
         actions.forEach(function (a) {
             var b = document.createElement('button');

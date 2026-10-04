@@ -21,6 +21,7 @@
             title: '影像检查报告',
             size: 'lg',
             body: '<div class="pv-report"><div class="pv-report-loading">正在加载报告…</div></div>',
+            footNote: '本报告由具有资质的医师完成，仅供参考。',
             actions: [{ label: '关闭', cls: 'pv-btn-ghost' }],
             onOpen: function (h) { self._loadReport(h.body, pInfo, s, uid); }
         });
