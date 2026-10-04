@@ -140,7 +140,7 @@
                 var scroll = document.getElementById('pvLogScroll');
                 var body = document.getElementById('pvLogBody');
                 if (!scroll || !body) return;
-                function esc(s) { return PvUI.esc(s == null ? '' : s); }
+                var esc = PvUI.esc;   // 复用通用转义助手
                 function rowHtml(l) {
                     var rc = (l.action === 'search') ? String(l.result_count == null ? 0 : l.result_count) : '—';
                     return '<tr data-row="1" data-id="' + (parseInt(l.id, 10) || 0) + '"><td class="pv-dim">' + esc(l.created_at) + '</td>'
@@ -151,10 +151,7 @@
                         + '<td>' + esc(rc) + '</td>'
                         + '<td class="pv-dim">' + esc(l.ip) + '</td></tr>';
                 }
-                function logUrl(params) {
-                    return global.PvNav ? global.PvNav.route('admin/logs', params) : ('?r=admin/logs&' + paramStr(params));
-                }
-                function paramStr(p) { var a = []; for (var k in p) a.push(encodeURIComponent(k) + '=' + encodeURIComponent(p[k])); return a.join('&'); }
+                function logUrl(params) { return PvUI.route('admin/logs', params); }
                 function currentTotal() { return parseInt(scroll.getAttribute('data-total'), 10) || 0; }
                 function setTotal(n) {
                     scroll.setAttribute('data-total', n);
@@ -218,26 +215,14 @@
                 }
 
                 var liveBtn = document.getElementById('pvLogLive');
-                function stopLive() {
-                    if (window.__pvLogLiveTimer) { clearInterval(window.__pvLogLiveTimer); window.__pvLogLiveTimer = null; }
-                    if (liveBtn) liveBtn.classList.remove('active');
-                }
-                function startLive() {
-                    stopLive();
-                    if (liveBtn) liveBtn.classList.add('active');
-                    poll();
-                    window.__pvLogLiveTimer = setInterval(poll, 5000);
-                }
-                if (liveBtn) liveBtn.addEventListener('click', function () {
-                    if (liveBtn.classList.contains('active')) stopLive(); else startLive();
-                });
+                var live = PvUI.liveToggle(liveBtn, poll, 5000);   // 复用通用「实时」开关
                 var refreshBtn = document.getElementById('pvLogRefresh');
                 if (refreshBtn) refreshBtn.addEventListener('click', function () { reloadFirstPage(true); });
                 // 切换到其他页签时停止实时轮询，避免无谓请求
                 Array.prototype.forEach.call(document.querySelectorAll('.pv-tab'), function (t) {
-                    t.addEventListener('click', function () { if (t.getAttribute('data-tab') !== 'logs') stopLive(); });
+                    t.addEventListener('click', function () { if (t.getAttribute('data-tab') !== 'logs') live.stop(); });
                 });
-                global.__pvLogStopLive = stopLive;   // 供页面销毁时清理
+                global.__pvLogStopLive = function () { live.stop(); };   // 供页面销毁时清理
             })();
 
             // 外部接口：DICOM / PACS 连通性测试（当前输入）

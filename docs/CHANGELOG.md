@@ -14,6 +14,17 @@
 
 ---
 
+## [1.2.8] - 2026-10-04
+
+### 变更
+- **前端重复实现收敛（无行为变化）**：
+  - `admin.js` 去除本地 `esc`（改用 `PvUI.esc`）、日志 URL 构造改用 `PvUI.route()`、
+    日志「实时」改用 `PvUI.liveToggle()`；
+  - `admin-storage.js` 路由与「实时」改用 `PvUI.route()` / `PvUI.liveToggle()`；
+  - `mock.js` 的 `getJson` 改用 `PvUI.route()` / `PvUI.get()`。
+
+---
+
 ## [1.2.7] - 2026-10-04
 
 ### 变更

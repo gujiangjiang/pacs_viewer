@@ -2,10 +2,7 @@
 (function (global) {
     'use strict';
 
-    function getJson(route, params) {
-        var url = global.PvNav ? global.PvNav.route(route, params) : (global.PV_BOOT.home || '/') + '?r=' + route;
-        return PvUI.get(url);
-    }
+    function getJson(route, params) { return PvUI.get(PvUI.route(route, params)); }   // 复用通用路由/请求助手
 
     /** 更新患者数据来源标签（builtin 内置仿真 / fhir 门诊 FHIR） */
     function updateSource(src) {

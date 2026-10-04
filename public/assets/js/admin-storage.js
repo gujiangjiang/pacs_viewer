@@ -12,9 +12,7 @@
         return (b / 1073741824).toFixed(2) + ' GB';
     }
 
-    function route(r) {
-        return global.PvNav ? global.PvNav.route(r) : ((global.PV_BOOT.home || '/') + '?r=' + r);
-    }
+    function route(r) { return PvUI.route(r); }   // 复用通用路由助手
 
     global.PvAdminStorage = {
         /**
@@ -25,7 +23,6 @@
             var box = document.getElementById('pvStorageBox');
             if (!box) return;
             cache = cache || {};
-            var liveTimer = null;
             var docClick = null;
 
             function render(d) {
@@ -56,21 +53,9 @@
             var refresh = document.getElementById('pvStorageRefresh');
             if (refresh) refresh.addEventListener('click', function () { load(true); });
 
-            // 实时：定时刷新存储占用
+            // 实时：定时刷新存储占用（复用通用「实时」开关）
             var liveBtn = document.getElementById('pvStorageLive');
-            function stopLive() {
-                if (liveTimer) { clearInterval(liveTimer); liveTimer = null; }
-                if (liveBtn) liveBtn.classList.remove('active');
-            }
-            function startLive() {
-                stopLive();
-                if (liveBtn) liveBtn.classList.add('active');
-                load(false);
-                liveTimer = setInterval(function () { load(false); }, 5000);
-            }
-            if (liveBtn) liveBtn.addEventListener('click', function () {
-                if (liveBtn.classList.contains('active')) stopLive(); else startLive();
-            });
+            var live = PvUI.liveToggle(liveBtn, function () { load(false); }, 5000);
 
             // 合并「清空」下拉：清空上传文件 / 清空缓存区
             var dd = document.getElementById('pvStorageClear');
@@ -159,7 +144,7 @@
 
             // 供页面销毁时清理定时器与文档监听
             global.__pvStorageStop = function () {
-                stopLive();
+                live.stop();
                 if (docClick) { document.removeEventListener('click', docClick); docClick = null; }
             };
         }
