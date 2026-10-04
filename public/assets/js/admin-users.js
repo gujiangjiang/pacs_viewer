@@ -20,7 +20,7 @@
             '</select></label>' +
             (opts.owner ? '<p class="pv-hint">安装管理员必须保持管理员角色。</p>' : '');
 
-        PvModal.open({
+        var m = PvModal.open({
             title: isEdit ? ('编辑账号 · ' + PvUI.esc(opts.username)) : '新增账号',
             body: body,
             actions: [
@@ -46,6 +46,7 @@
                 }
             ]
         });
+        if (global.PvControls) global.PvControls.init(m.body);   // 增强角色下拉
     }
 
     function passwordModal(u) {

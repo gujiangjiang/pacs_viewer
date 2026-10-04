@@ -246,6 +246,8 @@
             if (global.PvPages && global.PvPages.mock && typeof global.PvPages.mock.init === 'function') {
                 try { global.PvPages.mock.init({}); } catch (e) { if (global.console) console.error(e); }
             }
+            // 自定义表单控件（下拉 / 日期 / 文件）
+            if (global.PvControls) global.PvControls.init(document);
         },
         destroy: function () {
             if (global.__pvLogStopLive) { try { global.__pvLogStopLive(); } catch (e) {} global.__pvLogStopLive = null; }

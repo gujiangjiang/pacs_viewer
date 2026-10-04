@@ -14,7 +14,7 @@ class PvAssets {
     /** 公共 CSS（页头固定引入） */
     private static $commonCss = array('base.css', 'ui.css');
     /** 公共 JS（页脚固定引入） */
-    private static $commonJs  = array('api.js', 'ui.js', 'spa.js', 'pwa.js');
+    private static $commonJs  = array('api.js', 'ui.js', 'modules/controls.js', 'spa.js', 'pwa.js');
 
     /** 各页面额外资源（css / js 均为相对 assets 的路径，顺序敏感） */
     private static $pages = array(

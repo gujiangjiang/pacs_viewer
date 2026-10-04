@@ -215,6 +215,7 @@
                 });
                 rows.appendChild(frag);
                 bindRemove();
+                if (global.PvControls) global.PvControls.init(rows);   // 增强新增行的部位下拉
             });
         }
         bindRemove();

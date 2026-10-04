@@ -69,6 +69,8 @@
 .pv-in-sm { width: 110px; }
 .pv-in-lg { width: 100%; min-width: 220px; }
 .pv-anatomy-table select.pv-input { width: 130px; }
+.pv-anatomy-table .pv-select { width: 130px; max-width: 130px; }
+.pv-anatomy-table .pv-select-btn { height: 30px; padding: 4px 8px; font-size: 13px; }
 
 /* 存储情况 */
 .pv-storage { border: 1px solid var(--pv-line); border-radius: 10px; overflow: hidden; }

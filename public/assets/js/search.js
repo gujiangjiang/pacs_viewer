@@ -242,6 +242,7 @@
             if (fromEl) { fromEl.value = r.from; fromEl.disabled = true; }
             if (toEl) { toEl.value = r.to; toEl.disabled = true; }
         }
+        if (global.PvControls) { global.PvControls.sync(fromEl); global.PvControls.sync(toEl); }
         validateDates();
     }
 
@@ -293,6 +294,7 @@
             list.forEach(function (m) { html += '<option value="' + esc(m) + '">' + esc(m) + '</option>'; });
             mEl.innerHTML = html;
             if (sideFilters.modality) mEl.value = sideFilters.modality;
+            if (global.PvControls) global.PvControls.sync(mEl);
         }).catch(function () {});
     }
 
@@ -427,6 +429,7 @@
                 renderAll();
                 doSearch();
             }
+            if (global.PvControls) global.PvControls.init(document);   // 增强下拉 / 日期控件
             input.focus();
         },
         destroy: function () {

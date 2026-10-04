@@ -186,6 +186,70 @@ input[type="file"]::-webkit-file-upload-button {
 }
 input[type="file"]::-webkit-file-upload-button:hover { background: #334155; color: #fff; }
 
+/* 原生元素视觉隐藏（保留取值 / 提交 / 校验能力） */
+.pv-native-hidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0 0 0 0) !important; white-space: nowrap !important; border: 0 !important; }
+
+/* ---------- 自定义下拉选择 ---------- */
+.pv-select { position: relative; width: 100%; max-width: 560px; }
+.pv-select-btn {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 9px 12px; border: 1px solid var(--pv-line2); border-radius: 8px;
+    background: #0b0f17; color: var(--pv-txt); font-size: 14px; font-family: inherit; cursor: pointer; text-align: left;
+}
+.pv-select-btn:focus { outline: none; border-color: var(--pv-acc2); box-shadow: 0 0 0 3px rgba(14,165,233,.15); }
+.pv-select.is-disabled .pv-select-btn { opacity: .55; cursor: not-allowed; }
+.pv-select-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-select-caret { display: inline-flex; flex: 0 0 auto; width: 14px; height: 14px; color: var(--pv-txt2); transition: transform .15s; }
+.pv-select-caret svg { width: 100%; height: 100%; }
+.pv-select.open .pv-select-caret { transform: rotate(180deg); }
+.pv-select-menu {
+    position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 70;
+    max-height: 264px; overflow: auto; padding: 5px; background: #0f172a; border: 1px solid var(--pv-line);
+    border-radius: 9px; box-shadow: 0 16px 40px rgba(0,0,0,.55); display: none;
+}
+.pv-select.open .pv-select-menu { display: block; }
+.pv-select-opt { display: block; width: 100%; text-align: left; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--pv-txt); cursor: pointer; font-size: 13px; font-family: inherit; }
+.pv-select-opt:hover { background: #1e293b; color: #fff; }
+.pv-select-opt.selected { color: #6ee7b7; background: rgba(16,185,129,.12); }
+.pv-select-opt:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ---------- 自定义日期选择 ---------- */
+.pv-date { position: relative; width: 100%; max-width: 560px; }
+.pv-date-field {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 9px 12px; border: 1px solid var(--pv-line2); border-radius: 8px;
+    background: #0b0f17; color: var(--pv-txt); font-size: 14px; font-family: inherit; cursor: pointer; text-align: left;
+}
+.pv-date-field:focus { outline: none; border-color: var(--pv-acc2); box-shadow: 0 0 0 3px rgba(14,165,233,.15); }
+.pv-date.is-disabled .pv-date-field { opacity: .55; cursor: not-allowed; }
+.pv-date-text.is-placeholder { color: #64748b; }
+.pv-date-ico { display: inline-flex; flex: 0 0 auto; width: 15px; height: 15px; color: var(--pv-txt2); }
+.pv-date-ico svg { width: 100%; height: 100%; }
+.pv-date-pop {
+    position: absolute; left: 0; top: calc(100% + 6px); z-index: 70; width: 264px; padding: 10px;
+    background: #0f172a; border: 1px solid var(--pv-line); border-radius: 10px; box-shadow: 0 16px 40px rgba(0,0,0,.55); display: none;
+}
+.pv-date.open .pv-date-pop { display: block; }
+.pv-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.pv-cal-title { font-size: 13px; color: #e2e8f0; }
+.pv-cal-nav { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 1px solid var(--pv-line); border-radius: 6px; background: transparent; color: var(--pv-txt2); cursor: pointer; }
+.pv-cal-nav:hover { background: #1e293b; color: #fff; }
+.pv-cal-nav svg { width: 14px; height: 14px; }
+.pv-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.pv-cal-w { text-align: center; font-size: 11px; color: var(--pv-txt2); padding: 4px 0; }
+.pv-cal-day { text-align: center; padding: 6px 0; border: 0; border-radius: 6px; background: transparent; color: var(--pv-txt); cursor: pointer; font-size: 12px; font-family: inherit; }
+.pv-cal-day:hover { background: #1e293b; color: #fff; }
+.pv-cal-day.cur { background: var(--pv-acc); color: #04140d; font-weight: 600; }
+
+/* ---------- 自定义文件选择 ---------- */
+.pv-file { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pv-file-name { font-size: 13px; color: var(--pv-txt2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+
+/* 分隔栏（检索页）内的日期控件紧凑样式 */
+.pv-daterange .pv-date { flex: 1 1 0; min-width: 0; }
+.pv-daterange .pv-date-field { padding: 7px 8px; font-size: 12px; }
+.pv-modal .pv-field .pv-select, .pv-modal .pv-field .pv-date { max-width: none; }
+
 /* ---------- 内联 SVG 图标（替代 emoji / 符号） ---------- */
 .pv-ico { display: inline-flex; align-items: center; justify-content: center; width: 1em; height: 1em; vertical-align: -0.14em; }
 .pv-ico svg { width: 100%; height: 100%; display: block; }
