@@ -7,7 +7,6 @@ $bodyClass = 'pv-page-search';
 $extraCss = PvAssets::pageCss('search');
 $extraJs = PvAssets::pageJs('search');
 $pageData = array('mode' => $mode, 'source' => isset($source) ? $source : null, 'flash' => isset($flash) ? $flash : '', 'clearOnOpen' => !empty($clearOnOpen) ? 1 : 0, 'searchView' => isset($searchView) ? $searchView : 'table');
-$pvSrc = isset($source) ? $source : array('label' => '未配置 PACS 接口', 'state' => 'unset', 'fhir' => false);
 ?>
 <div class="pv-search-wrap">
     <aside class="pv-search-side pv-card">
@@ -63,7 +62,6 @@ $pvSrc = isset($source) ? $source : array('label' => '未配置 PACS 接口', 's
                 <span class="pv-track"></span>
                 <span class="pv-switch-label">打开影像时清空已加载序列</span>
             </label>
-            <div class="pv-source">数据来源：<b id="pvMode" class="<?php echo $pvSrc['state'] !== 'unset' ? 'is-remote' : 'is-demo'; ?>"><?php echo pvw_e($pvSrc['label']); ?></b><?php if (!empty($pvSrc['fhir'])) { ?> <span class="pv-dim">+ FHIR 补充</span><?php } ?></div>
         </div>
     </aside>
 

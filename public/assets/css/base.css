@@ -64,7 +64,9 @@ body.pv-nav-busy #pvMain { opacity: .55; transition: opacity .12s; }
 }
 .pv-footer-left { justify-self: start; }
 .pv-footer-hosp { justify-self: center; color: #94a3b8; font-weight: 600; }
-.pv-footer-dim { justify-self: end; color: #64748b; }
+.pv-footer-src { justify-self: end; color: #64748b; }
+.pv-footer-src.is-ok { color: #34d399; }
+.pv-footer-src.is-off { color: #64748b; }
 
 /* ---------- 通用组件 ---------- */
 .pv-btn {

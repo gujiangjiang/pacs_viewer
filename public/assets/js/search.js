@@ -353,10 +353,10 @@
             renderAll();
             resetLoader();
             saveState();
-            var modeEl = document.getElementById('pvMode');
-            if (modeEl && d.source) {
-                modeEl.textContent = d.source.label || '';
-                modeEl.className = d.source.state !== 'unset' ? 'is-remote' : 'is-demo';
+            var srcEl = document.getElementById('pvFooterSource');
+            if (srcEl && d.source) {
+                srcEl.textContent = d.source.label || '';
+                srcEl.className = 'pv-footer-src ' + (d.source.state !== 'unset' ? 'is-ok' : 'is-off');
             }
             if (d.fhir_error) PvUI.toast('FHIR 补充失败：' + d.fhir_error, 'err');
         }).catch(function () {

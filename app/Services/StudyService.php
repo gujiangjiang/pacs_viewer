@@ -9,19 +9,16 @@
  * ============================================================ */
 class PvStudyService {
 
-    /** 检索来源展示信息（用于检索页顶部标签） */
+    /** 数据来源状态（用于页脚「服务器已连接」展示；不暴露主机 / IP） */
     public static function sourceInfo() {
         $endpoint = trim((string)PvSettings::get('pacs_endpoint', ''));
         if ($endpoint === '') {
-            $state = 'unset'; $label = '未配置 PACS 接口';
-        } elseif (PvMockServer::isSelfEndpoint($endpoint)) {
-            $state = 'mock'; $label = '内置模拟 DICOMweb 服务器';
-        } else {
-            $state = 'remote';
-            $host = parse_url($endpoint, PHP_URL_HOST);
-            $label = '远程 DICOMweb 接口' . ($host ? ' · ' . $host : '');
+            return array('state' => 'unset', 'label' => 'DICOMweb 服务器未连接');
         }
-        return array('state' => $state, 'label' => $label);
+        if (PvMockServer::isSelfEndpoint($endpoint)) {
+            return array('state' => 'mock', 'label' => 'DICOMweb 服务器已连接 · 内置模拟');
+        }
+        return array('state' => 'remote', 'label' => 'DICOMweb 服务器已连接 · 远程');
     }
 
     /** 记录远程接口返回的机构名称（DICOMweb InstitutionName）到 pacs_hospital_name */
