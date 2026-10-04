@@ -6,7 +6,7 @@
             <h3 class="pv-form-title">存储情况</h3>
             <span class="pv-card-actions">
                 <div class="pv-dropdown" id="pvStorageClear">
-                    <button type="button" class="pv-btn pv-btn-outline pv-btn-sm">清空 ▾</button>
+                    <button type="button" class="pv-btn pv-btn-outline pv-btn-sm">清空 <span class="pv-caret"><?php echo pvw_icon('chevron-down'); ?></span></button>
                     <div class="pv-dropdown-menu">
                         <button type="button" data-clear="uploads">清空上传文件</button>
                         <button type="button" data-clear="cache">清空缓存区</button>

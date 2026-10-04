@@ -109,7 +109,7 @@ $pvPartText = $pvPartList ? implode('、', $pvPartList) : '未启用任何部位
                     </section>
 
                     <div class="pv-form-actions pv-apply-bar">
-                        <button type="button" class="pv-btn pv-btn-accent" id="pvApplyMock">⇩ 一键应用模拟服务器数据</button>
+                        <button type="button" class="pv-btn pv-btn-accent" id="pvApplyMock"><span class="pv-ico"><?php echo pvw_icon('import'); ?></span> 一键应用模拟服务器数据</button>
                         <span class="pv-hint">将 DICOMweb 地址与密钥自动填入【外部接口】。</span>
                     </div>
                 </div>
@@ -197,7 +197,7 @@ $pvPartText = $pvPartList ? implode('、', $pvPartList) : '未启用任何部位
                     </table>
                 </div>
                 <div class="pv-form-actions">
-                    <button type="button" class="pv-btn pv-btn-outline" id="pvAnatomyAdd">＋ 添加部位</button>
+                    <button type="button" class="pv-btn pv-btn-outline" id="pvAnatomyAdd"><span class="pv-ico"><?php echo pvw_icon('plus'); ?></span> 添加部位</button>
                     <button type="submit" class="pv-btn pv-btn-primary">保存解剖部位配置</button>
                     <button type="button" class="pv-btn pv-btn-ghost" id="pvAnatomyReset">恢复默认</button>
                     <span class="pv-hint">修改切片数后，重新打开检查即可生效（新序列规划）</span>
@@ -255,7 +255,7 @@ $pvPartText = $pvPartList ? implode('、', $pvPartList) : '未启用任何部位
             <div id="pvMockScroll" class="pv-mock-scroll">
                 <div id="pvMockPatients" class="pv-mock-patients"></div>
                 <div id="pvMockEmpty" class="pv-empty">
-                    <div class="pv-empty-ico">🧪</div>
+                    <div class="pv-empty-ico"><?php echo pvw_icon('sample'); ?></div>
                     <div class="pv-empty-title">点击「检索患者」查看模拟服务器中的患者与检查</div>
                 </div>
             </div>

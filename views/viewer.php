@@ -35,12 +35,12 @@ $pageData = array(
             <span class="pv-bi"><?php echo pvw_icon('wl'); ?></span><span class="pv-bl">窗宽窗位</span></button>
         <div class="pv-menu-wrap">
             <button type="button" class="pv-bigbtn" data-pv-menu="preset" title="常用窗宽窗位预设">
-                <span class="pv-bi"><?php echo pvw_icon('preset'); ?></span><span class="pv-bl">预设窗 ▾</span></button>
+                <span class="pv-bi"><?php echo pvw_icon('preset'); ?></span><span class="pv-bl">预设窗 <span class="pv-caret"><?php echo pvw_icon('chevron-down'); ?></span></span></button>
             <div class="pv-menu" data-pv-menu-panel="preset">
-                <button type="button" data-pv-preset="soft"><span class="ic">🟫</span> 软组织窗 (400 / 40)</button>
-                <button type="button" data-pv-preset="lung"><span class="ic">🫁</span> 肺窗 (1500 / -600)</button>
-                <button type="button" data-pv-preset="bone"><span class="ic">🦴</span> 骨窗 (2000 / 350)</button>
-                <button type="button" data-pv-preset="full"><span class="ic">🖼</span> <span data-preset-label="full">默认窗</span></button>
+                <button type="button" data-pv-preset="soft"><span class="ic"><?php echo pvw_icon('win-soft'); ?></span> 软组织窗 (400 / 40)</button>
+                <button type="button" data-pv-preset="lung"><span class="ic"><?php echo pvw_icon('win-lung'); ?></span> 肺窗 (1500 / -600)</button>
+                <button type="button" data-pv-preset="bone"><span class="ic"><?php echo pvw_icon('win-bone'); ?></span> 骨窗 (2000 / 350)</button>
+                <button type="button" data-pv-preset="full"><span class="ic"><?php echo pvw_icon('win-full'); ?></span> <span data-preset-label="full">默认窗</span></button>
             </div>
         </div>
         <span class="pv-tsep"></span>
@@ -54,12 +54,12 @@ $pageData = array(
             <span class="pv-bi"><?php echo pvw_icon('next'); ?></span><span class="pv-bl">下一帧</span></button>
         <div class="pv-menu-wrap">
             <button type="button" class="pv-bigbtn" data-pv-menu="layout" title="视图分栏布局">
-                <span class="pv-bi"><?php echo pvw_icon('layout'); ?></span><span class="pv-bl">布局 ▾</span></button>
+                <span class="pv-bi"><?php echo pvw_icon('layout'); ?></span><span class="pv-bl">布局 <span class="pv-caret"><?php echo pvw_icon('chevron-down'); ?></span></span></button>
             <div class="pv-menu" data-pv-menu-panel="layout">
-                <button type="button" data-pv-layout="1"><span class="ic">▢</span> 单视图</button>
-                <button type="button" data-pv-layout="2h"><span class="ic">◫</span> 左右双视图</button>
-                <button type="button" data-pv-layout="2v"><span class="ic">⬓</span> 上下双视图</button>
-                <button type="button" data-pv-layout="4"><span class="ic">⊞</span> 四视图</button>
+                <button type="button" data-pv-layout="1"><span class="ic"><?php echo pvw_icon('layout-1'); ?></span> 单视图</button>
+                <button type="button" data-pv-layout="2h"><span class="ic"><?php echo pvw_icon('layout-2h'); ?></span> 左右双视图</button>
+                <button type="button" data-pv-layout="2v"><span class="ic"><?php echo pvw_icon('layout-2v'); ?></span> 上下双视图</button>
+                <button type="button" data-pv-layout="4"><span class="ic"><?php echo pvw_icon('layout-4'); ?></span> 四视图</button>
             </div>
         </div>
         <button type="button" class="pv-bigbtn" data-pv-act="fit" title="图像适应窗口">
@@ -69,7 +69,7 @@ $pageData = array(
         <span class="pv-tsep"></span>
         <div class="pv-menu-wrap">
             <button type="button" class="pv-bigbtn" data-pv-menu="measure" title="测量工具">
-                <span class="pv-bi"><?php echo pvw_icon('measure'); ?></span><span class="pv-bl">测量 ▾</span></button>
+                <span class="pv-bi"><?php echo pvw_icon('measure'); ?></span><span class="pv-bl">测量 <span class="pv-caret"><?php echo pvw_icon('chevron-down'); ?></span></span></button>
             <div class="pv-menu" data-pv-menu-panel="measure">
                 <button type="button" data-pv-tool="length"><span class="ic"><?php echo pvw_icon('length'); ?></span> 测距（mm）</button>
                 <button type="button" data-pv-tool="angle"><span class="ic"><?php echo pvw_icon('angle'); ?></span> 测角（°）</button>
@@ -81,7 +81,7 @@ $pageData = array(
         </div>
         <div class="pv-menu-wrap">
             <button type="button" class="pv-bigbtn" data-pv-menu="transform" title="图像变换">
-                <span class="pv-bi"><?php echo pvw_icon('transform'); ?></span><span class="pv-bl">变换 ▾</span></button>
+                <span class="pv-bi"><?php echo pvw_icon('transform'); ?></span><span class="pv-bl">变换 <span class="pv-caret"><?php echo pvw_icon('chevron-down'); ?></span></span></button>
             <div class="pv-menu" data-pv-menu-panel="transform">
                 <button type="button" data-pv-act="rotate-ccw"><span class="ic"><?php echo pvw_icon('rotate-ccw'); ?></span> 逆时针 90°</button>
                 <button type="button" data-pv-act="rotate-cw"><span class="ic"><?php echo pvw_icon('rotate-cw'); ?></span> 顺时针 90°</button>
@@ -92,7 +92,7 @@ $pageData = array(
         </div>
         <div class="pv-menu-wrap">
             <button type="button" class="pv-bigbtn" data-pv-menu="tools" title="更多工具">
-                <span class="pv-bi"><?php echo pvw_icon('tools'); ?></span><span class="pv-bl">工具 ▾</span></button>
+                <span class="pv-bi"><?php echo pvw_icon('tools'); ?></span><span class="pv-bl">工具 <span class="pv-caret"><?php echo pvw_icon('chevron-down'); ?></span></span></button>
             <div class="pv-menu" data-pv-menu-panel="tools">
                 <button type="button" data-pv-act="report"><span class="ic"><?php echo pvw_icon('report'); ?></span> 查看影像报告</button>
                 <button type="button" data-pv-act="dicom-info"><span class="ic"><?php echo pvw_icon('dicom'); ?></span> DICOM 详情</button>
@@ -101,7 +101,7 @@ $pageData = array(
                 <button type="button" data-pv-act="save-series"><span class="ic"><?php echo pvw_icon('save-series'); ?></span> 保存序列（ZIP）</button>
                 <button type="button" data-pv-act="save-dicom"><span class="ic"><?php echo pvw_icon('dicom'); ?></span> 导出 DICOM（原始文件）</button>
                 <div class="pv-menu-sep"></div>
-                <button type="button" data-pv-act="shortcuts"><span class="ic">⌘</span> 键盘快捷键</button>
+                <button type="button" data-pv-act="shortcuts"><span class="ic"><?php echo pvw_icon('keyboard'); ?></span> 键盘快捷键</button>
             </div>
         </div>
         <button type="button" class="pv-bigbtn" data-pv-act="about" title="关于本软件">

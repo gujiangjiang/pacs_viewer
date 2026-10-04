@@ -79,6 +79,7 @@
     font-size: 15px; line-height: 1; padding: 0 2px;
 }
 .pv-sg-close:hover { color: #fca5a5; }
+.pv-sg-close svg { display: block; margin: 0 auto; }
 .pv-sg-series { padding: 6px; }
 .pv-sg.collapsed .pv-sg-series { display: none; }
 
@@ -174,7 +175,8 @@
 }
 .pv-ctx-item:hover { background: #1e293b; color: #fff; }
 .pv-ctx-item .lb { flex: 1 1 auto; }
-.pv-ctx-item .arrow { color: var(--pv-txt2); font-size: 9px; }
+.pv-ctx-item .arrow { color: var(--pv-txt2); display: inline-flex; align-items: center; }
+.pv-ctx-item .arrow svg { width: 11px; height: 11px; display: block; }
 .pv-ctx-sep { height: 1px; background: var(--pv-line); margin: 4px 2px; }
 .pv-ctx-sub {
     position: absolute; left: 100%; top: -5px; display: none; min-width: 150px; padding: 4px;

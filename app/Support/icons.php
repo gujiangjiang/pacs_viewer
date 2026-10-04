@@ -4,7 +4,6 @@
  * ============================================================
  * 供 PHP 模板（pvw_icon()）与前端（经 pvw_icons() 注入 PvIcons）共用，
  * 保证工具栏与右键菜单图标一致。统一 24 视图框、currentColor 描边。
- * 预设窗（软组织/肺/骨/默认）暂用 emoji，不在此列。
  * ============================================================ */
 
 /** 图标内部路径集合：name => SVG 内部标记 */
@@ -47,6 +46,27 @@ function pvw_icons() {
         'link'       => '<path d="M9 15l6-6"/><path d="M8.5 12 6.5 14a3 3 0 0 0 4 4l2-2"/><path d="M15.5 12l2-2a3 3 0 0 0-4-4l-2 2"/>',
         'save-image' => '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M4 17l5-5 3 3 3-3 5 5"/>',
         'save-series'=> '<path d="M12 3v10M8.5 9.5 12 13l3.5-3.5"/><path d="M5 16v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',
+        // 通用 UI
+        'chevron-down'  => '<polyline points="6 9 12 15 18 9"/>',
+        'chevron-right' => '<polyline points="9 6 15 12 9 18"/>',
+        'check'         => '<polyline points="20 6 9 17 4 12"/>',
+        'cross'         => '<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',
+        'plus'          => '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+        'lock'          => '<rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+        'alert'         => '<path d="M12 3 2.6 20h18.8L12 3z"/><line x1="12" y1="9.5" x2="12" y2="14.5"/><circle cx="12" cy="17.4" r="1" fill="currentColor" stroke="none"/>',
+        'import'        => '<path d="M12 3v12"/><polyline points="8 11 12 15 16 11"/><path d="M5 19h14"/>',
+        'sample'        => '<path d="M9 3h6M10 3v6l-5 8.5A2 2 0 0 0 6.7 21h10.6a2 2 0 0 0 1.7-3.5L14 9V3"/><line x1="8.2" y1="15" x2="15.8" y2="15"/>',
+        'keyboard'      => '<rect x="3" y="6.5" width="18" height="11" rx="2"/><circle cx="7" cy="10" r=".9" fill="currentColor" stroke="none"/><circle cx="11" cy="10" r=".9" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r=".9" fill="currentColor" stroke="none"/><line x1="8" y1="14" x2="16" y2="14"/>',
+        // 布局
+        'layout-1'      => '<rect x="3" y="4" width="18" height="16" rx="2"/>',
+        'layout-2h'     => '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="12" y1="4" x2="12" y2="20"/>',
+        'layout-2v'     => '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/>',
+        'layout-4'      => '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="3" y1="12" x2="21" y2="12"/>',
+        // 窗宽窗位预设
+        'win-soft'      => '<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/>',
+        'win-lung'      => '<path d="M12 4v9"/><path d="M12 8c-1.8-1.6-5-1.2-6 1.3S5 16 7.5 16.6 12 15 12 12"/><path d="M12 8c1.8-1.6 5-1.2 6 1.3S19 16 16.5 16.6 12 15 12 12"/>',
+        'win-bone'      => '<path d="M8.5 15.5 15.5 8.5"/><circle cx="7" cy="17" r="2.2"/><circle cx="17" cy="7" r="2.2"/>',
+        'win-full'      => '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M4 17l5-5 3 3 3-3 5 5"/>',
     );
 }
 

@@ -100,7 +100,7 @@
         COLUMNS.forEach(function (c) {
             var sk = c.sort || c.key;
             var active = !c.nosort && sortState.key === sk;
-            var arrow = active ? (sortState.dir === 'asc' ? ' ▲' : ' ▼') : '';
+            var arrow = active ? '<span class="pv-sort-arrow ' + (sortState.dir === 'asc' ? 'up' : 'down') + '"></span>' : '';
             h += '<th class="' + (c.nosort ? '' : 'sortable' + (active ? ' active' : '')) + '"' +
                 (c.nosort ? '' : ' data-key="' + attr(sk) + '"') + '>' + esc(c.label) + arrow + '</th>';
         });

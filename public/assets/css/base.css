@@ -143,6 +143,15 @@ input[type=checkbox], input[type=radio] { width: 16px; height: 16px; min-width: 
 .pv-test-result.ok { color: #34d399; }
 .pv-test-result.err { color: #fca5a5; }
 
+/* ---------- 内联 SVG 图标（替代 emoji / 符号） ---------- */
+.pv-ico { display: inline-flex; align-items: center; justify-content: center; width: 1em; height: 1em; vertical-align: -0.14em; }
+.pv-ico svg { width: 100%; height: 100%; display: block; }
+.pv-caret { display: inline-flex; align-items: center; justify-content: center; width: 12px; height: 12px; vertical-align: -2px; opacity: .75; }
+.pv-caret svg { width: 12px; height: 12px; display: block; }
+.pv-empty-ico svg { width: 44px; height: 44px; opacity: .5; }
+.pv-test-result .pv-ic { width: 14px; height: 14px; vertical-align: -2px; }
+.pv-btn .pv-ico svg, .pv-badge .pv-ico svg { fill: none; }
+
 /* ---------- 开关（toggle switch） ---------- */
 .pv-switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; font-size: 13px; color: var(--pv-txt); }
 .pv-switch input { position: absolute; opacity: 0; width: 0; height: 0; margin: 0; }

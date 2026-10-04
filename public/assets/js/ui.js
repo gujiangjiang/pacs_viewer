@@ -18,6 +18,15 @@
             .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    /** 内联小图标（用于连接测试结果等文本内图标，替代 emoji / 符号） */
+    var TR_ICONS = {
+        check: '<polyline points="20 6 9 17 4 12"/>',
+        cross: '<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>'
+    };
+    function trIcon(name) {
+        return '<svg class="pv-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (TR_ICONS[name] || '') + '</svg>';
+    }
+
     /* ---------------- 轻提示 ---------------- */
     function toastBox() {
         var box = document.getElementById('pvToastBox');
@@ -277,7 +286,7 @@
      *   btn / out   按钮与结果元素（或元素 id）
      *   route       测试接口路由
      *   fields      参与提交的字段名数组
-     *   okText      function(data) → 成功文案（自动前置「✓ 」）；缺省「连接成功」
+     *   okText      function(data) → 成功文案（前置对勾图标）；缺省「连接成功」
      */
     function bindConnTest(o) {
         o = o || {};
@@ -297,15 +306,15 @@
                 if (j && j.code === 200) {
                     out.className = 'pv-test-result ok';
                     var d = j.data || {};
-                    out.textContent = '✓ ' + (typeof o.okText === 'function' ? o.okText(d) : '连接成功');
+                    out.innerHTML = trIcon('check') + ' ' + esc(typeof o.okText === 'function' ? o.okText(d) : '连接成功');
                 } else {
                     out.className = 'pv-test-result err';
-                    out.textContent = '✗ ' + ((j && j.msg) || '测试失败');
+                    out.innerHTML = trIcon('cross') + ' ' + esc((j && j.msg) || '测试失败');
                 }
             }).catch(function () {
                 btn.disabled = false;
                 out.className = 'pv-test-result err';
-                out.textContent = '✗ 网络请求失败';
+                out.innerHTML = trIcon('cross') + ' ' + esc('网络请求失败');
             });
         });
     }

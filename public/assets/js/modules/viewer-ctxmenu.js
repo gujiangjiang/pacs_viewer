@@ -19,7 +19,7 @@
 
     PvViewer.prototype._ctxItem = function (o) {
         if (o.sep) return '<div class="pv-ctx-sep"></div>';
-        var arrow = o.sub ? '<span class="arrow">▶</span>' : '';
+        var arrow = o.sub ? '<span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></span>' : '';
         var sub = o.sub ? '<div class="pv-ctx-sub">' + o.sub.map(this._ctxItem.bind(this)).join('') + '</div>' : '';
         var attrs = '';
         if (o.tool) attrs += ' data-tool="' + o.tool + '"';
@@ -38,7 +38,7 @@
             items = [{ label: '关于', icon: 'about', act: 'about' }];
         } else {
             items = [
-                { label: '预设窗', icon: 'preset', sub: [{ label: '软组织窗 (400/40)', preset: 'soft', icon: '🟫' }, { label: '肺窗 (1500/-600)', preset: 'lung', icon: '🫁' }, { label: '骨窗 (2000/350)', preset: 'bone', icon: '🦴' }, { label: '默认窗 (2500/250)', preset: 'full', icon: '🖼' }] },
+                { label: '预设窗', icon: 'preset', sub: [{ label: '软组织窗 (400/40)', preset: 'soft', icon: 'win-soft' }, { label: '肺窗 (1500/-600)', preset: 'lung', icon: 'win-lung' }, { label: '骨窗 (2000/350)', preset: 'bone', icon: 'win-bone' }, { label: '默认窗 (2500/250)', preset: 'full', icon: 'win-full' }] },
                 { label: '缩放', icon: 'zoom', tool: 'zoom' }, { label: '平移', icon: 'pan', tool: 'pan' }, { label: '使用窗口', icon: 'wl', tool: 'wl' },
                 { label: '原图 1:1', icon: 'oneone', act: 'oneone' }, { sep: true },
                 { label: '测量', icon: 'measure', sub: [{ label: '测距（mm）', tool: 'length', icon: 'length' }, { label: '测角（°）', tool: 'angle', icon: 'angle' }, { label: '矩形 ROI', tool: 'rect', icon: 'rect' }, { label: '椭圆 ROI', tool: 'ellipse', icon: 'ellipse' }, { sep: true }, { label: '清除标注', act: 'clear', icon: 'clear' }] },
