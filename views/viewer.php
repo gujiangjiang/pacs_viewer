@@ -1,7 +1,7 @@
 <?php
 /** views/viewer.php — 阅片器页面（片段） */
 $page = 'viewer';
-$pageTitle = '影像';
+$pageTitle = '影像查看';
 $active = 'viewer';
 $bodyClass = 'pv-page-viewer';
 $extraCss = PvAssets::pageCss('viewer');
