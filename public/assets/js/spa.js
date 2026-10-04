@@ -66,21 +66,25 @@
             document.head.appendChild(link);
         });
     }
+    // 动态脚本去重：按 key 复用同一个加载 Promise，避免「已在加载中」被误判为「已加载」
+    // 而让 initPage 早于脚本执行（表现为页面骨架出来了但没有初始化）。
+    var jsPromises = {};
     function ensureJs(list) {
         var chain = Promise.resolve();
         (list || []).forEach(function (name) {
             var src = (boot.asset || (home.replace(/\/$/, '') + '/assets')) + '/js/' + name;
             var key = assetKey(src);
-            if (loadedJs[key]) return;
-            loadedJs[key] = true;
+            if (loadedJs[key]) return;   // 首屏已由服务端引入
             chain = chain.then(function () {
-                return new Promise(function (resolve) {
+                if (jsPromises[key]) return jsPromises[key];
+                jsPromises[key] = new Promise(function (resolve) {
                     var s = document.createElement('script');
                     s.src = src;
-                    s.onload = resolve;
-                    s.onerror = function () { resolve(); };
+                    s.onload = function () { loadedJs[key] = true; resolve(); };
+                    s.onerror = function () { resolve(); };   // 失败也放行，避免永久等待
                     document.body.appendChild(s);
                 });
+                return jsPromises[key];
             });
         });
         return chain;
@@ -92,10 +96,16 @@
         });
     }
 
-    function initPage(res) {
+    function initPage(res, tries) {
         var page = res.page;
         if (page && global.PvPages && global.PvPages[page] && typeof global.PvPages[page].init === 'function') {
             try { global.PvPages[page].init(res.data || {}); } catch (e) { if (global.console) console.error(e); }
+            return;
+        }
+        // 兜底：脚本尚未执行完成时延迟重试；若期间已切走则放弃
+        tries = tries || 0;
+        if (page && tries < 20 && currentPage === page) {
+            setTimeout(function () { if (currentPage === page) initPage(res, tries + 1); }, 50);
         }
     }
 
