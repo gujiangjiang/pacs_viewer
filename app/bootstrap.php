@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '1.2.22');
+define('PV_VERSION', '1.2.23');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -95,6 +95,7 @@ require_once PV_APP . '/Pacs/Mock/Generators/DR/LimbDR.php';
 require_once PV_APP . '/Pacs/Mock/Generators/US/AbstractUS.php';
 require_once PV_APP . '/Pacs/Mock/Generators/US/AbdomenUS.php';
 require_once PV_APP . '/Pacs/Mock/Generators/US/CardiacUS.php';
+require_once PV_APP . '/Pacs/Mock/Generators/Generic/GenericPlaceholder.php';
 require_once PV_APP . '/Pacs/Mock/MockDispatcher.php';
 require_once PV_APP . '/Services/StudyService.php';
 require_once PV_APP . '/Services/IconRenderer.php';

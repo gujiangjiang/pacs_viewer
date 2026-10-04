@@ -72,12 +72,14 @@ class PvMockDispatcher {
         $seed = isset($ctx['seed']) ? $ctx['seed'] : 'mock';
         $weight = isset($ctx['weight']) ? strtoupper($ctx['weight']) : 'T1';
         $orientation = isset($ctx['orientation']) ? $ctx['orientation'] : null;
+        $description = isset($ctx['description']) ? (string)$ctx['description'] : '';
 
-        $ck = $modality . '|' . $body . '|' . $seed . '|' . $weight . '|' . (string)$orientation;
+        $ck = $modality . '|' . $body . '|' . $seed . '|' . $weight . '|' . (string)$orientation . '|' . md5($description);
         if (isset(self::$genCache[$ck])) return self::$genCache[$ck];
 
         $class = self::resolveClass($modality, $body);
         $gen = new $class($seed, $weight);
+        if (method_exists($gen, 'setContext')) $gen->setContext($modality, $description);
         if ($orientation !== null && $orientation !== '') {
             $gen->setOrientation($orientation);
         }
@@ -101,7 +103,8 @@ class PvMockDispatcher {
         if (isset($map[$modality]) && $body !== '' && isset($map[$modality][$body])) {
             return $map[$modality][$body];
         }
-        return isset($defaults[$modality]) ? $defaults[$modality] : 'PvMockHeadCT';
+        // CT/MR/DR/CR/US 的回退生成器；其余模态（OT 等）统一使用通用占位生成器
+        return isset($defaults[$modality]) ? $defaults[$modality] : 'PvMockGeneric';
     }
 
     /* ---------------- 序列规划 ---------------- */
@@ -127,7 +130,7 @@ class PvMockDispatcher {
                 : array(array('1', 'Axial', null));
             foreach ($weights as $w) {
                 $seed = 'p|' . $studyUid . '|s' . $w[0];
-                $ctx = array('modality' => $modality, 'body_key' => $body, 'seed' => $seed, 'weight' => $w[2] ? $w[2] : 'T1');
+                $ctx = array('modality' => $modality, 'body_key' => $body, 'seed' => $seed, 'weight' => $w[2] ? $w[2] : 'T1', 'description' => $description);
                 $gen = self::createGenerator($ctx);
                 $out[] = self::seriesMeta($w[0], $w[1], $gen, $body, $modality, $w[2], $seed, $studyUid);
             }
@@ -136,7 +139,7 @@ class PvMockDispatcher {
 
         // DR / CR / US：单序列
         $seed = 'p|' . $studyUid . '|s1';
-        $gen = self::createGenerator(array('modality' => $modality, 'body_key' => $body, 'seed' => $seed));
+        $gen = self::createGenerator(array('modality' => $modality, 'body_key' => $body, 'seed' => $seed, 'description' => $description));
         $out[] = self::seriesMeta('1', $gen->getSeriesDescription(), $gen, $body, $modality, null, $seed, $studyUid);
         return self::$planCache[$ck] = $out;
     }
@@ -172,7 +175,7 @@ class PvMockDispatcher {
             'slice_count' => $count,
             'is_mock' => false,
             'format' => 'dicom',
-            'is_hu' => ($modality !== 'US'),
+            'is_hu' => $gen->isHU(),
             'slice_thickness' => $gen->getSliceThickness(),
             'pixel_spacing' => $ps[0],
             'rows' => (int)$dim['rows'],
@@ -211,6 +214,7 @@ class PvMockDispatcher {
             'body_key' => $s['body_key'],
             'seed' => $s['seed'],
             'weight' => $s['weight'] ? $s['weight'] : 'T1',
+            'description' => $description,
         ));
     }
 
@@ -224,6 +228,6 @@ class PvMockDispatcher {
         $idx = max(0, (int)$seriesIndex);
         $weight = ($modality === 'MR') ? ((($idx % 2) === 1) ? 'T2' : 'T1') : 'T1';
         $seed = 'src|' . $studyUid . '|s' . ($idx + 1);
-        return self::createGenerator(array('modality' => $modality, 'body_key' => $body, 'seed' => $seed, 'weight' => $weight));
+        return self::createGenerator(array('modality' => $modality, 'body_key' => $body, 'seed' => $seed, 'weight' => $weight, 'description' => $description));
     }
 }

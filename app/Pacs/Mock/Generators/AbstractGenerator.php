@@ -148,6 +148,8 @@ abstract class PvMockAbstractGenerator implements PvMockSliceGeneratorInterface,
     public function getBodyPartExamined() { return $this->bodyPartExamined; }
     public function getModality() { return $this->modality; }
     public function getSliceThickness() { return (float)$this->sliceThickness; }
+    /** 像素是否为 HU 值域（CT 等）；US / 通用占位返回 false */
+    public function isHU() { return true; }
 
     public function getDimensions() {
         return array(

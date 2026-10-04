@@ -29,6 +29,8 @@ abstract class PvMockAbstractUS extends PvMockAbstractGenerator {
 
     abstract protected function initUS();
 
+    public function isHU() { return false; }
+
     protected function encodePixel($value) {
         $v = (int)round($value);
         return $v < 0 ? 0 : ($v > 255 ? 255 : $v);
