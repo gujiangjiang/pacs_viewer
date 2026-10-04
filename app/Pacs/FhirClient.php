@@ -356,7 +356,7 @@ class PvFhirClient {
         elseif (!empty($r['resultsInterpreter'][0]['display'])) $doctor = (string)$r['resultsInterpreter'][0]['display'];
         $item = !empty($r['code']['text']) ? (string)$r['code']['text'] : '';
         $issued = isset($r['issued']) ? (string)$r['issued'] : '';
-        $pdf = !empty($r['presentedForm'][0]['url']) ? (string)$r['presentedForm'][0]['url'] : '';
+        $pdf = !empty($r['presentedForm'][0]['url']) ? self::safeHttpUrl((string)$r['presentedForm'][0]['url']) : '';
         $findings = trim((string)self::extString($r, 'urn:clinic:extension:imaging-findings'));
         $conclusion = trim((string)(isset($r['conclusion']) ? $r['conclusion'] : ''));
         $clin = trim((string)self::extString($r, 'urn:clinic:extension:clinical-diagnosis'));
@@ -387,6 +387,12 @@ class PvFhirClient {
             }
         }
         return '';
+    }
+
+    /** 仅放行 http(s) 绝对地址；其余（含 javascript:、data: 等）返回空串，防 XSS */
+    private static function safeHttpUrl($u) {
+        $u = trim((string)$u);
+        return preg_match('#^https?://#i', $u) ? $u : '';
     }
 
     /** 从 ImagingStudy.subject 提取患者 ID */

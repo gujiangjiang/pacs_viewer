@@ -78,7 +78,10 @@
         var footItems = item('开单医生', rep.apply_doctor) + item('开单科室', rep.apply_dept)
             + item('报告医生', rep.report_doctor) + item('报告时间', rep.issued);
         var foot = footItems !== '' ? '<div class="pv-report-foot">' + footItems + '</div>' : '';
-        var pdfBtn = ('pdf_url' in rep && rep.pdf_url) ? '<a class="pv-btn pv-btn-ghost pv-btn-sm" href="' + esc(rep.pdf_url) + '" target="_blank" rel="noopener">查看 PDF 报告</a>' : '';
+        // PDF 链接仅允许 http(s)：避免远端 FHIR 下发 javascript: 等协议造成点击执行
+        var pdfUrl = ('pdf_url' in rep && rep.pdf_url) ? String(rep.pdf_url) : '';
+        var pdfBtn = /^https?:\/\//i.test(pdfUrl)
+            ? '<a class="pv-btn pv-btn-ghost pv-btn-sm" href="' + esc(pdfUrl) + '" target="_blank" rel="noopener">查看 PDF 报告</a>' : '';
 
         return '<div class="pv-report"><div class="pv-report-doc">'
             + '<div class="pv-report-title">'
