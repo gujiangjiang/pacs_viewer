@@ -17,6 +17,7 @@ class PvMockChestDR extends PvMockAbstractGenerator {
             'rows' => 1024, 'cols' => 1024,
             'sliceThickness' => 0.0, 'spacingBetweenSlices' => 0.0,
             'rowSpacing' => 0.35, 'colSpacing' => 0.35,
+            'rescaleIntercept' => 0.0,   // 投影强度直接作为存储值（配合 12 位位深）
             'bitsStored' => 12, 'highBit' => 11,
             'windowCenter' => 1500.0, 'windowWidth' => 3000.0,
             'noise' => $this->seed . '|chestdr',

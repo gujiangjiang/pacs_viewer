@@ -114,11 +114,13 @@ abstract class PvMockAbstractGenerator implements PvMockSliceGeneratorInterface,
         return $out;
     }
 
-    /** 强度 → DICOM 存储值（默认按 RescaleIntercept 平移到无符号 16 位） */
+    /** 强度 → DICOM 存储值（按 RescaleIntercept 平移为无符号整数，并遵守 BitsStored 位宽） */
     protected function encodePixel($value) {
         $stored = (int)round($value - $this->rescaleIntercept);
         if ($stored < 0) $stored = 0;
-        if ($stored > 65535) $stored = 65535;
+        $bits = (int)$this->bitsStored;
+        $max = ($bits >= 16 || $bits < 1) ? 65535 : ((1 << $bits) - 1);
+        if ($stored > $max) $stored = $max;
         return $stored;
     }
 
