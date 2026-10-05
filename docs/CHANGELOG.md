@@ -25,6 +25,12 @@
   仅缺失时回退单资源回读）。单次加载请求数由 ~101 降至 ~2（ImagingStudy + Organization），
   逐患者回读降为 0；配合既有 20s 结果缓存，重复加载进一步降为 0 请求。
 
+### 文档
+- **移除过时的 git subtree 约定**：本仓库为完全独立项目，并未通过 `git subtree`
+  挂载到门诊一体化主项目的 `tools/pacs_viewer/`。已删除 `AGENTS.md`「与宿主项目的关系
+  （git subtree）」小节及 `README.md`「与门诊一体化主项目集成（git subtree）」章节，
+  并同步修正「部署路径自适应」措辞（保留 `pvw_url()`/`pvw_asset()` 路径自适应约定）。
+
 ---
 
 ## [1.2.28] - 2026-10-04

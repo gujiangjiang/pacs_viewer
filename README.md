@@ -139,8 +139,9 @@ tools/serve.sh status     # 查看 up / down
 首次访问自动创建 `data/pacs_viewer.db`，并进入**首次运行安装向导**：创建管理员
 账号并填写站点信息后即可登录使用（不再有硬编码默认账号）。
 
-> 入口已做部署路径自适应：若以仓库根或子目录方式挂载（如主项目的
-> `tools/pacs_viewer/`），页面 / 接口 / 静态资源链接会自动适配，无需改代码。
+> 本仓库为完全独立项目（Web 根 = `public/`），不通过 git subtree 挂载到任何宿主。
+> 入口已做部署路径自适应，页面 / 接口 / 静态资源链接统一经 `pvw_url()` / `pvw_asset()`
+> 输出，若被外部以 iframe 嵌入或反向代理到子目录也会自动适配，无需改代码。
 
 ## 首次运行
 
@@ -198,23 +199,6 @@ POST {站点}?r=upload/delete      （需登录 + CSRF）字段：t；管理员�
 
 服务端：`PvUploadStore::save()/find()/path()/deleteByToken()`、助手 `pvw_file_url($token)`；
 前端：`PvUI.upload(route, file, fields)`。
-
-## 与门诊一体化主项目集成（git subtree）
-
-本项目为**源仓库**；门诊一体化主项目（Clinic_OPD_System）通过 `git subtree`
-把它挂载在 `tools/pacs_viewer/`，主项目内不含独立实现。集成不影响本仓库
-以原生形态独立部署。
-
-更新流程（在本仓库提交推送后，到主项目目录执行同步）：
-
-```bash
-# 1) 本仓库：改完即提交并推送
-git push origin main
-
-# 2) 主项目：拉取本仓库最新内容到挂载点
-git subtree pull --prefix=tools/pacs_viewer \
-  https://github.com/gujiangjiang/pacs_viewer main
-```
 
 ## 更多文档
 
