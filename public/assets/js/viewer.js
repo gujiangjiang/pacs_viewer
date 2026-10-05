@@ -642,6 +642,7 @@
 
     PvViewer.prototype.destroy = function () {
         this.closeLightbox();   // 移除可能残留的阅片灯浮层
+        if (document.body) document.body.classList.remove('pv-embedded');   // 离开阅片器还原外壳
         if (this._onHostMsg) { window.removeEventListener('message', this._onHostMsg); this._onHostMsg = null; }
         // 保存各窗格当前序列的操作痕迹，供再次进入时恢复
         var self = this;
@@ -672,6 +673,7 @@
             // 是否被 iframe 嵌入：以 `self !== top` 为最终权威（覆盖后端 Sec-Fetch-Dest 初值）
             var embedded = !!data.embedded;
             try { embedded = global.self !== global.top; } catch (e) { embedded = true; }
+            if (document.body) document.body.classList.toggle('pv-embedded', embedded);   // 嵌入时隐藏顶栏/页脚
             if (instance) { try { instance.destroy(); } catch (e) {} instance = null; }
             instance = new PvViewer(root, {
                 uid: data.uid || '', mode: data.mode || 'append',

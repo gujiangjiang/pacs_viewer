@@ -68,6 +68,10 @@ body.pv-nav-busy #pvMain { opacity: .55; transition: opacity .12s; }
 .pv-footer-src.is-ok { color: #34d399; }
 .pv-footer-src.is-off { color: #64748b; }
 
+/* 嵌入模式：隐藏本站顶栏与页脚，交由宿主外壳承载 */
+body.pv-embedded .pv-topbar,
+body.pv-embedded .pv-footer { display: none; }
+
 /* ---------- 通用组件 ---------- */
 .pv-btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 5px;

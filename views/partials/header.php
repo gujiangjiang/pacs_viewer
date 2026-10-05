@@ -11,6 +11,7 @@ $pvHosp = pvw_hospital();
 $pvPage = isset($page) ? $page : '';
 $pvPageData = isset($pageData) ? $pageData : array();
 $pvGuest = !empty($guest);   // 链接访客阅片：无登录、仅影像查看入口
+$pvEmbedded = !empty($embedded);   // 被 iframe 嵌入：隐藏顶栏/页脚（后端初值，前端会纠正）
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -56,7 +57,7 @@ window.PV_BOOT.data = window.PV_BOOT.data || {};
 try { window.PV_BOOT.data.embedded = window.self !== window.top; }
 catch (e) { window.PV_BOOT.data.embedded = true; }</script>
 </head>
-<body class="<?php echo pvw_e(isset($bodyClass) ? $bodyClass : ''); ?>">
+<body class="<?php echo pvw_e(trim((isset($bodyClass) ? $bodyClass : '') . ($pvEmbedded ? ' pv-embedded' : ''))); ?>">
 <header class="pv-topbar<?php echo $pvGuest ? ' pv-topbar-guest' : ''; ?>">
     <a class="pv-brand pv-brand-refresh<?php echo $pvGuest ? ' pv-brand-guest' : ''; ?>" id="pvBrand"
        href="<?php echo pvw_e(pvw_url('')); ?>" title="点击软刷新当前页面">
