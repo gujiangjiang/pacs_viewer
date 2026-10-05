@@ -230,6 +230,28 @@ body.pv-page-viewer { overscroll-behavior: none; }
 .pv-guest .pv-sg-close { display: none; }
 .pv-guest .pv-closeall { display: none; }
 
+/* ---------- 竖屏：序列栏移到底部横向显示，把空间让给影像 ---------- */
+@media (orientation: portrait) {
+    .pv-vw-body { flex-direction: column; }
+    .pv-panes { order: 1; }
+    .pv-splitter { display: none; }
+    .pv-filmstrip {
+        order: 2; flex: 0 0 auto !important; width: auto !important; height: 150px;
+        flex-direction: row; align-items: stretch; gap: 8px;
+        border-right: 0; border-top: 1px solid var(--pv-line); padding: 6px 8px;
+    }
+    .pv-serieslist {
+        display: flex; flex-direction: row; align-items: flex-start; gap: 8px;
+        overflow-x: auto; overflow-y: hidden; padding-bottom: 4px;
+    }
+    .pv-serieslist::-webkit-scrollbar { width: auto; height: 8px; }
+    .pv-sg { flex: 0 0 auto; margin-bottom: 0; display: flex; flex-direction: column; max-height: 100%; }
+    .pv-sg-series { display: flex; flex-direction: row; gap: 6px; padding: 4px; overflow: hidden; }
+    .pv-thumb { flex: 0 0 auto; width: 76px; margin: 0; }
+    .pv-thumb-desc { display: none; }
+    .pv-closeall { align-self: center; margin: 0; flex: 0 0 auto; }
+}
+
 /* ---------- 阅片灯：全屏纯白背光，点击任意区域退出 ---------- */
 .pv-lightbox {
     position: fixed; inset: 0; z-index: 2000;

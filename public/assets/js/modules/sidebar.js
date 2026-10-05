@@ -178,9 +178,11 @@
         var th = this.el.querySelector('.pv-thumb[data-g="' + gi + '"][data-s="' + (si || 0) + '"]');
         if (!th) return;
         var cRect = this.el.getBoundingClientRect(), tRect = th.getBoundingClientRect();
-        var delta = tRect.top - cRect.top;
+        // 竖屏时序列栏横排滚动，按水平方向定位；否则维持纵向
+        var horizontal = this.el.scrollWidth > this.el.clientWidth + 1 && this.el.scrollHeight <= this.el.clientHeight + 1;
+        var delta = horizontal ? (tRect.left - cRect.left) : (tRect.top - cRect.top);
         if (Math.abs(delta) < 0.5) return;
-        this.el.scrollTop += delta;   // 越界时浏览器自动钳位，实现“尽量上移”
+        if (horizontal) this.el.scrollLeft += delta; else this.el.scrollTop += delta;   // 越界时浏览器自动钳位
     };
 
     /** 仅更新激活高亮（不重建 DOM，缩略图保持显示） */
