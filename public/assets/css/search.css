@@ -45,7 +45,7 @@
 .pv-toggle-btn.active { background: rgba(14,165,233,.16); color: #7dd3fc; }
 .pv-toggle-btn + .pv-toggle-btn { border-left: 1px solid var(--pv-line2); }
 
-.pv-result-meta { font-size: 13px; color: var(--pv-txt2); margin: 0; }
+.pv-result-meta { font-size: 13px; color: var(--pv-txt2); margin: 0; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* 卡片视图 */
 .pv-results.pv-results-card { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; padding-top: 6px; }
@@ -117,4 +117,6 @@
     /* 表格较宽时在结果框内横向滚动，避免把整个页面撑宽 */
     .pv-results { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
     .pv-results.pv-results-card { grid-template-columns: 1fr; }
+    /* 卡片/紧凑列表内的信息行允许换行，避免 nowrap 撑破卡片 */
+    .pv-results-list .pv-study-rows > div { white-space: normal; }
 }
