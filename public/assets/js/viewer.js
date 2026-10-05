@@ -335,9 +335,9 @@
         else if (a === 'invert') st.invert = !st.invert;
         else if (a === 'clear') { p.clearAnnos(); this.syncToolbar(); return; }
         else if (a === 'fit') { p.fit(); this.syncToolbar(); return; }
-        else if (a === 'oneone') { st.zoom = 1; st.panX = 0; st.panY = 0; }
-        else if (a === 'zoom-in') { st.zoom = clamp(st.zoom * 1.2, 0.12, 16); }
-        else if (a === 'zoom-out') { st.zoom = clamp(st.zoom / 1.2, 0.12, 16); }
+        else if (a === 'oneone') { st.zoom = 1; st.panX = 0; st.panY = 0; p._fitPending = false; }
+        else if (a === 'zoom-in') { st.zoom = clamp(st.zoom * 1.2, 0.12, 16); p._fitPending = false; }
+        else if (a === 'zoom-out') { st.zoom = clamp(st.zoom / 1.2, 0.12, 16); p._fitPending = false; }
         else if (a === 'prev') { p.setFrame(st.fi - 1); this.syncToolbar(); return; }
         else if (a === 'next') { p.setFrame(st.fi + 1); this.syncToolbar(); return; }
         this.syncToolbar(); p.render();

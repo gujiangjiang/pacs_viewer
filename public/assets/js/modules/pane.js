@@ -49,6 +49,7 @@
         this._frames = {};         // 显示帧缓存（global frame index → {dec,raw}）
         this._instances = {};      // 解码实例缓存（instance index → {status,dec}，支持多帧复用）
         this._wwTouched = false;   // 用户是否手动改过窗宽窗位（未改则采用序列/解码默认窗，避免来回跳变）
+        this._fitPending = false;  // 尺寸未就绪时延后「适应窗口」，待 resize 补齐
         this._ctrls = [];          // 在途请求的 AbortController（离开/换序列时中止）
         this._prefetchSeq = 0;     // 预取代次，用于中止后停止预取循环
         this._dir = 1;             // 最近滚动方向（+1 向后 / -1 向前），用于预取偏置
@@ -129,6 +130,8 @@
         if (this.canvas.width !== bw) this.canvas.width = bw;
         if (this.canvas.height !== bh) this.canvas.height = bh;
         this.canvas.style.width = w + 'px'; this.canvas.style.height = h + 'px';
+        // 首次打开时若尺寸尚未就绪（如 SPA 保活节点曾被摘下），尺寸可用后补做「适应窗口」
+        if (this._fitPending && w > 10 && h > 10) this.fit();
         this.updateScrollbar();
     };
 
@@ -421,6 +424,7 @@
         if (t === 'wl') st.drag = { mode: 'wl', x: pt.x, y: pt.y, ww: st.ww, wl: st.wl };
         else if (t === 'pan') st.drag = { mode: 'pan', x: pt.x, y: pt.y, px: st.panX, py: st.panY };
         else if (t === 'zoom') st.drag = { mode: 'zoom', y: pt.y, z: st.zoom };
+        if (st.drag && (st.drag.mode === 'wl' || st.drag.mode === 'pan' || st.drag.mode === 'zoom')) this._fitPending = false;   // 用户已介入视图
         else if (t === 'length' || t === 'angle') this._addPoint(t, p);
         else if (t === 'rect' || t === 'ellipse') st.draft = { type: t, fixed: [p, p] };
         this.render();
@@ -455,6 +459,7 @@
         }
     };
     PvPane.prototype._zoomTo = function (z, sx, sy) {
+        this._fitPending = false;   // 用户已介入缩放
         z = clamp(z, 0.12, 16);
         var b = this.screenToImg(sx, sy); this.st.zoom = z;
         var m = this.imgToScreen(b.x, b.y);
@@ -508,8 +513,12 @@
         this._wwTouched = false;   // 默认态：允许采用解码得到的 DICOM 窗
     };
     PvPane.prototype.fit = function () {
+        // 尺寸尚未就绪：记为待适配，待 resize() 拿到有效尺寸后再执行
+        if (!(this.cssW > 10 && this.cssH > 10)) { this._fitPending = true; return; }
         this.st.zoom = clamp(Math.min(this.cssW / BASE, this.cssH / BASE) * 0.92, 0.05, 16);
-        this.st.panX = 0; this.st.panY = 0; this.render();
+        this.st.panX = 0; this.st.panY = 0;
+        this._fitPending = false;
+        this.render();
     };
     /** 采集当前序列的视图状态（缩放/平移/窗值/变换/测量/帧） */
     PvPane.prototype.captureView = function () {
@@ -531,6 +540,7 @@
         s.draft = null;
         s.isHU = this.frameIsHU();
         this._wwTouched = !!v.wwTouched;   // 恢复该序列的「是否手动调窗」痕迹
+        this._fitPending = false;          // 已有既定视图：不再自动适应窗口
     };
 
     /**
