@@ -5,6 +5,8 @@
     flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; width: 100%;
     background: #000;
 }
+/* 阅片页禁止整页下拉刷新 / 橡皮筋滚动，避免与画布拖动、测量手势冲突 */
+body.pv-page-viewer { overscroll-behavior: none; }
 .pv-app * { user-select: none; -webkit-user-select: none; }
 
 /* 工具条（大图标 + 下拉菜单；固定高度，避免展开/收起侧栏时抖动） */
@@ -123,18 +125,18 @@
 /* 右侧帧滚动条（CT/MR 多帧时显示，可拖动实现连续滚动） */
 .pv-vw-scroll {
     position: absolute; right: 8px; top: 76px; bottom: 86px; width: 16px; z-index: 6;
-    display: flex; justify-content: center;
+    display: flex; justify-content: center; touch-action: none;
 }
 .pv-vw-scroll[hidden] { display: none; }
 .pv-vw-scroll-track {
     position: relative; width: 8px; height: 100%; background: rgba(148,163,184,.16);
-    border-radius: 6px; cursor: pointer;
+    border-radius: 6px; cursor: pointer; touch-action: none;
 }
 .pv-vw-scroll-track:hover { background: rgba(148,163,184,.28); }
 .pv-vw-scroll-thumb {
     position: absolute; left: -2px; width: 12px; min-height: 28px;
     background: #10b981; border-radius: 6px; box-shadow: 0 0 0 1px rgba(0,0,0,.5);
-    cursor: grab;
+    cursor: grab; touch-action: none;
 }
 .pv-vw-scroll-thumb:hover, .pv-vw-scroll.dragging .pv-vw-scroll-thumb { background: #34d399; cursor: grabbing; }
 .pv-vw-scroll-bubble {
@@ -201,7 +203,7 @@
 .pv-menu button:disabled { opacity: .4; cursor: not-allowed; }
 
 /* 序列栏与视图之间的可拖动分隔条 */
-.pv-splitter { flex: 0 0 5px; cursor: col-resize; background: transparent; position: relative; z-index: 7; }
+.pv-splitter { flex: 0 0 5px; cursor: col-resize; background: transparent; position: relative; z-index: 7; touch-action: none; }
 .pv-splitter:hover, .pv-splitter.dragging { background: rgba(14,165,233,.45); }
 .pv-filmstrip.is-hidden + .pv-splitter { display: none; }
 
@@ -218,7 +220,7 @@
     border: 2px solid var(--pv-acc); pointer-events: none; z-index: 5;
 }
 .pv-pane .pv-canvas-wrap { position: absolute; inset: 0; }
-.pv-pane canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+.pv-pane canvas { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
 
 /* 菜单项图标统一占位，保证对齐 */
 .pv-menu button .ic, .pv-ctx-item .ic { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; }
