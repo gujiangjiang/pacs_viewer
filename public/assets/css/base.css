@@ -311,9 +311,17 @@ input[type="file"]::-webkit-file-upload-button:hover { background: #334155; colo
 .pv-switch .pv-switch-label { line-height: 1.4; }
 
 /* ---------- 页签 ---------- */
-.pv-tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--pv-line); }
-.pv-tab { padding: 9px 16px; border: 0; background: transparent; color: var(--pv-txt2); cursor: pointer; font-size: 14px; border-bottom: 2px solid transparent; }
+.pv-tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--pv-line); overflow-x: auto; }
+.pv-tab { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border: 0; background: transparent; color: var(--pv-txt2); cursor: pointer; font-size: 14px; border-bottom: 2px solid transparent; white-space: nowrap; }
+.pv-tab .ic { display: inline-flex; flex: 0 0 auto; width: 16px; height: 16px; }
+.pv-tab .ic svg { width: 16px; height: 16px; display: block; }
 .pv-tab:hover { color: #fff; }
 .pv-tab.active { color: var(--pv-acc); border-bottom-color: var(--pv-acc); }
+
+/* 管理页小屏：页签只留图标 */
+@media (max-width: 760px) {
+    .pv-tab { padding: 9px 12px; }
+    .pv-tab .lbl { display: none; }
+}
 .pv-tabpane { display: none; }
 .pv-tabpane.active { display: block; }

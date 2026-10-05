@@ -26,12 +26,12 @@ $pageData = array(
 );
 ?>
 <div class="pv-tabs">
-    <button type="button" class="pv-tab<?php echo $tabCls('basic'); ?>" data-tab="basic">基础设置</button>
-    <button type="button" class="pv-tab<?php echo $tabCls('pacs'); ?>" data-tab="pacs">外部接口</button>
-    <button type="button" class="pv-tab<?php echo $tabCls('users'); ?>" data-tab="users">账号管理</button>
-    <button type="button" class="pv-tab<?php echo $tabCls('logs'); ?>" data-tab="logs">操作日志</button>
-    <button type="button" class="pv-tab<?php echo $tabCls('mock'); ?>" data-tab="mock">模拟服务器</button>
-    <button type="button" class="pv-tab<?php echo $tabCls('storage'); ?>" data-tab="storage">存储情况</button>
+    <button type="button" class="pv-tab<?php echo $tabCls('basic'); ?>" data-tab="basic"><span class="ic"><?php echo pvw_icon('sliders'); ?></span><span class="lbl">基础设置</span></button>
+    <button type="button" class="pv-tab<?php echo $tabCls('pacs'); ?>" data-tab="pacs"><span class="ic"><?php echo pvw_icon('server'); ?></span><span class="lbl">外部接口</span></button>
+    <button type="button" class="pv-tab<?php echo $tabCls('users'); ?>" data-tab="users"><span class="ic"><?php echo pvw_icon('users'); ?></span><span class="lbl">账号管理</span></button>
+    <button type="button" class="pv-tab<?php echo $tabCls('logs'); ?>" data-tab="logs"><span class="ic"><?php echo pvw_icon('view-list'); ?></span><span class="lbl">操作日志</span></button>
+    <button type="button" class="pv-tab<?php echo $tabCls('mock'); ?>" data-tab="mock"><span class="ic"><?php echo pvw_icon('sample'); ?></span><span class="lbl">模拟服务器</span></button>
+    <button type="button" class="pv-tab<?php echo $tabCls('storage'); ?>" data-tab="storage"><span class="ic"><?php echo pvw_icon('database'); ?></span><span class="lbl">存储情况</span></button>
 </div>
 
 
