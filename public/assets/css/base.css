@@ -83,6 +83,20 @@ body.pv-nav-busy #pvMain { opacity: .55; transition: opacity .12s; }
 .pv-footer-src.is-ok { color: #34d399; }
 .pv-footer-src.is-off { color: #64748b; }
 
+/* ---------- 页脚响应式：逐级精简 ---------- */
+/* 一级：容纳不下三项时，隐藏接口来源，医院名靠右、版本号靠左 */
+@media (max-width: 720px) {
+    .pv-footer { grid-template-columns: 1fr auto; }
+    .pv-footer-hosp { justify-self: end; }
+    .pv-footer-src { display: none; }
+}
+/* 二级：进一步缩小则仅居中显示站点名称 */
+@media (max-width: 480px) {
+    .pv-footer { display: flex; justify-content: center; }
+    .pv-footer-ver { display: none; }
+    .pv-footer-hosp { display: none; }
+}
+
 /* 嵌入模式：隐藏本站顶栏与页脚，交由宿主外壳承载 */
 body.pv-embedded .pv-topbar,
 body.pv-embedded .pv-footer { display: none; }
