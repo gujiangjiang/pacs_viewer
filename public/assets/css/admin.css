@@ -60,6 +60,9 @@
 /* 详情列超长省略，悬浮 title 显示完整内容 */
 .pv-log-detail { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* 账号管理表：窄屏时在框内横向滚动，不撑宽页面 */
+.pv-user-table { min-width: 720px; }
+
 /* 解剖部位配置表 */
 .pv-table-wrap { overflow-x: auto; border: 1px solid var(--pv-line); border-radius: 10px; }
 .pv-anatomy-table { min-width: 860px; }

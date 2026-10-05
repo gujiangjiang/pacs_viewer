@@ -6,7 +6,8 @@
             <h3 class="pv-form-title">账号管理</h3>
             <button type="button" id="pvAddUser" class="pv-btn pv-btn-primary pv-btn-sm"><span class="pv-ico"><?php echo pvw_icon('plus'); ?></span> 新增账号</button>
         </div>
-        <table class="pv-table" id="pvUserTable">
+        <div class="pv-table-wrap">
+        <table class="pv-table pv-user-table" id="pvUserTable">
             <thead><tr><th>ID</th><th>用户名</th><th>显示名</th><th>角色</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
             <tbody>
             <?php foreach ($users as $u) {
@@ -40,5 +41,6 @@
             <?php } ?>
             </tbody>
         </table>
+        </div>
     </div>
 </section>
