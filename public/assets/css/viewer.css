@@ -122,6 +122,11 @@ body.pv-page-viewer { overscroll-behavior: none; }
     padding: 2px 10px; border-radius: 8px; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
+/* 窄屏（手机）：顶部绿标仅显示检查号，省略检查类型与名称 */
+@media (max-width: 640px) {
+    .pv-vw-title .pv-vw-title-main { display: none; }
+}
+
 /* 右侧帧滚动条（CT/MR 多帧时显示，可拖动实现连续滚动） */
 .pv-vw-scroll {
     position: absolute; right: 8px; top: 76px; bottom: 86px; width: 16px; z-index: 6;
@@ -242,9 +247,10 @@ body.pv-page-viewer { overscroll-behavior: none; }
     }
     .pv-serieslist {
         display: flex; flex-direction: row; align-items: flex-start; gap: 8px;
-        overflow-x: auto; overflow-y: hidden; padding-bottom: 4px;
+        overflow-x: auto; overflow-y: hidden; padding-bottom: 10px;
+        scrollbar-width: none;   /* 隐藏横滚条，避免遮盖缩略图下方的帧数信息 */
     }
-    .pv-serieslist::-webkit-scrollbar { width: auto; height: 8px; }
+    .pv-serieslist::-webkit-scrollbar { display: none; }
     .pv-sg { flex: 0 0 auto; margin-bottom: 0; display: flex; flex-direction: column; max-height: 100%; }
     .pv-sg-series { display: flex; flex-direction: row; gap: 6px; padding: 4px; overflow: hidden; }
     /* 竖屏不提供折叠：默认全部展开，隐藏折叠箭头 */

@@ -9,6 +9,7 @@
 
     var BASE = PvRender.BASE;
     var clamp = PvRender.clamp;   // 复用通用钳位助手
+    var esc = PvUI.esc;           // 复用通用转义助手
     var PRESETS = {
         soft: { ww: 400, wl: 40, label: '软组织窗' },
         lung: { ww: 1500, wl: -600, label: '肺窗' },
@@ -116,9 +117,11 @@
     PvPane.prototype.updateTitle = function () {
         if (!this.titleEl) return;
         var d = this.data(), s = (d && d.data && d.data.study) || {};
-        this.titleEl.textContent = this.hasImage()
-            ? ((s.modality || '') + ' · ' + (s.description || '') + (s.accession_no ? ' · ' + s.accession_no : ''))
-            : '';
+        if (!this.hasImage()) { this.titleEl.innerHTML = ''; return; }
+        var main = (s.modality || '') + (s.description ? ' · ' + s.description : '');
+        // 窄屏（手机）仅显示检查号：主标题作为单独 span，由 CSS 隐藏；无检查号时回退显示主标题
+        this.titleEl.innerHTML = '<span class="pv-vw-title-main">' + esc(main) + (s.accession_no ? ' · ' : '') + '</span>'
+            + (s.accession_no ? '<span class="pv-vw-title-acc">' + esc(s.accession_no) + '</span>' : '');
     };
 
     PvPane.prototype.resize = function () {
