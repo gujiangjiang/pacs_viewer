@@ -54,6 +54,19 @@ code { background: #1e293b; padding: 1px 5px; border-radius: 4px; font-size: 12p
 .pv-user { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .pv-user-name { font-size: 13px; color: var(--pv-txt2); }
 
+/* ---------- 顶部栏响应式：小屏逐级精简 ---------- */
+/* 一级：空间不足时导航只留图标、用户名隐藏角色 */
+@media (max-width: 760px) {
+    .pv-topbar { gap: 10px; padding: 0 12px; }
+    .pv-nav a { padding: 6px 10px; }
+    .pv-nav a .lbl { display: none; }
+    .pv-user-role { display: none; }
+}
+/* 二级：进一步缩小则隐藏站点名称，仅保留 LOGO + 图标导航 + 用户名 */
+@media (max-width: 520px) {
+    .pv-brand-name { display: none; }
+}
+
 /* ---------- 主区 / 页脚 ---------- */
 .pv-main { flex: 1 1 auto; min-height: 0; padding: 18px; overflow: auto; }
 body.pv-nav-busy { cursor: progress; }
