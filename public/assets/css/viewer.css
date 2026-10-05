@@ -247,9 +247,17 @@ body.pv-page-viewer { overscroll-behavior: none; }
     .pv-serieslist::-webkit-scrollbar { width: auto; height: 8px; }
     .pv-sg { flex: 0 0 auto; margin-bottom: 0; display: flex; flex-direction: column; max-height: 100%; }
     .pv-sg-series { display: flex; flex-direction: row; gap: 6px; padding: 4px; overflow: hidden; }
+    /* 竖屏不提供折叠：默认全部展开，隐藏折叠箭头 */
+    .pv-sg.collapsed .pv-sg-series { display: flex; }
+    .pv-sg-head::after { display: none; }
     .pv-thumb { flex: 0 0 auto; width: 76px; margin: 0; }
     .pv-thumb-desc { display: none; }
-    .pv-closeall { align-self: center; margin: 0; flex: 0 0 auto; }
+    /* 「关闭全部」竖排，节省横向空间 */
+    .pv-closeall {
+        align-self: center; margin: 0; flex: 0 0 auto;
+        writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 2px;
+        padding: 8px 5px; line-height: 1.15;
+    }
 }
 
 /* ---------- 阅片灯：全屏纯白背光，点击任意区域退出 ---------- */

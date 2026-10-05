@@ -492,7 +492,12 @@
             // 序列栏点击会 stopPropagation，需主动收起工具/预设下拉菜单，避免菜单残留
             onSeries: function (gi, si) { if (self.toolbar) self.toolbar.closeMenus(); self.setSeriesOnActive(gi, si, false); },
             onSeriesReset: function (gi, si) { if (self.toolbar) self.toolbar.closeMenus(); self.setSeriesOnActive(gi, si, true); },
-            onToggle: function (gi) { if (self.toolbar) self.toolbar.closeMenus(); var st = self.ws.studies[gi]; if (!st) return; st.collapsed = !st.collapsed; self.renderSidebar(); self.persist(); },
+            onToggle: function (gi) {
+                if (self.toolbar) self.toolbar.closeMenus();
+                // 竖屏底部横排序列栏不支持折叠：忽略切换，保持全部展开
+                if (global.matchMedia && global.matchMedia('(orientation: portrait)').matches) return;
+                var st = self.ws.studies[gi]; if (!st) return; st.collapsed = !st.collapsed; self.renderSidebar(); self.persist();
+            },
             onClose: function (gi) { if (self.toolbar) self.toolbar.closeMenus(); self.removeStudy(gi); }
         });
     };
