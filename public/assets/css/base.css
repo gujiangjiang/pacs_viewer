@@ -106,9 +106,9 @@ body.pv-embedded .pv-footer { display: none; }
     display: inline-flex; align-items: center; justify-content: center; gap: 5px;
     padding: 8px 16px; border: 1px solid var(--pv-line2); border-radius: 8px;
     background: #0f172a; color: var(--pv-txt); cursor: pointer; font-size: 13px;
-    transition: all .13s; white-space: nowrap;
+    transition: all .13s; white-space: nowrap; text-decoration: none;
 }
-.pv-btn:hover { background: #1e293b; color: #fff; }
+.pv-btn:hover { background: #1e293b; color: #fff; text-decoration: none; }
 .pv-btn-primary { background: var(--pv-acc); border-color: var(--pv-acc); color: #04140d; font-weight: 600; }
 .pv-btn-primary:hover { background: #34d399; color: #04140d; }
 .pv-btn-outline { background: transparent; border-color: var(--pv-acc2); color: #7dd3fc; }
