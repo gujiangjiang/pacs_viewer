@@ -53,6 +53,17 @@
 .pv-report-status.ok { background: rgba(16,185,129,.16); color: #34d399; }
 .pv-report-status.warn { background: rgba(245,158,11,.16); color: #fbbf24; }
 .pv-report-status.off { background: rgba(148,163,184,.16); color: #cbd5e1; }
+
+/* 窄屏：报告抬头改为纵向排布，避免右上角「状态 / 报告号」与医院名、标题重叠 */
+@media (max-width: 640px) {
+    .pv-report-title { padding: 12px 14px; }
+    .pv-report-hosp { font-size: 17px; letter-spacing: .5px; }
+    .pv-report-title h2 { font-size: 15px; letter-spacing: 2px; }
+    .pv-report-corner {
+        position: static; flex-direction: row; justify-content: center; align-items: center;
+        gap: 8px; margin-top: 9px;
+    }
+}
 .pv-report-meta { display: flex; flex-wrap: wrap; padding: 12px 18px; border-bottom: 1px solid var(--pv-line); }
 .pv-report-item { width: 50%; display: flex; font-size: 12.5px; line-height: 1.95; }
 .pv-report-item span { width: 70px; flex: 0 0 auto; color: var(--pv-txt2); }
