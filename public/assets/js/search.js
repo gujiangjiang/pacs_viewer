@@ -158,7 +158,11 @@
             else { sortState.key = key; sortState.dir = 'desc'; }
             doSearch();
         });
-        return tbl;
+        // 宽表格在独立容器内横向滚动，避免撑宽页面；纵向仍随页面滚动
+        var wrap = document.createElement('div');
+        wrap.className = 'pv-results-table-wrap';
+        wrap.appendChild(tbl);
+        return wrap;
     }
 
     function setMeta() {
