@@ -17,6 +17,16 @@
     var PAGE = 30;
     var allItems = [], total = 0, hasMore = false, query = '';
 
+    // 触摸端无可靠 dblclick：用双触（pointerup）兜底；并防抖避免双击/双触重复打开
+    var lastTapAt = 0, lastTapKey = '';
+    var lastOpenAt = 0, lastOpenKey = '';
+    function isDoubleTap(e, key) {
+        if (!e || (e.pointerType && e.pointerType !== 'touch')) return false;   // 仅触摸端接管
+        var now = Date.now();
+        if (now - lastTapAt < 320 && lastTapKey === key) { lastTapAt = 0; lastTapKey = ''; return true; }
+        lastTapAt = now; lastTapKey = key; return false;
+    }
+
     // 列顺序：重要信息靠前
     var COLUMNS = [
         { key: 'name', label: '姓名' },
@@ -50,8 +60,12 @@
     /* ---------- 打开 / 选中 ---------- */
     function openItem(s) {
         if (s.has_images === false) { PvUI.toast('该检查仅有登记信息，暂无影像数据', 'err'); return; }
+        var key = s.study_uid || s.accession_no;
+        var now = Date.now();
+        if (key === lastOpenKey && now - lastOpenAt < 700) return;   // 双击/双触只打开一次
+        lastOpenAt = now; lastOpenKey = key;
         var mode = (clearChk && clearChk.checked) ? 'replace' : 'append';
-        global.PvNav.go('viewer', { uid: s.study_uid || s.accession_no, mode: mode });
+        global.PvNav.go('viewer', { uid: key, mode: mode });
     }
     function selectItem(s, el) {
         selectedKey = s.study_uid || s.accession_no;
@@ -82,6 +96,9 @@
             '</div>';
         el.addEventListener('click', function () { selectItem(s, el); });
         el.addEventListener('dblclick', function () { openItem(s); });
+        el.addEventListener('pointerup', function (e) {   // 触摸端双触兜底
+            if (isDoubleTap(e, s.study_uid || s.accession_no)) openItem(s);
+        });
         return el;
     }
 
@@ -124,6 +141,13 @@
             if (!tr) return;
             var i = parseInt(tr.getAttribute('data-i'), 10);
             if (allItems[i]) openItem(allItems[i]);
+        });
+        tbl.addEventListener('pointerup', function (e) {   // 触摸端双触兜底
+            var tr = e.target.closest ? e.target.closest('tbody tr') : null;
+            if (!tr) return;
+            var i = parseInt(tr.getAttribute('data-i'), 10);
+            var s = allItems[i];
+            if (s && isDoubleTap(e, s.study_uid || s.accession_no)) openItem(s);
         });
         tbl.addEventListener('click', function (e) {
             var th = e.target.closest ? e.target.closest('th.sortable') : null;
