@@ -7,10 +7,16 @@ $bodyClass = 'pv-page-viewer';
 $extraCss = PvAssets::pageCss('viewer');
 $extraJs = PvAssets::pageJs('viewer');
 $isGuest = !empty($guest);   // 链接访客阅片模式
+// 是否被 iframe 嵌入：后端 Sec-Fetch-Dest 初值，前端 self!==top 会再纠正（最终权威）
+$isEmbedded = !empty($embedded);
+// 工具项显隐：普通访客直链隐藏「复制阅片直链」；嵌入模式再隐藏「阅片灯」
+$hideCopyLink = $isGuest || $isEmbedded;
+$hideLightbox = $isEmbedded;
 $pageData = array(
     'uid'        => $uid,
     'mode'       => $mode,
     'guest'      => $isGuest,
+    'embedded'   => $isEmbedded,
     'guestToken' => isset($guestToken) ? (string)$guestToken : '',
     // 宿主来源：由嵌入方通过 ?host=<origin> 显式下发（如门诊一体化内嵌转发），
     // 用于宿主 postMessage 指令桥的严格来源校验；未提供时回退「信任直接父窗口」。
@@ -96,12 +102,12 @@ $pageData = array(
             <div class="pv-menu" data-pv-menu-panel="tools">
                 <button type="button" data-pv-act="report"><span class="ic"><?php echo pvw_icon('report'); ?></span> 查看影像报告</button>
                 <button type="button" data-pv-act="dicom-info"><span class="ic"><?php echo pvw_icon('dicom'); ?></span> DICOM 详情</button>
-                <button type="button" data-pv-act="copy-link"><span class="ic"><?php echo pvw_icon('link'); ?></span> 复制阅片直链</button>
+                <button type="button" data-pv-act="copy-link"<?php echo $hideCopyLink ? ' hidden' : ''; ?>><span class="ic"><?php echo pvw_icon('link'); ?></span> 复制阅片直链</button>
                 <button type="button" data-pv-act="save-image"><span class="ic"><?php echo pvw_icon('save-image'); ?></span> 保存当前图像</button>
                 <button type="button" data-pv-act="save-series"><span class="ic"><?php echo pvw_icon('save-series'); ?></span> 保存序列（ZIP）</button>
                 <button type="button" data-pv-act="save-dicom"><span class="ic"><?php echo pvw_icon('dicom'); ?></span> 导出 DICOM（原始文件）</button>
                 <div class="pv-menu-sep"></div>
-                <button type="button" data-pv-act="lightbox"><span class="ic"><?php echo pvw_icon('lightbox'); ?></span> 阅片灯</button>
+                <button type="button" data-pv-act="lightbox"<?php echo $hideLightbox ? ' hidden' : ''; ?>><span class="ic"><?php echo pvw_icon('lightbox'); ?></span> 阅片灯</button>
                 <div class="pv-menu-sep"></div>
                 <button type="button" data-pv-act="shortcuts"><span class="ic"><?php echo pvw_icon('keyboard'); ?></span> 键盘快捷键</button>
             </div>

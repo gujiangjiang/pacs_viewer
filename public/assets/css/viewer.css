@@ -45,6 +45,7 @@
     color: var(--pv-txt); cursor: pointer; font-size: 12px; white-space: nowrap;
 }
 .pv-menu button:hover, .pv-menu button.active { background: #1e293b; color: #fff; }
+.pv-menu button[hidden] { display: none; }
 .pv-menu-sep { height: 1px; background: var(--pv-line); margin: 4px 2px; }
 
 /* 主体 */

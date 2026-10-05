@@ -50,7 +50,11 @@ $pvGuest = !empty($guest);   // 链接访客阅片：无登录、仅影像查看
     'csrf'     => pvw_csrf(),
     'roles'    => array('admin' => ($pvUser && $pvUser['role'] === 'admin')),
     'guest'    => $pvGuest,
-), JSON_UNESCAPED_UNICODE); ?>;</script>
+), JSON_UNESCAPED_UNICODE); ?>;
+/* 前端最终判定是否被 iframe 嵌入（覆盖后端 Sec-Fetch-Dest 初值） */
+window.PV_BOOT.data = window.PV_BOOT.data || {};
+try { window.PV_BOOT.data.embedded = window.self !== window.top; }
+catch (e) { window.PV_BOOT.data.embedded = true; }</script>
 </head>
 <body class="<?php echo pvw_e(isset($bodyClass) ? $bodyClass : ''); ?>">
 <header class="pv-topbar<?php echo $pvGuest ? ' pv-topbar-guest' : ''; ?>">

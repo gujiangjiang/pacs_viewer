@@ -30,6 +30,7 @@
         // 宿主指令桥允许来源：显式配置的 hostOrigin 优先；未配置时信任「嵌入本页的
         // 直接父窗口」与同源来源（见 _isTrustedHost），兼容独立域的 iframe 宿主。
         this.hostOrigin = opts.hostOrigin || '';
+        this.embedded = !!opts.embedded;   // 是否被 iframe 嵌入（前端 self!==top 为最终判定）
         this.studyLimit = this.guest ? 1 : clamp(parseInt(opts.limit, 10) || 5, 3, 10);
         if (root && root.classList) root.classList.toggle('pv-guest', this.guest);
         this.q = function (k) { return root.querySelector('[data-pv="' + k + '"]'); };
@@ -54,6 +55,7 @@
             onAction: this.doAction.bind(this),
             onLayout: this.setLayoutByKey.bind(this)
         });
+        this.applyAccessMode();
         this._bindCloseAll();
         this._bindSplitter();
         this._bindCtxMenu();
@@ -346,6 +348,20 @@
         var visible = !this.filmstripEl.classList.contains('is-hidden');
         var p = this.activePane(); if (p) p.setStatus(visible ? '序列栏已显示' : '序列栏已隐藏');
         this.panes.forEach(function (p) { p.resize(); p.render(); });
+    };
+    /**
+     * 访问模式差异化：普通访客直链隐藏「复制阅片直链」、保留「阅片灯」；
+     * 嵌入模式两者都隐藏；登录用户（非嵌入）不变。
+     */
+    PvViewer.prototype.applyAccessMode = function () {
+        var bar = this.toolbarEl;
+        if (!bar) return;
+        var hide = function (act, on) {
+            var b = bar.querySelector('[data-pv-act="' + act + '"]');
+            if (b) b.hidden = !!on;   // 前端最终判定，覆盖服务端初值
+        };
+        hide('copy-link', this.embedded || this.guest);
+        hide('lightbox', this.embedded);
     };
     PvViewer.prototype.refreshControlState = function () {
         var bar = this.toolbarEl; if (!bar) return;
@@ -653,11 +669,14 @@
             global.PvIcons = data.icons || global.PvIcons || {};
             var root = document.querySelector('[data-pv="app"]');
             if (!root) return;
+            // 是否被 iframe 嵌入：以 `self !== top` 为最终权威（覆盖后端 Sec-Fetch-Dest 初值）
+            var embedded = !!data.embedded;
+            try { embedded = global.self !== global.top; } catch (e) { embedded = true; }
             if (instance) { try { instance.destroy(); } catch (e) {} instance = null; }
             instance = new PvViewer(root, {
                 uid: data.uid || '', mode: data.mode || 'append',
                 limit: data.studyLimit || 5, about: data.about || {},
-                guest: !!data.guest, hostOrigin: data.hostOrigin || ''
+                guest: !!data.guest, embedded: embedded, hostOrigin: data.hostOrigin || ''
             });
         },
         destroy: function () { if (instance) { try { instance.destroy(); } catch (e) {} instance = null; } },

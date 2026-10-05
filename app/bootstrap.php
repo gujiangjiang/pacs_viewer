@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '1.2.26');
+define('PV_VERSION', '1.2.27');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -182,6 +182,22 @@ function pvw_is_ajax() {
     if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
         strtolower((string)$_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') return true;
     return isset($_GET['pv_ajax']) && (string)$_GET['pv_ajax'] === '1';
+}
+
+/**
+ * 是否被 iframe 嵌入（服务端初值，用于渲染前的差异化 / 日志）。
+ * 现代浏览器优先用 Sec-Fetch-Dest：顶层导航=document，iframe 导航=iframe；
+ * 旧浏览器回退 Referer 主机是否与自身不同（缺失或同源视为非嵌入）。
+ * 注意：前端 `window.self !== window.top` 为最终权威，会纠正此初值。
+ */
+function pvw_is_embedded() {
+    $dest = isset($_SERVER['HTTP_SEC_FETCH_DEST']) ? strtolower((string)$_SERVER['HTTP_SEC_FETCH_DEST']) : '';
+    if ($dest === 'iframe') return true;
+    if ($dest === 'document') return false;
+    $ref = isset($_SERVER['HTTP_REFERER']) ? (string)parse_url((string)$_SERVER['HTTP_REFERER'], PHP_URL_HOST) : '';
+    if ($ref === '') return false;
+    $own = isset($_SERVER['HTTP_HOST']) ? preg_replace('/:\d+$/', '', (string)$_SERVER['HTTP_HOST']) : '';
+    return $own === '' || strcasecmp($ref, $own) !== 0;
 }
 
 /** 任意站点路径的绝对地址（保持路径原样，如 DICOMweb 的 /dicom-web） */

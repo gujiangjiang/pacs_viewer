@@ -13,6 +13,7 @@ class PvViewerController {
         $uid = trim((string)pvw_input('uid'));
         // 访客阅片：仅当「阅片直链」请求（uid + 无 mode）。无 Cookie / 无会话，
         // 仅向页面下发按 UID 计算的签名令牌，供后续 API / 取像按请求校验。
+        $embedded = pvw_is_embedded();
         if (self::isLink()) {
             pvw_page('viewer', array(
                 'user'       => null,
@@ -20,6 +21,7 @@ class PvViewerController {
                 'uid'        => $uid,
                 'mode'       => 'replace',
                 'guestToken' => PvGuest::token($uid),
+                'embedded'   => $embedded,
                 'site'       => PvSettings::get('site_title', 'PACS 影像浏览器'),
                 'isAdmin'    => false,
             ));
@@ -33,6 +35,7 @@ class PvViewerController {
             'uid'  => $uid,
             'mode' => $mode,
             'guestToken' => '',
+            'embedded' => $embedded,
             'site' => PvSettings::get('site_title', 'PACS 影像浏览器'),
             'isAdmin' => PvAuth::isAdmin(),
         ));
