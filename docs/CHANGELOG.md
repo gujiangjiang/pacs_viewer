@@ -14,6 +14,19 @@
 
 ---
 
+## [1.2.29] - 2026-10-04
+
+### 变更
+- **FHIR 取数消除 N+1（性能）**：FHIR 患者数据源工作台列表原为「列出检查后逐个
+  `GET Patient/{id}` 回读患者」，一次加载约 1 + N（N 可达 100）次请求，导致宿主
+  FHIR 接口/日志洪峰。现列表改用
+  `GET ImagingStudy?_count=100&_include=ImagingStudy:patient` **一次请求同时带回检查与
+  患者资源**（`listStudies()` 返回 studies + patients 映射，`patientForStudy()` 优先取随附件、
+  仅缺失时回退单资源回读）。单次加载请求数由 ~101 降至 ~2（ImagingStudy + Organization），
+  逐患者回读降为 0；配合既有 20s 结果缓存，重复加载进一步降为 0 请求。
+
+---
+
 ## [1.2.28] - 2026-10-04
 
 ### 变更

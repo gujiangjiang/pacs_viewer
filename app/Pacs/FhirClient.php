@@ -7,11 +7,10 @@
  * （Clinic_OPD_System 等）获取「已缴费、已登记」的患者及其检查信息。
  *
  * 取数口径（约定）：
- *   1) 先按姓名 / 患者标识检索 Patient：
- *        GET {fhir}/Patient?name=关键词&_count=20
- *        GET {fhir}/Patient?_id=患者ID
- *   2) 对每个 Patient 查询其已登记的影像检查 ImagingStudy：
- *        GET {fhir}/ImagingStudy?patient=Patient/{id}&_count=50
+ *   1) 列表/工作台：`GET {fhir}/ImagingStudy?_count=100&_include=ImagingStudy:patient`
+ *      —— 一次请求同时带回检查与其患者资源，避免逐个 Patient/{id} 回读（消除 N+1）。
+ *   2) 关键字检索：先按姓名/标识检索 Patient（name / identifier / _id），
+ *      再对匹配到的患者查询 ImagingStudy?patient=Patient/{id}&_count=50。
  *      存在 ImagingStudy 即视为「已缴费并已登记」（门诊系统在登记后创建该资源）。
  *   3) 资源同时兼容「Patient / ImagingStudy 以 Bundle 返回」与「直接数组返回」。
  *
@@ -98,8 +97,9 @@ class PvFhirClient {
         /* 无关键字：以 ImagingStudy 为主列出「已登记影像」的检查，
          * 避免把仅有就诊记录（未开影像/未缴费）的患者也列出来。 */
         try {
-            foreach (self::listStudies(100) as $im) {
-                $rows[] = self::mapStudy(self::patientForStudy($im), $im);
+            $ls = self::listStudies(100);
+            foreach ($ls['studies'] as $im) {
+                $rows[] = self::mapStudy(self::patientForStudy($im, $ls['patients']), $im);
             }
         } catch (Exception $e) {
             self::note($e);
@@ -110,18 +110,39 @@ class PvFhirClient {
         return self::rowsFromEncounters();
     }
 
-    /** 列出检查资源（ImagingStudy?_count） */
+    /**
+     * 列出检查资源（ImagingStudy?_count），并随附 `_include=ImagingStudy:patient`
+     * 在同一次请求中带回患者资源，供上层直接取用——避免逐个 Patient/{id} 回读的 N+1。
+     * @return array { studies: ImagingStudy[], patients: array<PatientId, Patient> }
+     */
     private static function listStudies($count = 50) {
-        $b = self::getJson(self::base() . '/ImagingStudy?' . http_build_query(array('_count' => (int)$count)));
-        $out = array();
-        foreach (self::entries($b) as $r) { if (self::isType($r, 'ImagingStudy')) $out[] = $r; }
+        $b = self::getJson(self::base() . '/ImagingStudy?' . http_build_query(array(
+            '_count'   => (int)$count,
+            '_include' => 'ImagingStudy:patient',
+        )));
+        $out = array('studies' => array(), 'patients' => array());
+        foreach (self::entries($b) as $r) {
+            if (self::isType($r, 'ImagingStudy')) {
+                $out['studies'][] = $r;
+            } elseif (self::isType($r, 'Patient')) {
+                $pid = isset($r['id']) ? (string)$r['id'] : '';
+                if ($pid !== '') $out['patients'][$pid] = $r;
+            }
+        }
         return $out;
     }
 
-    /** 由 ImagingStudy.subject 回读患者资源（失败退回仅 id 的占位） */
-    private static function patientForStudy($im) {
+    /**
+     * 由 ImagingStudy.subject 取患者资源：
+     * 优先使用 `_include` 随附的患者（$patients 映射），缺失时才回退单资源回读。
+     * 失败退回仅 id 的占位（不再逐条触发 Patient/{id} 请求）。
+     */
+    private static function patientForStudy($im, $patients = null) {
         $ref = self::patientRef($im);
         if ($ref === '') return array('id' => '', 'resourceType' => 'Patient');
+        if (is_array($patients) && isset($patients[$ref]) && self::isType($patients[$ref], 'Patient')) {
+            return $patients[$ref];
+        }
         try {
             $p = self::getJson(self::base() . '/Patient/' . rawurlencode($ref));
             if (self::isType($p, 'Patient')) return $p;
