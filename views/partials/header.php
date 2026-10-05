@@ -66,18 +66,18 @@ catch (e) { window.PV_BOOT.data.embedded = true; }</script>
     </a>
     <nav class="pv-nav" id="pvNav">
         <?php if ($pvGuest) { ?>
-        <a class="active" href="<?php echo pvw_e(pvw_url('viewer')); ?>" data-nav="viewer" draggable="false">影像查看</a>
+        <a class="active" href="<?php echo pvw_e(pvw_url('viewer')); ?>" data-nav="viewer" draggable="false"><span class="ic"><?php echo pvw_icon('eye'); ?></span><span class="lbl">影像查看</span></a>
         <?php } else { ?>
-        <a class="<?php echo $pvActive === 'search' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('search')); ?>" data-nav="search" draggable="false">患者查询</a>
-        <a class="<?php echo $pvActive === 'viewer' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('viewer')); ?>" data-nav="viewer" draggable="false">影像查看</a>
+        <a class="<?php echo $pvActive === 'search' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('search')); ?>" data-nav="search" draggable="false"><span class="ic"><?php echo pvw_icon('search'); ?></span><span class="lbl">患者查询</span></a>
+        <a class="<?php echo $pvActive === 'viewer' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('viewer')); ?>" data-nav="viewer" draggable="false"><span class="ic"><?php echo pvw_icon('eye'); ?></span><span class="lbl">影像查看</span></a>
         <?php if ($pvUser && $pvUser['role'] === 'admin') { ?>
-        <a class="<?php echo $pvActive === 'admin' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('admin')); ?>" data-nav="admin" draggable="false">管理设置</a>
+        <a class="<?php echo $pvActive === 'admin' ? 'active' : ''; ?>" href="<?php echo pvw_e(pvw_url('admin')); ?>" data-nav="admin" draggable="false"><span class="ic"><?php echo pvw_icon('settings'); ?></span><span class="lbl">管理设置</span></a>
         <?php } ?>
         <?php } ?>
     </nav>
     <div class="pv-user">
         <?php if ($pvUser && !$pvGuest) { ?>
-        <span class="pv-user-name"><?php echo pvw_e($pvUser['display_name'] !== '' ? $pvUser['display_name'] : $pvUser['username']); ?><?php echo $pvUser['role'] === 'admin' ? ' · 管理员' : ''; ?></span>
+        <span class="pv-user-name"><?php echo pvw_e($pvUser['display_name'] !== '' ? $pvUser['display_name'] : $pvUser['username']); ?><?php echo $pvUser['role'] === 'admin' ? '<span class="pv-user-role"> · 管理员</span>' : ''; ?></span>
         <a class="pv-btn pv-btn-ghost pv-btn-sm" href="<?php echo pvw_e(pvw_url('logout')); ?>" data-no-nav="1"
            onclick="try{if(window.PvUI)PvUI.clearSessionState();}catch(e){}">退出</a>
         <?php } ?>
