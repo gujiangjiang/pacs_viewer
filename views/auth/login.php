@@ -19,7 +19,7 @@
     <div class="pv-auth-head">
         <img class="pv-auth-logo" src="<?php echo pvw_e(PvPwaController::iconUrl(96)); ?>" width="56" height="56" alt="">
         <h1><?php echo pvw_e($site); ?></h1>
-        <p class="pv-auth-sub">DICOM / PACS 接口联调测试工具</p>
+        <p class="pv-auth-sub">DICOM / PACS 影像浏览器</p>
     </div>
     <form method="post" action="<?php echo pvw_e(pvw_url('login')); ?>" autocomplete="off">
         <input type="hidden" name="_csrf" value="<?php echo pvw_e(pvw_csrf()); ?>">
@@ -34,7 +34,7 @@
         <button type="submit" class="pv-btn pv-btn-primary pv-btn-block">登 录</button>
     </form>
     <div class="pv-auth-hint">
-        使用安装时创建的管理员账号登录
+        使用你的账号登录；本系统支持多用户，如需账号请联系管理员
     </div>
 </div>
 <script src="<?php echo pvw_asset('js/ui.js'); ?>"></script>

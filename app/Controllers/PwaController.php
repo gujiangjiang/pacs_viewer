@@ -16,7 +16,7 @@ class PvPwaController {
         $manifest = array(
             'name'             => $site,
             'short_name'       => 'PACS 浏览器',
-            'description'      => 'DICOM / PACS 接口联调测试工具',
+            'description'      => 'DICOM / PACS 影像浏览器',
             'lang'             => 'zh-CN',
             'start_url'        => pvw_url(''),
             'scope'            => self::scope(),
