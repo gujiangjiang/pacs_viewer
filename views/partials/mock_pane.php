@@ -30,6 +30,7 @@ $pvPartText = $pvPartList ? implode('、', $pvPartList) : '未启用任何部位
         <button type="button" class="pv-split-item" data-mp="source">数据来源</button>
         <button type="button" class="pv-split-item" data-mp="anatomy">部位与切片</button>
         <button type="button" class="pv-split-item" data-mp="api">标准 API</button>
+        <button type="button" class="pv-split-item" data-mp="worklist">摄片登记</button>
         <button type="button" class="pv-split-item" data-mp="patients">患者查询</button>
         <button type="button" class="pv-split-item" data-mp="logs">日志查询</button>
     </aside>
@@ -238,6 +239,25 @@ $pvPartText = $pvPartList ? implode('、', $pvPartList) : '未启用任何部位
                         <tr><td>GET</td><td><code>{根}/studies/{studyUID}/series/{seriesUID}/instances/{sopUID}</code></td><td>WADO-RS 实例字节流（application/dicom）</td></tr>
                         <tr><td>GET</td><td><code>{根}/studies/{studyUID}/series/{seriesUID}/instances/{sopUID}/rendered</code></td><td>渲染图（缩略图）</td></tr>
                     </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 摄片登记：已缴费未摄片工作列表（来源门诊 FHIR Task），登记/摄片两步 -->
+        <div class="pv-card pv-hidden" data-mp-pane="worklist">
+            <div class="pv-card-head">
+                <h3 class="pv-form-title">摄片登记（待摄片工作列表）</h3>
+                <span class="pv-card-actions">
+                    <button type="button" id="pvWorklistRefresh" class="pv-btn pv-btn-outline pv-btn-sm">刷新</button>
+                </span>
+            </div>
+            <p class="pv-hint">来源：门诊系统 FHIR 工作项（Task）。先「登记」再「摄片」；摄片后由模拟服务器分配 StudyInstanceUID 并生成影像，可经 DICOMweb 调阅。</p>
+            <div id="pvWorklistHint" class="pv-dim" style="display:none;padding:6px 2px"></div>
+            <div class="pv-logscroll" id="pvWorklistScroll">
+                <table class="pv-table">
+                    <colgroup><col style="width:10%"><col style="width:6%"><col style="width:7%"><col style="width:8%"><col style="width:20%"><col style="width:15%"><col style="width:14%"><col style="width:10%"><col style="width:10%"></colgroup>
+                    <thead><tr><th>姓名</th><th>性别</th><th>年龄</th><th>类型</th><th>检查项目</th><th>检查号</th><th>检查时间</th><th>状态</th><th>操作</th></tr></thead>
+                    <tbody id="pvWorklistBody"><tr data-row="1"><td colspan="9" class="pv-dim" style="text-align:center">点击「刷新」加载待摄片工作列表</td></tr></tbody>
                 </table>
             </div>
         </div>

@@ -8,26 +8,45 @@
 class PvHttp {
 
     public static function get($url, $timeout = 5, array $headers = array()) {
+        return self::request('GET', $url, $timeout, $headers, null);
+    }
+
+    /**
+     * 通用 HTTP 请求（curl 优先，file 回退），支持任意方法与请求体。
+     * @param string      $method  GET / POST / PUT / PATCH / DELETE
+     * @param string      $url
+     * @param int         $timeout
+     * @param array       $headers
+     * @param string|null $body    请求体（null 表示无）
+     * @return array {body, code}
+     */
+    public static function request($method, $url, $timeout = 5, array $headers = array(), $body = null) {
         $timeout = max(1, (int)$timeout);
+        $method = strtoupper((string)$method);
         if (function_exists('curl_init')) {
             $ch = curl_init($url);
-            curl_setopt_array($ch, array(
+            $opt = array(
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => $timeout,
                 CURLOPT_CONNECTTIMEOUT => $timeout,
                 CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_CUSTOMREQUEST => $method,
                 CURLOPT_HTTPHEADER => $headers,
-            ));
-            $body = curl_exec($ch);
+            );
+            if ($body !== null) $opt[CURLOPT_POSTFIELDS] = $body;
+            curl_setopt_array($ch, $opt);
+            $resp = curl_exec($ch);
             $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
             if (PHP_VERSION_ID < 80500) curl_close($ch);   // 8.5 起 curl_close 已弃用
-            return array('body' => $body, 'code' => $code);
+            return array('body' => $resp, 'code' => $code);
         }
-        $ctx = stream_context_create(array('http' => array(
-            'method' => 'GET', 'timeout' => $timeout, 'ignore_errors' => true,
+        $ctxArr = array(
+            'method' => $method, 'timeout' => $timeout, 'ignore_errors' => true,
             'header' => implode("\r\n", $headers) . "\r\n",
-        )));
-        $body = @file_get_contents($url, false, $ctx);
+        );
+        if ($body !== null) $ctxArr['content'] = (string)$body;
+        $ctx = stream_context_create(array('http' => $ctxArr));
+        $resp = @file_get_contents($url, false, $ctx);
         $code = 0;
         if (PHP_VERSION_ID < 80500 && isset($http_response_header) && preg_match('#\s(\d{3})\s#', $http_response_header[0], $m)) {
             $code = (int)$m[1];                                  // PHP < 8.5 的 $http_response_header
@@ -35,7 +54,7 @@ class PvHttp {
             $hdrs = http_get_last_response_headers();
             if (is_array($hdrs) && isset($hdrs[0]) && preg_match('#\s(\d{3})\s#', $hdrs[0], $m)) $code = (int)$m[1];
         }
-        return array('body' => $body, 'code' => $code);
+        return array('body' => $resp, 'code' => $code);
     }
 
     /**

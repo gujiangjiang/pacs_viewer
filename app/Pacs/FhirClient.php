@@ -737,6 +737,93 @@ class PvFhirClient {
         return $t === false ? $s : date('Y-m-d H:i:s', $t);
     }
 
+    /* ---------------- 摄片工作列表 / 工作项回写（标准 FHIR 工作流） ---------------- */
+
+    /**
+     * 读取「摄片登记」工作列表：Task?status=requested,accepted,in-progress（含患者）。
+     * 返回行结构供模拟服务器「摄片登记」页展示与摄片使用。
+     */
+    public static function worklist() {
+        self::$lastError = '';
+        if (!self::isConfigured()) throw new RuntimeException('未配置门诊系统 FHIR 接口地址');
+        $b = self::getJson(self::base() . '/Task?' . http_build_query(array(
+            'status' => 'requested,accepted,in-progress',
+            '_count' => 200,
+            '_include' => 'Task:patient',
+        )));
+        $tasks = array(); $patients = array();
+        foreach (self::entries($b) as $r) {
+            if (self::isType($r, 'Task')) $tasks[] = $r;
+            elseif (self::isType($r, 'Patient')) {
+                $pid = isset($r['id']) ? (string)$r['id'] : '';
+                if ($pid !== '') $patients[$pid] = $r;
+            }
+        }
+        $rows = array();
+        foreach ($tasks as $t) {
+            $ref = self::refId(isset($t['for']['reference']) ? (string)$t['for']['reference'] : '');
+            $p = array('id' => $ref, 'resourceType' => 'Patient');
+            if ($ref !== '') {
+                if (isset($patients['patient-' . $ref])) $p = $patients['patient-' . $ref];
+                elseif (isset($patients[$ref])) $p = $patients[$ref];
+            }
+            $itemName = isset($t['description']) ? (string)$t['description'] : '';
+            $birth = isset($p['birthDate']) ? (string)$p['birthDate'] : '';
+            $rows[] = array(
+                'task_id'         => isset($t['id']) ? (string)$t['id'] : '',
+                'status'          => isset($t['status']) ? (string)$t['status'] : 'requested',
+                'business_status' => isset($t['businessStatus']['text']) ? (string)$t['businessStatus']['text'] : '',
+                'accession_no'    => self::accessionOf($t),
+                'item_name'       => $itemName,
+                'modality'        => self::inferModality($itemName),
+                'patient_id'      => self::patientNo($p),
+                'name'            => self::patientName($p),
+                'gender'          => self::gender($p),
+                'age'             => self::ageText($birth),
+                'birth_date'      => $birth,
+                'outpatient_no'   => self::visitNo($t),
+                'registered_at'   => isset($t['executionPeriod']['start']) ? self::fmtDate($t['executionPeriod']['start']) : '',
+            );
+        }
+        return $rows;
+    }
+
+    /**
+     * 回写工作项状态到门诊 FHIR（PACS 侧登记 / 摄片）。
+     * @param string $taskId  Task 资源 id（如 task-123）
+     * @param array  $payload FHIR Task（至少含 status；可含 businessStatus/executionPeriod/owner）
+     * @return array 更新后的资源
+     * @throws RuntimeException 写入失败
+     */
+    public static function writeTask($taskId, array $payload) {
+        if (!self::isConfigured()) throw new RuntimeException('未配置门诊系统 FHIR 接口地址');
+        $url = self::base() . '/Task/' . rawurlencode((string)$taskId);
+        $headers = array('Accept: application/fhir+json', 'Content-Type: application/fhir+json');
+        $key = self::fhirKey();
+        if ($key !== '') { $headers[] = 'Authorization: Bearer ' . $key; $headers[] = 'X-API-Key: ' . $key; }
+        $r = PvHttp::request('PUT', $url, self::fhirTimeout(), $headers, json_encode($payload, JSON_UNESCAPED_UNICODE));
+        self::logApi($url, (int)$r['code']);
+        if ((int)$r['code'] < 200 || (int)$r['code'] >= 300) {
+            $msg = (string)$r['body'];
+            $j = json_decode((string)$r['body'], true);
+            if (is_array($j) && isset($j['issue'][0]['diagnostics'])) $msg = (string)$j['issue'][0]['diagnostics'];
+            throw new RuntimeException('FHIR 工作项回写失败（HTTP ' . (int)$r['code'] . '）：' . $msg);
+        }
+        $out = json_decode((string)$r['body'], true);
+        return is_array($out) ? $out : array();
+    }
+
+    /** 由检查项目名推断模态码（CT/MR/DR/US/OT），供模拟器选择生成器 */
+    private static function inferModality($text) {
+        $s = strtoupper(trim((string)$text));
+        if ($s === '') return 'OT';
+        if (preg_match('/\bMR|核磁|磁共振|MRI/i', $text)) return 'MR';
+        if (preg_match('/\bCT|断层/i', $text)) return 'CT';
+        if (preg_match('/DR|X线|X光|摄片|胸片|平片/i', $text)) return 'DR';
+        if (preg_match('/US|超[声生]|彩超|B超/i', $text)) return 'US';
+        return 'OT';
+    }
+
     /* ---------------- HTTP ---------------- */
 
     private static function base() {

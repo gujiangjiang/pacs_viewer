@@ -64,17 +64,37 @@ class PvMockServer {
 
     /* ---------------- 数据来源 ---------------- */
 
-    /** 患者检查行（统一结构）：按来源取内置仿真数据或 FHIR */
+    /** 患者检查行（统一结构）：按来源取内置仿真数据或 FHIR，并合并本机「摄片记录」 */
     public static function rows($keyword = '') {
         if (self::source() === 'fhir') {
             try {
                 $rows = PvFhirClient::search($keyword);
                 foreach ($rows as &$r) { $r['fhir'] = true; }
                 unset($r);
-                return $rows;
-            } catch (Exception $e) { return array(); }
+            } catch (Exception $e) { $rows = array(); }
+        } else {
+            $rows = PvDemoPacs::search($keyword);
         }
-        return PvDemoPacs::search($keyword);
+        return self::mergeAcquisitions($rows, $keyword);
+    }
+
+    /** 合并本机摄片记录（按检查号去重；摄片记录优先，保证新摄片立即可被 QIDO/取像） */
+    private static function mergeAcquisitions(array $rows, $keyword) {
+        if (!class_exists('PvAcquisitionStore')) return $rows;
+        $acq = PvAcquisitionStore::rows($keyword);
+        if (!$acq) return $rows;
+        $accSet = array();
+        foreach ($rows as $r) {
+            $acc = isset($r['accession_no']) ? (string)$r['accession_no'] : '';
+            if ($acc !== '') $accSet[$acc] = true;
+        }
+        $out = $rows;
+        foreach ($acq as $r) {
+            $acc = isset($r['accession_no']) ? (string)$r['accession_no'] : '';
+            if ($acc !== '' && isset($accSet[$acc])) continue;   // 已由来源列出（避免重复）
+            $out[] = $r;
+        }
+        return $out;
     }
 
     /** 数据中出现过的检查模态（去重，供检索页「检查类型」筛选） */

@@ -175,8 +175,11 @@
     function bindMpane() {
         PvUI.bindSplit({
             navSelector: '.pv-split-item[data-mp]', paneSelector: '[data-mp-pane]', attr: 'mp', initial: 'status',
-            // 离开「患者查询」子页即清空预览（框体高度由 CSS flex 锚定页脚，无需计算）
-            onChange: function (val) { if (val !== 'patients') clearMockPatients(); }
+            // 离开「患者查询」子页即清空预览；进入「摄片登记」自动加载工作列表
+            onChange: function (val) {
+                if (val !== 'patients') clearMockPatients();
+                if (val === 'worklist') loadWorklist();
+            }
         });
     }
 
@@ -229,6 +232,86 @@
         }
     }
 
+    /* ---------- 摄片登记：待摄片工作列表（登记 / 摄片两步） ---------- */
+    function wlStatusText(w) {
+        if (w.business_status) return w.business_status;
+        var m = { requested: '待登记', accepted: '已登记待摄片', 'in-progress': '摄片中', completed: '已摄片', cancelled: '已取消' };
+        return m[w.status] || w.status || '';
+    }
+    function renderWorklist(list) {
+        var body = document.getElementById('pvWorklistBody');
+        if (!body) return;
+        if (!list || !list.length) {
+            body.innerHTML = '<tr data-row="1"><td colspan="9" class="pv-dim" style="text-align:center">暂无待摄片工作项</td></tr>';
+            return;
+        }
+        body.innerHTML = list.map(function (w) {
+            var reg = (w.status === 'requested')
+                ? '<button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-wl-reg="1">登记</button> ' : '';
+            return '<tr data-row="1" data-wl=\'' + PvUI.esc(JSON.stringify(w)).replace(/'/g, '&#39;') + '\'>'
+                + '<td>' + PvUI.esc(w.name) + '</td><td>' + PvUI.esc(w.gender) + '</td><td>' + PvUI.esc(w.age || '—') + '</td>'
+                + '<td>' + PvUI.esc(w.modality) + '</td><td>' + PvUI.esc(w.item_name) + '</td><td>' + PvUI.esc(w.accession_no) + '</td>'
+                + '<td class="pv-dim">' + PvUI.esc(w.registered_at || '—') + '</td><td>' + PvUI.esc(wlStatusText(w)) + '</td>'
+                + '<td>' + reg + '<button type="button" class="pv-btn pv-btn-primary pv-btn-sm" data-wl-acq="1">摄片</button></td></tr>';
+        }).join('');
+    }
+    function loadWorklist(btn) {
+        var body = document.getElementById('pvWorklistBody');
+        var hint = document.getElementById('pvWorklistHint');
+        if (body) body.innerHTML = '<tr data-row="1"><td colspan="9" class="pv-dim" style="text-align:center">加载中…</td></tr>';
+        if (hint) { hint.style.display = 'none'; hint.textContent = ''; }
+        if (btn) btn.disabled = true;
+        return getJson('api/mock/worklist').then(function (j) {
+            if (btn) btn.disabled = false;
+            if (!j || j.code !== 200) { PvUI.toast((j && j.msg) || '加载失败', 'err'); renderWorklist([]); return; }
+            var d = j.data || {};
+            renderWorklist(d.list || []);
+            if (d.hint && hint) { hint.style.display = ''; hint.textContent = d.hint; }
+        }).catch(function () { if (btn) btn.disabled = false; PvUI.toast('网络请求失败', 'err'); });
+    }
+    function bindWorklist() {
+        var body = document.getElementById('pvWorklistBody');
+        var refresh = document.getElementById('pvWorklistRefresh');
+        if (refresh) refresh.addEventListener('click', function () { loadWorklist(refresh); });
+        if (!body) return;
+        body.addEventListener('click', function (e) {
+            var b = e.target.closest ? e.target.closest('[data-wl-reg],[data-wl-acq]') : null;
+            if (!b) return;
+            var tr = b.closest('tr');
+            var w = {};
+            try { w = JSON.parse(tr.getAttribute('data-wl') || '{}'); } catch (x) { w = {}; }
+            if (b.hasAttribute('data-wl-reg')) {
+                doRegister(w, b);
+            } else {
+                doAcquire(w, b);
+            }
+        });
+    }
+    function doRegister(w, btn) {
+        btn.disabled = true;
+        PvUI.post(PvNav.route('api/mock/register'), { task_id: w.task_id }).then(function (j) {
+            btn.disabled = false;
+            if (j && j.code === 200) { PvUI.toast(j.msg || '已登记', 'ok'); loadWorklist(); }
+            else PvUI.toast((j && j.msg) || '登记失败', 'err');
+        }).catch(function () { btn.disabled = false; PvUI.toast('网络请求失败', 'err'); });
+    }
+    function doAcquire(w, btn) {
+        btn.disabled = true;
+        PvUI.post(PvNav.route('api/mock/acquire'), {
+            task_id: w.task_id, accession_no: w.accession_no, patient_id: w.patient_id,
+            name: w.name, gender: w.gender, birth_date: w.birth_date, outpatient_no: w.outpatient_no,
+            modality: w.modality, item_name: w.item_name
+        }).then(function (j) {
+            btn.disabled = false;
+            if (j && j.code === 200) {
+                var uid = (j.data && j.data.study_uid) || '';
+                PvUI.toast('摄片完成' + (uid ? '（Study ' + uid + '）' : ''), 'ok');
+                if (j.data && j.data.write_error) PvUI.toast('状态回写失败：' + j.data.write_error, 'err');
+                loadWorklist();
+            } else PvUI.toast((j && j.msg) || '摄片失败', 'err');
+        }).catch(function () { btn.disabled = false; PvUI.toast('网络请求失败', 'err'); });
+    }
+
     global.PvPages = global.PvPages || {};
     global.PvPages.mock = {
         init: function (data) {
@@ -238,6 +321,7 @@
             bindMpane();
             bindSource();
             bindAnatomy();
+            bindWorklist();
             // 切换到其他页签（离开模拟服务器）时清空患者预览
             Array.prototype.forEach.call(document.querySelectorAll('.pv-tab'), function (t) {
                 t.addEventListener('click', function () { if (t.getAttribute('data-tab') !== 'mock') clearMockPatients(); });

@@ -96,6 +96,91 @@ class PvMockController {
         }
     }
 
+    /* ==================== 摄片登记工作列表（标准 FHIR 工作流） ==================== */
+
+    /** 工作列表：读取门诊 FHIR 的 Task（requested/accepted/in-progress） */
+    public static function worklist() {
+        PvAuth::requireAdmin();
+        @set_time_limit(20);
+        $source = PvMockServer::source();
+        if ($source !== 'fhir') {
+            pvw_json(200, 'success', array(
+                'list' => array(), 'total' => 0, 'source' => $source,
+                'hint' => '当前患者来源为「内置模拟数据」，无外部工作列表；请在【数据来源】切换为 FHIR 接口。',
+            ));
+        }
+        try {
+            $list = PvFhirClient::worklist();
+            pvw_json(200, 'success', array('list' => $list, 'total' => count($list), 'source' => 'fhir'));
+        } catch (Exception $e) {
+            pvw_json(500, $e->getMessage());
+        }
+    }
+
+    /** 登记：回写 Task=accepted（已登记待摄片） */
+    public static function register() {
+        PvAuth::requireAdmin();
+        pvw_csrf_check();
+        $taskId = trim((string)pvw_input('task_id'));
+        if ($taskId === '') pvw_json(400, '缺少工作项标识');
+        $u = PvAuth::user();
+        try {
+            PvFhirClient::writeTask($taskId, array(
+                'resourceType' => 'Task', 'id' => $taskId, 'status' => 'accepted',
+                'businessStatus' => array('text' => '已登记待摄片'),
+                'owner' => array('display' => 'PACS'),
+                'executionPeriod' => array('start' => date('c')),
+            ));
+            PvActivityLogRepository::mock('register', '登记工作项 ' . $taskId . '（操作员 ' . ($u ? $u['display_name'] : '') . '）');
+            pvw_json(200, '已登记，等待摄片');
+        } catch (Exception $e) {
+            PvActivityLogRepository::mock('register', '登记失败 ' . $taskId . '：' . $e->getMessage(), 'error');
+            pvw_json(500, '登记失败：' . $e->getMessage());
+        }
+    }
+
+    /** 摄片：分配 StudyInstanceUID、落本机摄片记录、回写 Task=completed */
+    public static function acquire() {
+        PvAuth::requireAdmin();
+        pvw_csrf_check();
+        $taskId = trim((string)pvw_input('task_id'));
+        $acc = trim((string)pvw_input('accession_no'));
+        if ($acc === '') pvw_json(400, '缺少检查号');
+        $u = PvAuth::user();
+        $op = $u ? (string)$u['display_name'] : '';
+        try {
+            $row = PvAcquisitionStore::save(array(
+                'task_ref'      => $taskId,
+                'accession_no'  => $acc,
+                'patient_id'    => (string)pvw_input('patient_id'),
+                'name'          => (string)pvw_input('name'),
+                'gender'        => (string)pvw_input('gender'),
+                'birth_date'    => (string)pvw_input('birth_date'),
+                'outpatient_no' => (string)pvw_input('outpatient_no'),
+                'modality'      => (string)pvw_input('modality'),
+                'description'   => (string)pvw_input('item_name'),
+                'operator'      => $op,
+            ));
+            // 回写工作项完成（失败不阻断：影像已生成，状态可后续重试）
+            $writeErr = '';
+            if ($taskId !== '') {
+                try {
+                    PvFhirClient::writeTask($taskId, array(
+                        'resourceType' => 'Task', 'id' => $taskId, 'status' => 'completed',
+                        'businessStatus' => array('text' => '已摄片'),
+                        'owner' => array('display' => 'PACS'),
+                        'executionPeriod' => array('end' => date('c')),
+                    ));
+                } catch (Exception $ex) { $writeErr = $ex->getMessage(); }
+            }
+            PvActivityLogRepository::mock('acquire', '摄片完成：' . $acc . ' → Study ' . $row['study_uid'] . ($writeErr !== '' ? '（状态回写失败：' . $writeErr . '）' : ''), $writeErr !== '' ? 'warn' : 'info');
+            pvw_json(200, '摄片完成', array('study_uid' => $row['study_uid'], 'write_error' => $writeErr));
+        } catch (Exception $e) {
+            PvActivityLogRepository::mock('acquire', '摄片失败 ' . $acc . '：' . $e->getMessage(), 'error');
+            pvw_json(500, '摄片失败：' . $e->getMessage());
+        }
+    }
+
     /* ==================== 标准 DICOM 二进制下发（WADO-URI） ==================== */
 
     /** 通用阅片器 / 外部 PACS 客户端按标准 DICOM 协议取像（登录或密钥二选一） */

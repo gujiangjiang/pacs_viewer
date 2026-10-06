@@ -14,6 +14,22 @@
 
 ---
 
+## [1.2.41] - 2026-10-07
+
+### 新增
+- **「摄片登记」工作列表**：模拟服务器左栏新增「摄片登记」，读取门诊系统 FHIR 工作项
+  （`Task?status=requested,accepted,in-progress`，含患者），按「已缴费未摄片」列出
+  姓名 / 性别 / 年龄 / 类型 / 检查项目 / 检查号 / 检查时间 / 状态，支持**先登记、后摄片**两步。
+- **摄片与影像生成**：点「摄片」由模拟服务器分配标准 `StudyInstanceUID`、落本机
+  `mock_acquisitions` 摄片记录，并经 DICOMweb 立即可检出 / 取像；同时按标准 FHIR
+  回写 `Task`（accepted / completed）到门诊系统。
+- **PACS 侧接口**：`PvFhirClient::worklist()/writeTask()`；`PvAcquisitionStore`（摄片记录
+  存取 + 检索行合成）；`api/mock/worklist|register|acquire` 端点；
+  `PvHttp::request()` 通用请求（支持 PUT 等）。
+- 摄片记录并入 `PvMockServer::rows()`（按检查号去重），使新摄片检查经 QIDO-RS 可检索。
+
+---
+
 ## [1.2.40] - 2026-10-07
 
 ### 新增

@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '1.2.40');
+define('PV_VERSION', '1.2.41');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -74,6 +74,7 @@ require_once PV_APP . '/Pacs/PacsClient.php';
 require_once PV_APP . '/Pacs/FhirClient.php';
 require_once PV_APP . '/Pacs/DicomWebClient.php';
 require_once PV_APP . '/Pacs/MockServer.php';
+require_once PV_APP . '/Pacs/AcquisitionStore.php';
 require_once PV_APP . '/Pacs/Mock/Contracts/SliceGeneratorInterface.php';
 require_once PV_APP . '/Pacs/Mock/Contracts/VolumeGeneratorInterface.php';
 require_once PV_APP . '/Pacs/Mock/Utils/ProceduralNoise.php';
