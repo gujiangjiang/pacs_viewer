@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '1.2.36');
+define('PV_VERSION', '1.2.37');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -103,6 +103,7 @@ require_once PV_APP . '/Services/UploadStore.php';
 require_once PV_APP . '/Services/StorageService.php';
 require_once PV_APP . '/Repositories/UserRepository.php';
 require_once PV_APP . '/Repositories/QueryLogRepository.php';
+require_once PV_APP . '/Repositories/ActivityLogRepository.php';
 require_once PV_APP . '/Controllers/AuthController.php';
 require_once PV_APP . '/Controllers/InstallController.php';
 require_once PV_APP . '/Controllers/SearchController.php';
