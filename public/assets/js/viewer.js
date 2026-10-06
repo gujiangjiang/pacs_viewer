@@ -593,7 +593,8 @@
         // 补全为绝对地址：route() 只返回站内路径（如 /?r=viewer&uid=...），
         // 直接复制缺少「协议 + 主机 + 部署前缀」的前半段，粘贴到外部无法打开。
         if (link && link.charAt(0) === '/') link = global.location.origin + link;
-        var done = function (ok) { if (p) p.setStatus((ok === false ? '复制失败，请手动复制：' : '已复制阅片直链：') + link); };
+        // 提示语不附带完整链接，避免窄屏被截断
+        var done = function (ok) { if (p) p.setStatus(ok === false ? '复制失败，请手动复制地址' : '已复制阅片直链'); };
         PvUI.copy(link).then(done, function () { done(false); });
     };
 
