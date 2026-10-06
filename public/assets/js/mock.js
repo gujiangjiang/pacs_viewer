@@ -47,7 +47,7 @@
         if (meta) {
             if (mockTotal > 0) {
                 meta.style.display = '';
-                meta.textContent = '共 ' + mockTotal + ' 位患者（仅显示已缴费、已登记的检查，已加载 ' + mockLoaded + (mockHasMore ? '，向下滚动加载更多' : '') + '）';
+                meta.textContent = '共 ' + mockTotal + ' 位患者（全部患者，含已摄片检查；已加载 ' + mockLoaded + (mockHasMore ? '，向下滚动加载更多' : '') + '）';
             } else {
                 meta.style.display = 'none';
                 var t = empty && empty.querySelector('.pv-empty-title');

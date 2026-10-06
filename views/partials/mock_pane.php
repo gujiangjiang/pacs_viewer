@@ -265,7 +265,7 @@ $pvPartText = $pvPartList ? implode('、', $pvPartList) : '未启用任何部位
         <!-- 患者查询 -->
         <div class="pv-card pv-hidden" data-mp-pane="patients">
             <div class="pv-card-head">
-                <h3 class="pv-form-title">已缴费已登记患者预览</h3>
+                <h3 class="pv-form-title">患者查询（全部患者）</h3>
                 <span class="pv-dim" id="pvMockSourceLabel">来源：<?php echo $pvSrc === 'fhir' ? '门诊 FHIR' : '内置仿真数据'; ?></span>
             </div>
             <form class="pv-searchbox" onsubmit="return false;">

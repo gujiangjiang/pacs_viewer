@@ -75,7 +75,7 @@ class PvMockController {
         ));
     }
 
-    /** 患者预览（已缴费、已登记）：分页返回，默认最新检查在前 */
+    /** 患者预览（全部患者）：分页返回，默认最新检查在前 */
     public static function patients() {
         PvAuth::requireAdmin();
         @set_time_limit(30);
