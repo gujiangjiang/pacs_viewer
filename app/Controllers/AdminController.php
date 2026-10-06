@@ -30,6 +30,12 @@ class PvAdminController {
             'users'    => PvUserRepository::all(),
             'logs'     => PvQueryLogRepository::recent(30),
             'logCount' => PvQueryLogRepository::count(),
+            'logLimits' => array(
+                'operation' => self::logLimits('operation'),
+                'protocol'  => self::logLimits('protocol'),
+                'system'    => self::logLimits('system'),
+                'mock'      => self::logLimits('mock'),
+            ),
             'mockKey'  => PvMockServer::apiKey(),
             'mockUrl'  => PvMockServer::dicomWebEndpoint(),
             'mockViewerUrl' => PvMockServer::viewerUrlTemplate(),
@@ -154,48 +160,125 @@ class PvAdminController {
         }
     }
 
+    /* ---------------- 日志查询（操作 / 协议 / 系统 / 模拟服务器） ---------------- */
+
+    /** 日志通道白名单（管理端「日志查询」左栏 + 模拟服务器日志共用） */
+    public static function logChannels() {
+        return array('operation', 'protocol', 'system', 'mock');
+    }
+
+    /** 规范化日志通道（非法回退 operation） */
+    private static function logChannel() {
+        $c = strtolower(trim((string)pvw_input('channel', 'operation')));
+        return in_array($c, self::logChannels(), true) ? $c : 'operation';
+    }
+
+    /** 指定通道的保留上限（条数 / 天数，0 表示不限制） */
+    private static function logLimits($channel) {
+        if ($channel === 'operation') {
+            return array('count' => PvQueryLogRepository::maxCount(), 'days' => PvQueryLogRepository::maxDays());
+        }
+        if ($channel === 'system') {
+            return PvSystemLogService::limits();
+        }
+        return PvActivityLogRepository::limits($channel);
+    }
+
     public static function logClear() {
         PvAuth::requireAdmin();
         pvw_csrf_check();
-        PvQueryLogRepository::clear();
-        self::reply('操作日志已清空', true, null, 'logs');
+        $channel = self::logChannel();
+        if ($channel === 'operation') {
+            PvQueryLogRepository::clear();
+        } elseif ($channel === 'system') {
+            PvSystemLogService::clear();
+        } else {
+            PvActivityLogRepository::clear($channel);
+        }
+        self::reply('日志已清空', true, array('channel' => $channel), 'logs');
     }
 
-    /** 保存操作日志保留上限（条数 / 天数，均为可选项，留空不限制） */
+    /** 保存指定通道日志保留上限（POST 保存 / GET 返回当前值供设置框回填） */
     public static function logSettings() {
         PvAuth::requireAdmin();
+        $channel = self::logChannel();
+        $isPost = isset($_SERVER['REQUEST_METHOD']) && strtoupper((string)$_SERVER['REQUEST_METHOD']) === 'POST';
+        if (!$isPost) {
+            pvw_json(200, 'success', array('channel' => $channel) + self::logLimits($channel));
+        }
         pvw_csrf_check();
-        PvSettings::set('log_max_count', PvNumber::positiveInt(pvw_input('log_max_count')));
-        PvSettings::set('log_max_days', PvNumber::positiveInt(pvw_input('log_max_days')));
-        PvQueryLogRepository::enforceLimits();   // 保存后立即按新上限清理
-        self::reply('日志保留设置已保存', true, PvQueryLogRepository::limits(), 'logs');
+        $count = pvw_input('log_max_count');
+        $days = pvw_input('log_max_days');
+        if ($channel === 'operation') {
+            PvSettings::set('log_max_count', PvNumber::positiveInt($count));
+            PvSettings::set('log_max_days', PvNumber::positiveInt($days));
+            PvQueryLogRepository::enforceLimits();
+        } elseif ($channel === 'system') {
+            PvSystemLogService::saveLimits($count, $days);
+        } else {
+            PvActivityLogRepository::saveLimits($channel, $count, $days);
+        }
+        self::reply('日志保留设置已保存', true, array('channel' => $channel) + self::logLimits($channel), 'logs');
     }
 
-    /** 操作日志分页读取（管理端滚动加载 / 实时增量） */
+    /** 指定通道日志分页读取（管理端滚动加载 / 实时增量） */
     public static function logs() {
         PvAuth::requireAdmin();
+        $channel = self::logChannel();
         $offset = max(0, (int)pvw_input('offset', 0));
         $limit = max(1, min(200, (int)pvw_input('limit', 30)));
         $sinceId = max(0, (int)pvw_input('since_id', 0));
-        // since_id>0：仅取比该 id 更新的日志（实时增量）；否则按偏移分页
-        $rows = $sinceId > 0 ? PvQueryLogRepository::since($sinceId, $limit) : PvQueryLogRepository::page($offset, $limit);
-        $list = array();
-        foreach ($rows as $l) {
-            $act = isset($l['action']) ? (string)$l['action'] : 'search';
-            $list[] = array(
-                'id' => (int)$l['id'],
-                'created_at' => (string)$l['created_at'],
-                'username' => (string)$l['username'],
-                'action' => $act,
-                'action_name' => PvQueryLogRepository::actionName($act),
-                'detail' => isset($l['detail']) ? (string)$l['detail'] : '',
-                'keyword' => (string)$l['keyword'],
-                'result_count' => ($act === 'search') ? (int)$l['result_count'] : null,
-                'ip' => (string)$l['ip'],
-            );
+
+        if ($channel === 'system') {
+            $lines = PvSystemLogService::lines($limit);
+            $list = array();
+            foreach ($lines as $i => $ln) {
+                $list[] = array('id' => $i + 1, 'created_at' => (string)$ln['time'], 'text' => (string)$ln['text']);
+            }
+            pvw_json(200, 'success', array(
+                'channel' => $channel,
+                'list' => $list,
+                'total' => max(count($list), PvSystemLogService::approxCount()),
+                'has_more' => count($list) >= $limit,
+            ));
         }
-        $total = PvQueryLogRepository::count();
+
+        if ($channel === 'operation') {
+            $rows = $sinceId > 0 ? PvQueryLogRepository::since($sinceId, $limit) : PvQueryLogRepository::page($offset, $limit);
+            $list = array();
+            foreach ($rows as $l) {
+                $act = isset($l['action']) ? (string)$l['action'] : 'search';
+                $list[] = array(
+                    'id' => (int)$l['id'],
+                    'created_at' => (string)$l['created_at'],
+                    'username' => (string)$l['username'],
+                    'action' => $act,
+                    'action_name' => PvQueryLogRepository::actionName($act),
+                    'detail' => isset($l['detail']) ? (string)$l['detail'] : '',
+                    'keyword' => (string)$l['keyword'],
+                    'result_count' => ($act === 'search') ? (int)$l['result_count'] : null,
+                    'ip' => (string)$l['ip'],
+                );
+            }
+            $total = PvQueryLogRepository::count();
+        } else {
+            $rows = $sinceId > 0 ? PvActivityLogRepository::since($channel, $sinceId, $limit) : PvActivityLogRepository::page($channel, $offset, $limit);
+            $list = array();
+            foreach ($rows as $l) {
+                $list[] = array(
+                    'id' => (int)$l['id'],
+                    'created_at' => (string)$l['created_at'],
+                    'level' => (string)$l['level'],
+                    'action' => (string)$l['action'],
+                    'detail' => (string)$l['detail'],
+                    'meta' => (string)$l['meta'],
+                    'ip' => (string)$l['ip'],
+                );
+            }
+            $total = PvActivityLogRepository::count($channel);
+        }
         pvw_json(200, 'success', array(
+            'channel' => $channel,
             'list' => $list,
             'total' => $total,
             'has_more' => ($sinceId <= 0) && (($offset + count($list)) < $total),

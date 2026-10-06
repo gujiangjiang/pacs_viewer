@@ -34,7 +34,7 @@ class PvAssets {
         ),
         'admin' => array(
             'css' => array('admin.css', 'mock.css'),
-            'js'  => array('modules/scroll.js', 'admin-users.js', 'admin-storage.js', 'admin.js', 'mock.js'),
+            'js'  => array('modules/scroll.js', 'admin-users.js', 'admin-storage.js', 'admin-logs.js', 'admin.js', 'mock.js'),
         ),
     );
 

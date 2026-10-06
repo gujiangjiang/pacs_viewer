@@ -31,6 +31,7 @@ $pvPartText = $pvPartList ? implode('、', $pvPartList) : '未启用任何部位
         <button type="button" class="pv-split-item" data-mp="anatomy">部位与切片</button>
         <button type="button" class="pv-split-item" data-mp="api">标准 API</button>
         <button type="button" class="pv-split-item" data-mp="patients">患者查询</button>
+        <button type="button" class="pv-split-item" data-mp="logs">日志查询</button>
     </aside>
     <div class="pv-split-body">
 
@@ -258,6 +259,27 @@ $pvPartText = $pvPartList ? implode('、', $pvPartList) : '未启用任何部位
                     <div class="pv-empty-ico"><?php echo pvw_icon('sample'); ?></div>
                     <div class="pv-empty-title">点击「检索患者」查看模拟服务器中的患者与检查</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- 日志查询（模拟服务器事件：FHIR 取数 / 登记 / 摄片 / 生图等） -->
+        <div class="pv-card pv-hidden pv-logpane" data-mp-pane="logs" data-channel="mock">
+            <div class="pv-card-head">
+                <h3 class="pv-form-title">日志查询（共 <span class="pv-log-total">0</span> 条）</h3>
+                <span class="pv-card-actions">
+                    <button type="button" class="pv-btn pv-btn-outline pv-btn-sm pv-btn-toggle pv-log-live" title="勾选后自动检测并实时更新">实时</button>
+                    <button type="button" class="pv-btn pv-btn-outline pv-btn-sm pv-log-refresh">刷新</button>
+                    <button type="button" class="pv-btn pv-btn-outline pv-btn-sm pv-log-settings">设置</button>
+                    <button type="button" class="pv-btn pv-btn-outline pv-btn-sm pv-log-clear">清空</button>
+                </span>
+            </div>
+            <p class="pv-hint">记录模拟服务器的运行事件：FHIR 来源取数调用、登记 / 摄片 / 生图（模拟）等，便于回溯。</p>
+            <div class="pv-logscroll pv-log-scroll" data-total="0">
+                <table class="pv-table">
+                    <colgroup><col style="width:16%"><col style="width:8%"><col style="width:14%"><col style="width:42%"><col style="width:20%"></colgroup>
+                    <thead><tr><th>时间</th><th>级别</th><th>动作</th><th>详情</th><th>IP</th></tr></thead>
+                    <tbody class="pv-log-body" data-channel="mock"><tr data-row="1"><td colspan="5" class="pv-dim" style="text-align:center">点击左侧「日志查询」加载…</td></tr></tbody>
+                </table>
             </div>
         </div>
 
