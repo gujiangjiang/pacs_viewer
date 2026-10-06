@@ -49,11 +49,23 @@ class PvDicomWebClient {
         $k = self::key();
         if ($k !== '') { $headers[] = 'Authorization: Bearer ' . $k; $headers[] = 'X-API-Key: ' . $k; }
         $r = PvHttp::get($url, self::timeout(), $headers);
+        self::logOutbound($path, $query, (int)$r['code']);
         if ($r['body'] === false || $r['body'] === '') throw new RuntimeException('无法连接 DICOMweb 接口：' . $url);
         $j = json_decode($r['body'], true);
         if (!is_array($j)) throw new RuntimeException('DICOMweb 返回非 JSON 数据');
         if (isset($j['resourceType'])) throw new RuntimeException('DICOMweb 返回错误：' . (isset($j['issue'][0]['diagnostics']) ? $j['issue'][0]['diagnostics'] : 'OperationOutcome'));
         return $j;
+    }
+
+    /** 出向 DICOMweb 调用落账（协议日志，channel=protocol） */
+    private static function logOutbound($path, array $query, $status) {
+        if (!class_exists('PvActivityLogRepository')) return;
+        $action = (strpos($path, '/series') !== false) ? 'wado/retrieve' : 'qido/studies';
+        $ok = $status >= 200 && $status < 300;
+        $level = $ok ? 'info' : ($status === 0 ? 'error' : 'warn');
+        $q = http_build_query($query);
+        $q = preg_replace('/(^|&)(token|api_key|key)=[^&]*/i', '$1', $q);
+        PvActivityLogRepository::protocol($action, self::base() . $path, $level, array('status' => $status, 'query' => $q));
     }
 
     /** 连通性测试：拉取 studies（limit=1），并返回机构名称（InstitutionName） */

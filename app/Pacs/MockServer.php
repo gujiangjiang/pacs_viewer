@@ -217,6 +217,7 @@ class PvMockServer {
         }
         $binary = self::buildDicom($row, $series, $seriesIndex, $instance, $gen, $pixels, $frameCount, $start);
         PvMockCache::set($key, $binary);
+        self::logGenerate($row, '实例 ' . $instance);
         return array('binary' => $binary, 'filename' => $base, 'content_type' => 'application/dicom');
     }
 
@@ -260,7 +261,15 @@ class PvMockServer {
         $pixels = $gen->generateFrame(max(0, $instNo - 1), $totalFrames > 0 ? $totalFrames : null);
         $binary = self::buildDicom($row, $series, $seriesNo - 1, $instNo, $gen, $pixels, 1, $instNo - 1, $seriesUid, $instanceUid);
         PvMockCache::set($key, $binary);
+        self::logGenerate($row, '序列 ' . $seriesNo . ' 实例 ' . $instNo);
         return array('binary' => $binary, 'content_type' => 'application/dicom', 'filename' => $base);
+    }
+
+    /** 记录一次「生图（模拟）」（channel=mock）；缓存命中不记录，避免重复刷屏 */
+    private static function logGenerate(array $row, $tail) {
+        if (!class_exists('PvActivityLogRepository')) return;
+        $desc = isset($row['description']) ? (string)$row['description'] : '';
+        PvActivityLogRepository::mock('generate', '生图（模拟）：' . (isset($row['modality']) ? $row['modality'] : '') . ($desc !== '' ? ' · ' . $desc : '') . ' · ' . $tail, 'info', array('study_uid' => isset($row['study_uid']) ? $row['study_uid'] : ''));
     }
 
     /** 按真实序列 UID 生成缩略图（PNG） */

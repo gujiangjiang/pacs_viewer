@@ -761,6 +761,7 @@ class PvFhirClient {
         if ($key !== '') { $headers[] = 'Authorization: Bearer ' . $key; $headers[] = 'X-API-Key: ' . $key; }
         $raw = self::httpGet($url, $timeout, $headers);
         $status = self::$lastStatus;
+        self::logApi($url, $status);
         if ($status === 401 || $status === 403) {
             throw new RuntimeException('鉴权失败：密钥无效或无访问权限（HTTP ' . $status . '）');
         }
@@ -787,5 +788,17 @@ class PvFhirClient {
         $r = PvHttp::get($url, $timeout, $headers);
         self::$lastStatus = (int)$r['code'];
         return $r['body'];
+    }
+
+    /** 记录一次 FHIR 来源 API 调用到「模拟服务器日志」（channel=mock） */
+    private static function logApi($url, $status) {
+        if (!class_exists('PvActivityLogRepository')) return;
+        $path = (string)parse_url((string)$url, PHP_URL_PATH);
+        $query = (string)parse_url((string)$url, PHP_URL_QUERY);
+        $query = preg_replace('/(^|&)(token|api_key|key)=[^&]*/i', '$1', $query);
+        $ok = $status >= 200 && $status < 300;
+        $level = $ok ? 'info' : ($status === 0 ? 'error' : 'warn');
+        $stTxt = $status === 0 ? '连接失败' : ('HTTP ' . $status);
+        PvActivityLogRepository::mock('fhir/api', 'FHIR 取数（' . $stTxt . '）：' . $path, $level, array('status' => $status, 'query' => $query));
     }
 }

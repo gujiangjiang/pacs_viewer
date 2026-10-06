@@ -13,6 +13,18 @@
  * ============================================================ */
 class PvDicomWebController {
 
+    /** 当前请求的路由动作（供协议日志记录） */
+    private static $protoAction = 'dicomweb';
+
+    /** 记录一条协议日志（DICOMweb 入向） */
+    private static function plog($level) {
+        if (!class_exists('PvActivityLogRepository')) return;
+        $method = isset($_SERVER['REQUEST_METHOD']) ? (string)$_SERVER['REQUEST_METHOD'] : 'GET';
+        $uri = isset($_SERVER['REQUEST_URI']) ? (string)$_SERVER['REQUEST_URI'] : '';
+        $uri = preg_replace('/([?&])(token|api_key|key)=[^&]*/i', '$1', $uri);   // 剔除密钥
+        PvActivityLogRepository::protocol(self::$protoAction, $method . ' ' . $uri, $level);
+    }
+
     /**
      * @param string|null $path DICOMweb 子路径（如 /studies/...）；为空时从 ?r=dicomweb... 解析
      */
@@ -27,17 +39,18 @@ class PvDicomWebController {
         }
         $path = trim((string)$path, '/');
         // 根地址（/dicom-web 或 /dicom-web/）视为 QIDO 检查检索，便于外部连通性测试
-        if ($path === '') { self::qidoStudies(); return; }
+        if ($path === '') { self::$protoAction = 'qido/studies'; self::qidoStudies(); return; }
         $seg = explode('/', $path);
-        if (!isset($seg[0]) || $seg[0] !== 'studies') { self::jsonError(404, '不支持的 DICOMweb 路径'); }
+        if (!isset($seg[0]) || $seg[0] !== 'studies') { self::$protoAction = 'dicomweb/unknown'; self::jsonError(404, '不支持的 DICOMweb 路径'); }
 
-        if (count($seg) === 1) { self::qidoStudies(); return; }
+        if (count($seg) === 1) { self::$protoAction = 'qido/studies'; self::qidoStudies(); return; }
         $studyUid = $seg[1];
-        if (count($seg) === 2) { self::studyMeta($studyUid); return; }
-        if (count($seg) === 3 && $seg[2] === 'series') { self::series($studyUid); return; }
-        if (count($seg) === 5 && $seg[2] === 'series' && $seg[4] === 'instances') { self::instances($studyUid, $seg[3]); return; }
-        if (count($seg) === 7 && $seg[2] === 'series' && $seg[4] === 'instances' && $seg[6] === 'rendered') { self::rendered($studyUid, $seg[3]); return; }
-        if (count($seg) === 6 && $seg[2] === 'series' && $seg[4] === 'instances') { self::instance($studyUid, $seg[3], $seg[5]); return; }
+        if (count($seg) === 2) { self::$protoAction = 'qido/study'; self::studyMeta($studyUid); return; }
+        if (count($seg) === 3 && $seg[2] === 'series') { self::$protoAction = 'qido/series'; self::series($studyUid); return; }
+        if (count($seg) === 5 && $seg[2] === 'series' && $seg[4] === 'instances') { self::$protoAction = 'qido/instances'; self::instances($studyUid, $seg[3]); return; }
+        if (count($seg) === 7 && $seg[2] === 'series' && $seg[4] === 'instances' && $seg[6] === 'rendered') { self::$protoAction = 'wado/rendered'; self::rendered($studyUid, $seg[3]); return; }
+        if (count($seg) === 6 && $seg[2] === 'series' && $seg[4] === 'instances') { self::$protoAction = 'wado/instance'; self::instance($studyUid, $seg[3], $seg[5]); return; }
+        self::$protoAction = 'dicomweb/unknown';
         self::jsonError(404, '不支持的 DICOMweb 路径');
     }
 
@@ -244,6 +257,7 @@ class PvDicomWebController {
         } catch (Exception $e) {
             self::jsonError(404, $e->getMessage());
         }
+        self::plog('info');
         PvHttp::sendBinary($r['binary'], 'application/dicom', 86400);
     }
 
@@ -256,6 +270,7 @@ class PvDicomWebController {
         } catch (Exception $e) {
             self::jsonError(404, $e->getMessage());
         }
+        self::plog('info');
         PvHttp::sendBinary($r['binary'], $r['content_type'], 86400);
     }
 
@@ -319,11 +334,13 @@ class PvDicomWebController {
     }
 
     private static function json($data) {
+        self::plog('info');
         if (!headers_sent()) header('Content-Type: application/dicom+json; charset=utf-8');
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         exit;
     }
     private static function jsonError($code, $msg) {
+        self::plog($code >= 500 ? 'error' : 'warn');
         if (!headers_sent()) { http_response_code((int)$code); header('Content-Type: application/json; charset=utf-8'); }
         echo json_encode(array('resourceType' => 'OperationOutcome', 'issue' => array(array('severity' => 'error', 'diagnostics' => $msg))), JSON_UNESCAPED_UNICODE);
         exit;
