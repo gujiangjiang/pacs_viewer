@@ -747,8 +747,8 @@ class PvFhirClient {
         self::$lastError = '';
         if (!self::isConfigured()) throw new RuntimeException('未配置门诊系统 FHIR 接口地址');
         $b = self::getJson(self::base() . '/Task?' . http_build_query(array(
-            'status' => 'requested,accepted,in-progress',
-            '_count' => 200,
+            'status' => 'requested,accepted,in-progress,completed',
+            '_count' => 300,
             '_include' => 'Task:patient',
         )));
         $tasks = array(); $patients = array();
@@ -783,6 +783,7 @@ class PvFhirClient {
                 'birth_date'      => $birth,
                 'outpatient_no'   => self::visitNo($t),
                 'registered_at'   => isset($t['executionPeriod']['start']) ? self::fmtDate($t['executionPeriod']['start']) : '',
+                'authored_at'     => isset($t['authoredOn']) ? self::fmtDate($t['authoredOn']) : '',
             );
         }
         return $rows;

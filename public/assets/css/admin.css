@@ -50,7 +50,8 @@
 }
 
 /* 检索日志：仅列表滚动，标题与表头固定 */
-.pv-logscroll { max-height: 62vh; overflow: auto; border: 1px solid var(--pv-line); border-radius: 10px; }
+.pv-logscroll { max-height: 62vh; overflow: auto; border: 1px solid var(--pv-line); border-radius: 10px;
+    -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; overscroll-behavior: contain; }
 .pv-logscroll .pv-table { min-width: 100%; }
 .pv-logscroll .pv-table thead th { position: sticky; top: 0; z-index: 2; background: #0b0f17; }
 /* 固定布局 + 百分比列宽：列宽按比例稳定，不随内容长短跳动；
@@ -92,6 +93,11 @@
 
 /* 外部分栏项上的「必填 / 补充」标签 */
 .pv-split-tag { font-size: 10px; font-weight: 600; color: var(--pv-acc); border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; margin-left: 4px; }
+
+/* 摄片列表子页签（待登记 / 待摄片 / 已完成） */
+.pv-wl-tabs { display: flex; gap: 8px; margin: 4px 0 10px; flex-wrap: wrap; }
+.pv-wl-tabs .pv-split-item { flex: 0 0 auto; padding: 6px 14px; text-align: center; }
+.pv-wl-tabs .pv-wl-cnt { display: inline-block; min-width: 16px; margin-left: 4px; padding: 0 5px; border-radius: 9px; font-size: 11px; background: rgba(255,255,255,.12); }
 
 /* ---------- 管理页：主区不整体滚动，各页签内部滚动 ----------
  * 使「操作日志」「患者预览」等列表框可在框内滚动、填至页脚上方，

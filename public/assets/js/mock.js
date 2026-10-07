@@ -232,27 +232,55 @@
         }
     }
 
-    /* ---------- 摄片登记：待摄片工作列表（登记 / 摄片两步） ---------- */
+    /* ---------- 摄片列表：待登记 / 待摄片 / 已完成（子页签 + 日期筛选） ---------- */
+    var wlAll = [], wlTab = 'pending', wlDate = '';
     function wlStatusText(w) {
         if (w.business_status) return w.business_status;
         var m = { requested: '待登记', accepted: '已登记待摄片', 'in-progress': '摄片中', completed: '已摄片', cancelled: '已取消' };
         return m[w.status] || w.status || '';
     }
-    function renderWorklist(list) {
+    function wlGroup(w) {
+        if (w.status === 'requested') return 'pending';
+        if (w.status === 'completed') return 'done';
+        return 'toshoot';   // accepted / in-progress
+    }
+    function wlRowDate(w) { var d = (w.registered_at || w.authored_at || ''); return d ? String(d).slice(0, 10) : ''; }
+    function wlCounts() {
+        var c = { pending: 0, toshoot: 0, done: 0 };
+        wlAll.forEach(function (w) {
+            if (wlDate && wlRowDate(w) !== wlDate) return;
+            var g = wlGroup(w); if (c[g] !== undefined) c[g]++;
+        });
+        return c;
+    }
+    function renderWorklist() {
         var body = document.getElementById('pvWorklistBody');
         if (!body) return;
-        if (!list || !list.length) {
-            body.innerHTML = '<tr data-row="1"><td colspan="9" class="pv-dim" style="text-align:center">暂无待摄片工作项</td></tr>';
+        var list = wlAll.filter(function (w) {
+            if (wlGroup(w) !== wlTab) return false;
+            if (wlDate && wlRowDate(w) !== wlDate) return false;
+            return true;
+        });
+        var c = wlCounts();
+        ['pending', 'toshoot', 'done'].forEach(function (k) {
+            var el = document.querySelector('.pv-wl-cnt[data-cnt="' + k + '"]');
+            if (el) el.textContent = c[k];
+        });
+        if (!list.length) {
+            body.innerHTML = '<tr data-row="1"><td colspan="9" class="pv-dim" style="text-align:center">无记录</td></tr>';
             return;
         }
         body.innerHTML = list.map(function (w) {
             var reg = (w.status === 'requested')
                 ? '<button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-wl-reg="1">登记</button> ' : '';
+            var acq = (w.status === 'completed')
+                ? ''
+                : '<button type="button" class="pv-btn pv-btn-primary pv-btn-sm" data-wl-acq="1">摄片</button>';
             return '<tr data-row="1" data-wl=\'' + PvUI.esc(JSON.stringify(w)).replace(/'/g, '&#39;') + '\'>'
                 + '<td>' + PvUI.esc(w.name) + '</td><td>' + PvUI.esc(w.gender) + '</td><td>' + PvUI.esc(w.age || '—') + '</td>'
                 + '<td>' + PvUI.esc(w.modality) + '</td><td>' + PvUI.esc(w.item_name) + '</td><td>' + PvUI.esc(w.accession_no) + '</td>'
-                + '<td class="pv-dim">' + PvUI.esc(w.registered_at || '—') + '</td><td>' + PvUI.esc(wlStatusText(w)) + '</td>'
-                + '<td>' + reg + '<button type="button" class="pv-btn pv-btn-primary pv-btn-sm" data-wl-acq="1">摄片</button></td></tr>';
+                + '<td class="pv-dim">' + PvUI.esc(w.registered_at || w.authored_at || '—') + '</td><td>' + PvUI.esc(wlStatusText(w)) + '</td>'
+                + '<td>' + reg + acq + '</td></tr>';
         }).join('');
     }
     function loadWorklist(btn) {
@@ -263,16 +291,28 @@
         if (btn) btn.disabled = true;
         return getJson('api/mock/worklist').then(function (j) {
             if (btn) btn.disabled = false;
-            if (!j || j.code !== 200) { PvUI.toast((j && j.msg) || '加载失败', 'err'); renderWorklist([]); return; }
+            if (!j || j.code !== 200) { PvUI.toast((j && j.msg) || '加载失败', 'err'); wlAll = []; renderWorklist(); return; }
             var d = j.data || {};
-            renderWorklist(d.list || []);
+            wlAll = d.list || [];
             if (d.hint && hint) { hint.style.display = ''; hint.textContent = d.hint; }
+            renderWorklist();
         }).catch(function () { if (btn) btn.disabled = false; PvUI.toast('网络请求失败', 'err'); });
     }
     function bindWorklist() {
         var body = document.getElementById('pvWorklistBody');
         var refresh = document.getElementById('pvWorklistRefresh');
+        var dateEl = document.getElementById('pvWorklistDate');
+        var dateClear = document.getElementById('pvWorklistDateClear');
         if (refresh) refresh.addEventListener('click', function () { loadWorklist(refresh); });
+        if (dateEl) dateEl.addEventListener('change', function () { wlDate = dateEl.value || ''; renderWorklist(); });
+        if (dateClear) dateClear.addEventListener('click', function () { if (dateEl) dateEl.value = ''; wlDate = ''; renderWorklist(); });
+        Array.prototype.forEach.call(document.querySelectorAll('#pvWorklistTabs [data-wl-tab]'), function (t) {
+            t.addEventListener('click', function () {
+                wlTab = t.getAttribute('data-wl-tab');
+                Array.prototype.forEach.call(document.querySelectorAll('#pvWorklistTabs [data-wl-tab]'), function (x) { x.classList.toggle('active', x === t); });
+                renderWorklist();
+            });
+        });
         if (!body) return;
         body.addEventListener('click', function (e) {
             var b = e.target.closest ? e.target.closest('[data-wl-reg],[data-wl-acq]') : null;
@@ -306,7 +346,7 @@
             if (j && j.code === 200) {
                 var uid = (j.data && j.data.study_uid) || '';
                 PvUI.toast('摄片完成' + (uid ? '（Study ' + uid + '）' : ''), 'ok');
-                if (j.data && j.data.write_error) PvUI.toast('状态回写失败：' + j.data.write_error, 'err');
+                if (j.data && j.data.write_error) PvUI.toast('门诊状态回写提示：' + j.data.write_error, 'err');
                 loadWorklist();
             } else PvUI.toast((j && j.msg) || '摄片失败', 'err');
         }).catch(function () { btn.disabled = false; PvUI.toast('网络请求失败', 'err'); });

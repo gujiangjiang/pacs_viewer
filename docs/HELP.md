@@ -97,9 +97,10 @@ PACS 接口字段：
   - **FHIR 接口获取**：填写 FHIR R4 地址 / 密钥 / 超时并【测试 FHIR 连接】，由门诊
     系统获取「已缴费、已登记」患者及其检查；影像仍由内置模拟服务器按标准 DICOM 生成。
 - **患者查询（全部患者）**：按关键词查看当前来源下的全部患者与检查（含已摄片）。
-- **摄片登记**（来源为 FHIR 时）：读取门诊系统 FHIR 工作项（`Task`）并列出「已缴费未摄片」
-  的检查；可先「登记」（回写 `Task=accepted`）再「摄片」（分配标准 `StudyInstanceUID`、生成影像、
-  回写 `Task=completed`）。摄片后该检查经 DICOMweb 立即可检索 / 取像。
+- **摄片列表**（来源为 FHIR 时）：读取门诊系统 FHIR 工作项（`Task`），按子页签
+  「待登记 / 待摄片 / 已完成」展示，并可按日期筛选；可先「登记」（回写 `Task=accepted`）
+  再「摄片」（分配标准 `StudyInstanceUID`、生成影像、回写 `Task=completed`）。摄片后该检查经
+  DICOMweb 立即可检索 / 取像。
   **回写要求 FHIR 访问密钥具备 `system/Task.write`（及 `system/Task.read` 取工作列表）**；
   仅取像联调时只读密钥即可（摄片仍会生成影像，仅状态回写失败并提示）。
 - **日志查询**：查看模拟服务器运行事件（FHIR 取数 API `fhir/api`、`register` 登记、
