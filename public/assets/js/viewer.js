@@ -24,7 +24,7 @@
     function PvViewer(root, opts) {
         opts = opts || {};
         this.root = root;
-        this.route = { uid: opts.uid || '', mode: opts.mode || 'append' };
+        this.route = { uid: opts.uid || '', uids: opts.uids || [], mode: opts.mode || 'append' };
         this.about = opts.about || {};
         this.guest = !!opts.guest;   // 链接访客模式：仅临时阅片，无登录 / 无搜索 / 无关闭
         // 宿主指令桥允许来源：显式配置的 hostOrigin 优先；未配置时信任「嵌入本页的
@@ -394,7 +394,7 @@
     };
 
     /* ---------- 工作区 ---------- */
-    PvViewer.prototype.openStudy = function (uid, mode) {
+    PvViewer.prototype.openStudy = function (uid, mode, noCull) {
         var self = this;
         var idx = this.indexOf(uid);
         var p = this.activePane();
@@ -404,16 +404,17 @@
             this.renderSidebar();
             this.sidebar.scrollToSeries(uid, 0);   // 自动滚动定位到该检查序列
             if (p) p.setStatus('该检查已在影像视图中打开，已定位');
-            return;
+            return Promise.resolve();
         }
         // 打开新检查：恢复默认单视图
         if (this.layout !== '1') this.setLayout('1', false);
         var p0 = this.activePane(); if (p0) p0.setStatus('正在加载影像数据…');
-        PvApi.study(uid, { fresh: true }).then(function (j) {
+        return PvApi.study(uid, { fresh: true }).then(function (j) {
             if (!j || j.code !== 200 || !j.data) { if (p0) p0.setStatus((j && j.msg) || '数据加载失败'); return; }
             if (mode === 'replace') { self.ws.studies = []; self.clearAllSeriesState(); self.panes.forEach(function (pp) { pp.st.uid = ''; pp.st.si = 0; pp.st.fi = 0; }); }
             self.ws.studies.push({ uid: uid, data: j.data, series: j.data.series || [], collapsed: false });
-            while (self.ws.studies.length > self.studyLimit) { var ev = self.ws.studies.shift(); self.clearStudySeriesState(ev.uid); }
+            // noCull：按申请单（A2）一次打开该单全部 Study 时不按上限裁剪
+            if (!noCull) { while (self.ws.studies.length > self.studyLimit) { var ev = self.ws.studies.shift(); self.clearStudySeriesState(ev.uid); } }
             self.ws.studies.forEach(function (x, k) { x.collapsed = (k !== self.ws.studies.length - 1); });
             var a = self.activePane(); if (a) a.setSeries(uid, 0);
             self.panes.forEach(function (pp) { if (pp !== a) { pp.updateTitle(); pp.updateScrollbar(); pp.render(); } });
@@ -430,6 +431,18 @@
         var ap = this.activePane(); if (ap) ap.setStatus('正在恢复影像视图…');
         if (this.route.uid) {
             this.restoreStudies(saved, function () { self.openStudy(self.route.uid, self.route.mode); });
+            return;
+        }
+        if (this.route.uids && this.route.uids.length) {
+            // A2：按申请单一并打开该单全部 Study（siblings 不受 study_limit 裁剪）
+            this.restoreStudies(saved, function () {
+                var list = self.route.uids.slice();
+                var seq = function (i) {
+                    if (i >= list.length) { self.refreshControlState(); return; }
+                    Promise.resolve(self.openStudy(list[i], i === 0 ? 'replace' : 'append', true)).then(function () { seq(i + 1); });
+                };
+                seq(0);
+            });
             return;
         }
         this.restoreStudies(saved, function () {
@@ -682,7 +695,7 @@
             if (document.body) document.body.classList.toggle('pv-embedded', embedded);   // 嵌入时隐藏顶栏/页脚
             if (instance) { try { instance.destroy(); } catch (e) {} instance = null; }
             instance = new PvViewer(root, {
-                uid: data.uid || '', mode: data.mode || 'append',
+                uid: data.uid || '', uids: data.uids || [], mode: data.mode || 'append',
                 limit: data.studyLimit || 5, about: data.about || {},
                 guest: !!data.guest, embedded: embedded, hostOrigin: data.hostOrigin || ''
             });

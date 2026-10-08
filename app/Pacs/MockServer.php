@@ -42,7 +42,7 @@ class PvMockServer {
      * {study_uid} 为检查 UID 占位符，外部系统按检查自动替换后打开本浏览器直链。
      */
     public static function viewerUrlTemplate() {
-        return pvw_abs_path(pvw_url('viewer')) . '&uid={study_uid}';
+        return pvw_abs_path(pvw_url('viewer')) . '&uid={study_uid}&uids={uids}';
     }
 
     /** 校验对外接口密钥 */

@@ -11,6 +11,10 @@ class PvViewerController {
 
     public static function show() {
         $uid = trim((string)pvw_input('uid'));
+        // A2：uids=逗号分隔的多个 StudyInstanceUID（按申请单一并打开整单全部检查）
+        $uids = array();
+        foreach (explode(',', (string)pvw_input('uids')) as $u) { $u = trim($u); if ($u !== '') $uids[] = $u; }
+        if ($uid === '' && $uids) $uid = $uids[0];
         // 访客阅片：仅当「阅片直链」请求（uid + 无 mode）。无 Cookie / 无会话，
         // 仅向页面下发按 UID 计算的签名令牌，供后续 API / 取像按请求校验。
         $embedded = pvw_is_embedded();
@@ -19,6 +23,7 @@ class PvViewerController {
                 'user'       => null,
                 'guest'      => true,
                 'uid'        => $uid,
+                'uids'       => $uids,
                 'mode'       => 'replace',
                 'guestToken' => PvGuest::token($uid),
                 'embedded'   => $embedded,
@@ -33,6 +38,7 @@ class PvViewerController {
             'user' => PvAuth::user(),
             'guest' => false,
             'uid'  => $uid,
+            'uids' => $uids,
             'mode' => $mode,
             'guestToken' => '',
             'embedded' => $embedded,

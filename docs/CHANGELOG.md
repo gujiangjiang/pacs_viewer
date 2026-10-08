@@ -14,6 +14,15 @@
 
 ---
 
+## [1.3.7] - 2026-10-09
+
+### 新增
+- **阅片直链支持整张申请单（A2）**：`?r=viewer&uids=uid1,uid2,...` 一次打开多张 Study
+  （供门诊按申请单「阅片」）；`ViewerController` 解析 `uids` 并下发给阅片器，同一批
+  Study 不按 `viewer_study_limit` 裁剪。`viewerUrlTemplate` 增加 `{uids}` 占位符。
+
+---
+
 ## [1.3.6] - 2026-10-09
 
 ### 新增

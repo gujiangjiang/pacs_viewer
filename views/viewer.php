@@ -14,6 +14,7 @@ $hideCopyLink = $isGuest || $isEmbedded;
 $hideLightbox = $isEmbedded;
 $pageData = array(
     'uid'        => $uid,
+    'uids'       => isset($uids) ? $uids : array(),
     'mode'       => $mode,
     'guest'      => $isGuest,
     'embedded'   => $isEmbedded,
