@@ -51,7 +51,7 @@
 
 /* 检索日志：仅列表滚动，标题与表头固定 */
 .pv-logscroll { max-height: 62vh; overflow: auto; border: 1px solid var(--pv-line); border-radius: 10px;
-    -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; overscroll-behavior: contain; }
+    -webkit-overflow-scrolling: touch; }
 .pv-logscroll .pv-table { min-width: 100%; }
 .pv-logscroll .pv-table thead th { position: sticky; top: 0; z-index: 2; background: #0b0f17; }
 /* 固定布局 + 百分比列宽：列宽按比例稳定，不随内容长短跳动；
@@ -106,8 +106,11 @@
 .pv-page-admin .pv-tabs { flex: 0 0 auto; }
 .pv-page-admin .pv-tabpane.active { flex: 1 1 auto; min-height: 0; overflow: auto; }
 
-/* 操作日志：内容框填至页脚上方，仅表体内部滚动 */
+/* 操作日志 / 日志中心：内容框填至页脚上方，仅表体内部滚动 */
 .pv-page-admin .pv-tabpane[data-pane="logs"].active { overflow: hidden; display: flex; flex-direction: column; }
+.pv-page-admin .pv-tabpane[data-pane="logs"] > .pv-split { flex: 1 1 auto; min-height: 0; align-items: stretch; }
+.pv-page-admin .pv-tabpane[data-pane="logs"] .pv-split-body { min-height: 0; display: flex; flex-direction: column; }
+.pv-page-admin .pv-tabpane[data-pane="logs"] .pv-logpane:not(.pv-hidden) { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .pv-page-admin .pv-tabpane[data-pane="logs"] .pv-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; margin-bottom: 0; }
 .pv-page-admin .pv-logscroll { flex: 1 1 auto; min-height: 0; max-height: none; }
 
