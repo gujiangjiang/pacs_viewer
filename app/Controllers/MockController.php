@@ -181,6 +181,58 @@ class PvMockController {
         }
     }
 
+    /**
+     * 按申请单摄片（A2）：一次完成为该申请单的每个检查项目生成一个 Study（共享 Accession）。
+     * 入参：order_no（申请单号）、items（JSON 数组 [{task_id,item_name,modality}]）、患者字段。
+     */
+    public static function acquireOrder() {
+        PvAuth::requireAdmin();
+        pvw_csrf_check();
+        $acc = trim((string)pvw_input('order_no'));
+        if ($acc === '') pvw_json(400, '缺少申请单号');
+        $items = json_decode((string)pvw_input('items', ''), true);
+        if (!is_array($items) || !$items) pvw_json(400, '缺少检查项目');
+        $u = PvAuth::user();
+        $op = $u ? (string)$u['display_name'] : '';
+        $pid = (string)pvw_input('patient_id');
+        $name = (string)pvw_input('name');
+        $gender = (string)pvw_input('gender');
+        $birth = (string)pvw_input('birth_date');
+        $outp = (string)pvw_input('outpatient_no');
+        $uids = array(); $errs = array();
+        foreach ($items as $it) {
+            if (!is_array($it)) continue;
+            $task = trim((string)(isset($it['task_id']) ? $it['task_id'] : ''));
+            $itemName = trim((string)(isset($it['item_name']) ? $it['item_name'] : ''));
+            $mod = trim((string)(isset($it['modality']) ? $it['modality'] : ''));
+            try {
+                $row = PvAcquisitionStore::save(array(
+                    'task_ref' => $task, 'accession_no' => $acc,
+                    'patient_id' => $pid, 'name' => $name, 'gender' => $gender,
+                    'birth_date' => $birth, 'outpatient_no' => $outp,
+                    'modality' => $mod, 'description' => $itemName, 'operator' => $op,
+                ));
+                $uids[] = (string)$row['study_uid'];
+                if ($task !== '') {
+                    try {
+                        PvFhirClient::writeTask($task, array(
+                            'resourceType' => 'Task', 'id' => $task, 'status' => 'completed',
+                            'businessStatus' => array('text' => '已摄片'),
+                            'owner' => array('display' => 'PACS'),
+                            'executionPeriod' => array('end' => date('c')),
+                        ));
+                    } catch (Exception $ex) { $errs[] = $task . '：' . $ex->getMessage(); }
+                }
+            } catch (Exception $e) {
+                $errs[] = $itemName . '：' . $e->getMessage();
+            }
+        }
+        PvActivityLogRepository::mock('acquire', '摄片完成（申请单 ' . $acc . '）：' . count($uids) . ' 个 Study' . ($errs ? '；回写异常 ' . implode('；', $errs) : ''), $errs ? 'warn' : 'info');
+        pvw_json(200, '摄片完成（' . $acc . '）', array(
+            'order_no' => $acc, 'study_uids' => $uids, 'study_count' => count($uids), 'errors' => $errs,
+        ));
+    }
+
     /* ==================== 标准 DICOM 二进制下发（WADO-URI） ==================== */
 
     /** 通用阅片器 / 外部 PACS 客户端按标准 DICOM 协议取像（登录或密钥二选一） */

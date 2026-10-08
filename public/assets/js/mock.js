@@ -232,33 +232,46 @@
         }
     }
 
-    /* ---------- 摄片列表：待登记 / 待摄片 / 已完成（子页签 + 日期筛选） ---------- */
+    /* ---------- 摄片列表：按申请单聚合（待登记 / 待摄片 / 已完成，可日期筛选） ---------- */
     var wlAll = [], wlTab = 'pending', wlDate = '';
-    function wlStatusText(w) {
-        if (w.business_status) return w.business_status;
-        var m = { requested: '待登记', accepted: '已登记待摄片', 'in-progress': '摄片中', completed: '已摄片', cancelled: '已取消' };
-        return m[w.status] || w.status || '';
+    function wlGroups() {
+        var map = {};
+        (wlAll || []).forEach(function (w) {
+            var k = w.accession_no || w.task_id || '';
+            if (!k) return;
+            if (!map[k]) map[k] = {
+                key: k, accession_no: w.accession_no || w.order_no || '', patient_id: w.patient_id || '',
+                name: w.name || '', gender: w.gender || '', age: w.age || '', birth_date: w.birth_date || '',
+                outpatient_no: w.outpatient_no || '', items: [], date: ''
+            };
+            map[k].items.push(w);
+            var d = w.registered_at || w.authored_at || '';
+            if (d && d > map[k].date) map[k].date = d;
+        });
+        return Object.keys(map).map(function (k) { return map[k]; });
     }
-    function wlGroup(w) {
-        if (w.status === 'requested') return 'pending';
-        if (w.status === 'completed') return 'done';
-        return 'toshoot';   // accepted / in-progress
+    function wlItemNames(g) { return g.items.map(function (x) { return x.item_name; }).filter(Boolean).join('、'); }
+    function wlGroupState(g) {
+        var sts = g.items.map(function (x) { return x.status; });
+        if (sts.length && sts.every(function (s) { return s === 'completed'; })) return 'done';
+        if (sts.some(function (s) { return s === 'accepted' || s === 'in-progress'; })) return 'toshoot';
+        return 'pending';
     }
-    function wlRowDate(w) { var d = (w.registered_at || w.authored_at || ''); return d ? String(d).slice(0, 10) : ''; }
+    function wlRowDate(g) { var d = g.date || ''; return d ? String(d).slice(0, 10) : ''; }
     function wlCounts() {
         var c = { pending: 0, toshoot: 0, done: 0 };
-        wlAll.forEach(function (w) {
-            if (wlDate && wlRowDate(w) !== wlDate) return;
-            var g = wlGroup(w); if (c[g] !== undefined) c[g]++;
+        wlGroups().forEach(function (g) {
+            if (wlDate && wlRowDate(g) !== wlDate) return;
+            var s = wlGroupState(g); if (c[s] !== undefined) c[s]++;
         });
         return c;
     }
     function renderWorklist() {
         var body = document.getElementById('pvWorklistBody');
         if (!body) return;
-        var list = wlAll.filter(function (w) {
-            if (wlGroup(w) !== wlTab) return false;
-            if (wlDate && wlRowDate(w) !== wlDate) return false;
+        var list = wlGroups().filter(function (g) {
+            if (wlGroupState(g) !== wlTab) return false;
+            if (wlDate && wlRowDate(g) !== wlDate) return false;
             return true;
         });
         var c = wlCounts();
@@ -270,16 +283,22 @@
             body.innerHTML = '<tr data-row="1"><td colspan="9" class="pv-dim" style="text-align:center">无记录</td></tr>';
             return;
         }
-        body.innerHTML = list.map(function (w) {
-            var reg = (w.status === 'requested')
-                ? '<button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-wl-reg="1">登记</button> ' : '';
-            var acq = (w.status === 'completed')
-                ? ''
-                : '<button type="button" class="pv-btn pv-btn-primary pv-btn-sm" data-wl-acq="1">摄片</button>';
-            return '<tr data-row="1" data-wl=\'' + PvUI.esc(JSON.stringify(w)).replace(/'/g, '&#39;') + '\'>'
-                + '<td>' + PvUI.esc(w.name) + '</td><td>' + PvUI.esc(w.gender) + '</td><td>' + PvUI.esc(w.age || '—') + '</td>'
-                + '<td>' + PvUI.esc(w.modality) + '</td><td>' + PvUI.esc(w.item_name) + '</td><td>' + PvUI.esc(w.accession_no) + '</td>'
-                + '<td class="pv-dim">' + PvUI.esc(w.registered_at || w.authored_at || '—') + '</td><td>' + PvUI.esc(wlStatusText(w)) + '</td>'
+        var stateTxt = { pending: '待登记', toshoot: '待摄片', done: '已完成' };
+        body.innerHTML = list.map(function (g) {
+            var state = wlGroupState(g);
+            var hasReq = g.items.some(function (x) { return x.status === 'requested'; });
+            var reg = hasReq ? '<button type="button" class="pv-btn pv-btn-outline pv-btn-sm" data-wl-reg="1">登记</button> ' : '';
+            var acq = (state !== 'done') ? '<button type="button" class="pv-btn pv-btn-primary pv-btn-sm" data-wl-acq="1">摄片</button>' : '';
+            var label = wlItemNames(g);
+            var modality = (g.items[0] && g.items[0].modality) || '';
+            var json = PvUI.esc(JSON.stringify(g)).replace(/'/g, '&#39;');
+            return '<tr data-row="1" data-wl-g=\'' + json + '\'>'
+                + '<td>' + PvUI.esc(g.name) + '</td><td>' + PvUI.esc(g.gender) + '</td><td>' + PvUI.esc(g.age || '—') + '</td>'
+                + '<td>' + PvUI.esc(modality) + '</td>'
+                + '<td><span class="pv-log-detail" title="' + PvUI.esc(label) + '">' + PvUI.esc(label) + '</span></td>'
+                + '<td>' + PvUI.esc(g.accession_no) + '</td>'
+                + '<td class="pv-dim">' + PvUI.esc(g.date || '—') + '</td>'
+                + '<td>' + PvUI.esc(stateTxt[state]) + '</td>'
                 + '<td>' + reg + acq + '</td></tr>';
         }).join('');
     }
@@ -318,39 +337,45 @@
             var b = e.target.closest ? e.target.closest('[data-wl-reg],[data-wl-acq]') : null;
             if (!b) return;
             var tr = b.closest('tr');
-            var w = {};
-            try { w = JSON.parse(tr.getAttribute('data-wl') || '{}'); } catch (x) { w = {}; }
-            if (b.hasAttribute('data-wl-reg')) {
-                doRegister(w, b);
-            } else {
-                doAcquire(w, b);
-            }
+            var g = {};
+            try { g = JSON.parse(tr.getAttribute('data-wl-g') || '{}'); } catch (x) { g = {}; }
+            if (b.hasAttribute('data-wl-reg')) doRegisterOrder(g, b); else doAcquireOrder(g, b);
         });
     }
-    function doRegister(w, btn) {
+    /* 登记整张申请单：逐项标记为已登记 */
+    function doRegisterOrder(g, btn) {
+        var tasks = (g.items || []).filter(function (x) { return x.status === 'requested'; }).map(function (x) { return x.task_id; });
+        if (!tasks.length) { PvUI.toast('无待登记项目', 'err'); return; }
         btn.disabled = true;
-        PvUI.post(PvNav.route('api/mock/register'), { task_id: w.task_id }).then(function (j) {
-            btn.disabled = false;
-            if (j && j.code === 200) { PvUI.toast(j.msg || '已登记', 'ok'); loadWorklist(); }
-            else PvUI.toast((j && j.msg) || '登记失败', 'err');
-        }).catch(function () { btn.disabled = false; PvUI.toast('网络请求失败', 'err'); });
+        var chain = Promise.resolve();
+        tasks.forEach(function (tid) {
+            chain = chain.then(function () { return PvUI.post(PvNav.route('api/mock/register'), { task_id: tid }); });
+        });
+        chain.then(function () {
+            btn.disabled = false; PvUI.toast('已登记 ' + tasks.length + ' 个检查项目', 'ok'); loadWorklist();
+        }).catch(function () { btn.disabled = false; PvUI.toast('登记失败', 'err'); });
     }
-    function doAcquire(w, btn) {
+    /* 摄片整张申请单：一次为该单每个检查项目生成一个 Study */
+    function doAcquireOrder(g, btn) {
+        var items = (g.items || []).map(function (x) {
+            return { task_id: x.task_id, item_name: x.item_name, modality: x.modality };
+        });
+        if (!items.length) { PvUI.toast('无检查项目', 'err'); return; }
         btn.disabled = true;
-        PvUI.post(PvNav.route('api/mock/acquire'), {
-            task_id: w.task_id, accession_no: w.accession_no, patient_id: w.patient_id,
-            name: w.name, gender: w.gender, birth_date: w.birth_date, outpatient_no: w.outpatient_no,
-            modality: w.modality, item_name: w.item_name
+        PvUI.post(PvNav.route('api/mock/acquire-order'), {
+            order_no: g.accession_no, patient_id: g.patient_id, name: g.name, gender: g.gender,
+            birth_date: g.birth_date, outpatient_no: g.outpatient_no, items: JSON.stringify(items)
         }).then(function (j) {
             btn.disabled = false;
             if (j && j.code === 200) {
-                var uid = (j.data && j.data.study_uid) || '';
-                PvUI.toast('摄片完成' + (uid ? '（Study ' + uid + '）' : ''), 'ok');
-                if (j.data && j.data.write_error) PvUI.toast('门诊状态回写提示：' + j.data.write_error, 'err');
+                var n = (j.data && j.data.study_count) || 0;
+                PvUI.toast('摄片完成（' + n + ' 个 Study）', 'ok');
+                if (j.data && j.data.errors && j.data.errors.length) PvUI.toast('门诊状态回写提示：' + j.data.errors.join('；'), 'err');
                 loadWorklist();
             } else PvUI.toast((j && j.msg) || '摄片失败', 'err');
         }).catch(function () { btn.disabled = false; PvUI.toast('网络请求失败', 'err'); });
     }
+
 
     global.PvPages = global.PvPages || {};
     global.PvPages.mock = {

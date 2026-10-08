@@ -58,6 +58,7 @@ $routes = array(
     'api/mock/worklist'     => array('PvMockController', 'worklist'),
     'api/mock/register'     => array('PvMockController', 'register'),
     'api/mock/acquire'      => array('PvMockController', 'acquire'),
+    'api/mock/acquire-order'=> array('PvMockController', 'acquireOrder'),
     'api/search'            => array('PvApiController', 'search'),
     'api/study'             => array('PvApiController', 'study'),
     'api/report'            => array('PvApiController', 'report'),

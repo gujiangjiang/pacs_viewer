@@ -8,20 +8,40 @@
  */
 class PvAcquisitionStore {
 
-    /** 分配标准 StudyInstanceUID（按检查号确定性派生，重复摄片幂等） */
-    public static function assignStudyUid($accession) {
+    /** 分配标准 StudyInstanceUID（A2：按 检查号+检查项目 确定性派生；重复摄片幂等） */
+    public static function assignStudyUid($accession, $seed = '') {
         $a = (string)$accession;
-        if ($a === '') $a = (string)microtime(true);
-        $u = sprintf('%u', crc32('mock-pacs|' . $a));
+        $seed = (string)$seed;
+        if ($a === '' && $seed === '') $a = (string)microtime(true);
+        $key = 'mock-pacs|' . $a;
+        if ($seed !== '') $key .= '|' . $seed;
+        $u = sprintf('%u', crc32($key));
         return '1.2.826.0.1.3680043.8.498.' . $u . '.1';
     }
 
-    /** 按检查号 / 研究 UID 查记录 */
+    /** 按检查号 / 研究 UID 查记录（返回首条） */
     public static function find($key) {
         $key = trim((string)$key);
         if ($key === '') return null;
         $r = PvDatabase::one("SELECT * FROM mock_acquisitions WHERE study_uid=? OR accession_no=? ORDER BY id DESC LIMIT 1", array($key, $key));
         return $r ?: null;
+    }
+
+    /** 按 检查号 + 检查项目（task_ref）查记录（A2：一申请单多项各一条 Study） */
+    public static function findByTask($accession, $taskRef) {
+        $accession = trim((string)$accession);
+        $taskRef = trim((string)$taskRef);
+        if ($accession === '') return null;
+        if ($taskRef === '') return self::find($accession);
+        $r = PvDatabase::one("SELECT * FROM mock_acquisitions WHERE accession_no=? AND task_ref=? ORDER BY id DESC LIMIT 1", array($accession, $taskRef));
+        return $r ?: null;
+    }
+
+    /** 某检查号下的全部摄片记录（A2：多 Study 共享 Accession） */
+    public static function allByAccession($accession) {
+        $accession = trim((string)$accession);
+        if ($accession === '') return array();
+        return PvDatabase::q("SELECT * FROM mock_acquisitions WHERE accession_no=? ORDER BY id", array($accession));
     }
 
     /** 全部/关键字检索（姓名 / 检查号 / 患者号 / 项目） */
@@ -45,9 +65,10 @@ class PvAcquisitionStore {
      */
     public static function save(array $d) {
         $acc = trim((string)(isset($d['accession_no']) ? $d['accession_no'] : ''));
-        $existing = $acc !== '' ? self::find($acc) : null;
+        $taskRef = trim((string)(isset($d['task_ref']) ? $d['task_ref'] : ''));
+        $existing = $acc !== '' ? self::findByTask($acc, $taskRef) : null;
         $now = date('Y-m-d H:i:s');
-        $uid = $existing ? (string)$existing['study_uid'] : self::assignStudyUid($acc);
+        $uid = $existing ? (string)$existing['study_uid'] : self::assignStudyUid($acc, $taskRef);
         if ($existing) {
             PvDatabase::exec(
                 "UPDATE mock_acquisitions SET patient_id=?, name=?, gender=?, birth_date=?, outpatient_no=?, modality=?, description=?, acquired_at=?, operator=? WHERE id=?",
