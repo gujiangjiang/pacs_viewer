@@ -14,6 +14,21 @@
 
 ---
 
+## [1.4.0] - 2026-10-09
+
+> A2 影像工作流（一申请单 N Study，报告合并）PACS 侧集成版本（配套门诊 v9.11.0）。
+
+### 新增
+- **按申请单摄片**：模拟服务器一次为该申请单每个检查项目生成一个 Study（共享 Accession）；
+  摄片列表按申请单聚合展示与操作。
+- **阅片直链整单打开**：`?uid=`（单 Study，标准）/`?uids=a,b,c`（整张申请单，一次打开全部
+  Study，不按 `viewer_study_limit` 裁剪）。
+
+### 变更
+- `PvAcquisitionStore` 按 `AccessionNumber + 检查项目` 派生幂等 StudyInstanceUID。
+
+---
+
 ## [1.3.7] - 2026-10-09
 
 ### 新增
