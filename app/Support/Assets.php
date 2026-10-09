@@ -29,7 +29,8 @@ class PvAssets {
                 'modules/toolbar.js', 'modules/measurements.js', 'modules/zip.js', 'modules/decoder.js',
                 'modules/pane.js', 'modules/pane-annotations.js', 'modules/pane-scrollbar.js',
                 'modules/pane-export.js', 'modules/pane-info.js',
-                'viewer.js', 'modules/viewer-report.js', 'modules/viewer-ctxmenu.js', 'modules/viewer-session.js',
+                'viewer.js', 'modules/viewer-host.js', 'modules/viewer-shortcuts.js',
+                'modules/viewer-report.js', 'modules/viewer-ctxmenu.js', 'modules/viewer-session.js',
             ),
         ),
         'admin' => array(
