@@ -175,6 +175,36 @@ class PvMockCache {
         @fclose($f);
     }
 
+    /** 生成锁文件路径（键级；独立 .locks 目录，不混入 *.bin / 索引统计） */
+    private static function lockFile($key) {
+        $dir = self::diskDir() . '/.locks';
+        if (!is_dir($dir)) @mkdir($dir, 0775, true);
+        return $dir . '/' . self::safeKey($key) . '.lock';
+    }
+
+    /**
+     * 获取「同一缓存键」的跨进程生成锁（flock；等待至多 $timeout 秒）。
+     * 供 MockServer 对缓存未命中的生图做单飞（single-flight），避免并发重复生成。
+     * @return resource|null 句柄（须传给 release）；获取失败返回 null（调用方可直接生成）
+     */
+    public static function acquire($key, $timeout = 20) {
+        $f = @fopen(self::lockFile($key), 'c');
+        if (!$f) return null;
+        $deadline = microtime(true) + max(1, (int)$timeout);
+        while (!@flock($f, LOCK_EX | LOCK_NB)) {
+            if (microtime(true) >= $deadline) { @fclose($f); return null; }
+            usleep(50000);   // 50ms 轮询
+        }
+        return $f;
+    }
+
+    /** 释放生成锁（句柄为空时安全忽略） */
+    public static function release($handle) {
+        if (!$handle) return;
+        @flock($handle, LOCK_UN);
+        @fclose($handle);
+    }
+
     /** 读取磁盘索引（缺失时由现存文件重建一次） */
     private static function loadDiskIdx() {
         if (is_array(self::$diskIdx)) return self::$diskIdx;

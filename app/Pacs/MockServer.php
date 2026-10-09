@@ -267,7 +267,7 @@ class PvMockServer {
         $base = ($row['patient_id'] ? $row['patient_id'] : 'patient') . '_' . ($row['accession_no'] ? $row['accession_no'] : 'study')
             . '_s' . ($seriesIndex + 1) . '_i' . $instance . '.dcm';
 
-        /* 内存 / 磁盘缓存：同一实例仅生成一次，后续直接读取 */
+        /* 内存 / 磁盘缓存：同一实例仅生成一次，后续直接读取；并发未命中按同键单飞 */
         $key = md5(implode('|', array(
             PV_VERSION, $row['study_uid'], $seriesIndex, $instance,
             $gen->getFrameCount(), $gen->getBodyPartExamined(),
@@ -276,16 +276,24 @@ class PvMockServer {
         if (is_string($cached) && $cached !== '') {
             return array('binary' => $cached, 'filename' => $base, 'content_type' => 'application/dicom');
         }
-
-        // 多帧：把本实例包含的各帧像素拼接为一个 DICOM 实例
-        $pixels = '';
-        for ($f = 0; $f < $frameCount; $f++) {
-            $pixels .= $gen->generateFrame($start + $f, $totalFrames);
+        $lock = PvMockCache::acquire($key);
+        try {
+            $cached = PvMockCache::get($key);   // 等待期间可能已由其他进程生成
+            if (is_string($cached) && $cached !== '') {
+                return array('binary' => $cached, 'filename' => $base, 'content_type' => 'application/dicom');
+            }
+            // 多帧：把本实例包含的各帧像素拼接为一个 DICOM 实例
+            $pixels = '';
+            for ($f = 0; $f < $frameCount; $f++) {
+                $pixels .= $gen->generateFrame($start + $f, $totalFrames);
+            }
+            $binary = self::buildDicom($row, $series, $seriesIndex, $instance, $gen, $pixels, $frameCount, $start);
+            PvMockCache::set($key, $binary);
+            self::logGenerate($row, '实例 ' . $instance);
+            return array('binary' => $binary, 'filename' => $base, 'content_type' => 'application/dicom');
+        } finally {
+            PvMockCache::release($lock);
         }
-        $binary = self::buildDicom($row, $series, $seriesIndex, $instance, $gen, $pixels, $frameCount, $start);
-        PvMockCache::set($key, $binary);
-        self::logGenerate($row, '实例 ' . $instance);
-        return array('binary' => $binary, 'filename' => $base, 'content_type' => 'application/dicom');
     }
 
     /**
@@ -319,17 +327,26 @@ class PvMockServer {
         }
         if ($totalFrames > 0 && $instNo > $totalFrames) $instNo = $totalFrames;
         $base = ($row['patient_id'] ? $row['patient_id'] : 'patient') . '_s' . $seriesNo . '_i' . $instNo . '.dcm';
-        /* 两级缓存：同一实例仅生成一次，避免每次取像都重新生成整幅像素（多帧序列下显著降低负载） */
+        /* 两级缓存：同一实例仅生成一次；并发未命中按同键单飞（避免多进程重复生成） */
         $key = md5(implode('|', array('wadouid', PV_VERSION, $studyUid, $seriesUid, $instanceUid)));
         $cached = PvMockCache::get($key);
         if (is_string($cached) && $cached !== '') {
             return array('binary' => $cached, 'content_type' => 'application/dicom', 'filename' => $base);
         }
-        $pixels = $gen->generateFrame(max(0, $instNo - 1), $totalFrames > 0 ? $totalFrames : null);
-        $binary = self::buildDicom($row, $series, $seriesNo - 1, $instNo, $gen, $pixels, 1, $instNo - 1, $seriesUid, $instanceUid);
-        PvMockCache::set($key, $binary);
-        self::logGenerate($row, '序列 ' . $seriesNo . ' 实例 ' . $instNo);
-        return array('binary' => $binary, 'content_type' => 'application/dicom', 'filename' => $base);
+        $lock = PvMockCache::acquire($key);
+        try {
+            $cached = PvMockCache::get($key);   // 等待期间可能已由其他进程生成
+            if (is_string($cached) && $cached !== '') {
+                return array('binary' => $cached, 'content_type' => 'application/dicom', 'filename' => $base);
+            }
+            $pixels = $gen->generateFrame(max(0, $instNo - 1), $totalFrames > 0 ? $totalFrames : null);
+            $binary = self::buildDicom($row, $series, $seriesNo - 1, $instNo, $gen, $pixels, 1, $instNo - 1, $seriesUid, $instanceUid);
+            PvMockCache::set($key, $binary);
+            self::logGenerate($row, '序列 ' . $seriesNo . ' 实例 ' . $instNo);
+            return array('binary' => $binary, 'content_type' => 'application/dicom', 'filename' => $base);
+        } finally {
+            PvMockCache::release($lock);
+        }
     }
 
     /** 记录一次「生图（模拟）」（channel=mock）；缓存命中不记录，避免重复刷屏 */
@@ -348,15 +365,24 @@ class PvMockServer {
         $seriesNo = PvMockDicomTagBuilder::uidTailInt($seriesUid, 1);
         $gen = PvMockDispatcher::generatorForSeriesIndex($modality, $desc, $studyUid, $seriesNo - 1);
         $size = 128;
-        /* 两级缓存：缩略图按序列生成一次后复用 */
+        /* 两级缓存：缩略图按序列生成一次后复用；并发未命中按同键单飞 */
         $key = md5(implode('|', array('thumbuid', PV_VERSION, $studyUid, $seriesUid, $size)));
         $cached = PvMockCache::get($key);
         if (is_string($cached) && $cached !== '') {
             return array('binary' => $cached, 'content_type' => 'image/png');
         }
-        $png = self::grayToPng($gen->generateThumbnailGray($size), $size);
-        PvMockCache::set($key, $png);
-        return array('binary' => $png, 'content_type' => 'image/png');
+        $lock = PvMockCache::acquire($key);
+        try {
+            $cached = PvMockCache::get($key);
+            if (is_string($cached) && $cached !== '') {
+                return array('binary' => $cached, 'content_type' => 'image/png');
+            }
+            $png = self::grayToPng($gen->generateThumbnailGray($size), $size);
+            PvMockCache::set($key, $png);
+            return array('binary' => $png, 'content_type' => 'image/png');
+        } finally {
+            PvMockCache::release($lock);
+        }
     }
 
     /**
@@ -374,9 +400,18 @@ class PvMockServer {
         if (is_string($cached) && $cached !== '') {
             return array('binary' => $cached, 'content_type' => 'image/png');
         }
-        $png = self::grayToPng($gen->generateThumbnailGray($size), $size);
-        PvMockCache::set($key, $png);
-        return array('binary' => $png, 'content_type' => 'image/png');
+        $lock = PvMockCache::acquire($key);
+        try {
+            $cached = PvMockCache::get($key);
+            if (is_string($cached) && $cached !== '') {
+                return array('binary' => $cached, 'content_type' => 'image/png');
+            }
+            $png = self::grayToPng($gen->generateThumbnailGray($size), $size);
+            PvMockCache::set($key, $png);
+            return array('binary' => $png, 'content_type' => 'image/png');
+        } finally {
+            PvMockCache::release($lock);
+        }
     }
 
     /** 解析请求对应的检查 / 序列 / 生成器（wado 与 thumbnail 共用） */
