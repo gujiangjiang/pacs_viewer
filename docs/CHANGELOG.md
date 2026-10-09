@@ -14,6 +14,16 @@
 
 ---
 
+## [1.5.3] - 2026-10-09
+
+### 重构
+- **自定义下拉 / 日期弹层去重**：`controls.js` 中 select 与 date 两套几乎相同的
+  定位、外部点击、视口重定位样板，统一改为 `PvPopover.positionFixed`（select 模式，
+  下拉对齐宽度）、`PvPopover.onOutside` 与 `PvPopover.onViewport`；
+  下拉键盘导航（方向键 / Enter / Esc）与日期选择行为保持不变。
+
+---
+
 ## [1.5.2] - 2026-10-09
 
 ### 重构

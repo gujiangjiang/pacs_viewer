@@ -62,18 +62,9 @@
         }
         function position() {
             if (!menu.classList.contains('open')) return;
-            var r = btn.getBoundingClientRect(), gap = 6;
-            menu.style.width = Math.round(r.width) + 'px';
-            menu.style.left = Math.round(r.left) + 'px';
-            menu.style.top = Math.round(r.bottom + gap) + 'px';
-            var w = menu.offsetWidth, h = menu.offsetHeight;
-            var vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
-            var left = r.left, top = r.bottom + gap;
-            if (left + w > vw - 8) left = Math.max(8, vw - 8 - w);
-            if (top + h > vh - 8) { var a = r.top - gap - h; top = a >= 8 ? a : Math.max(8, vh - 8 - h); }
-            menu.style.left = Math.round(left) + 'px';
-            menu.style.top = Math.round(top) + 'px';
+            PvPopover.positionFixed(menu, btn, { mode: 'select', matchWidth: true });
         }
+        var unbindOutside = null, unbindViewport = null;
         function open() {
             if (sel.disabled || menu.classList.contains('open')) return;
             build();
@@ -81,10 +72,9 @@
             wrap.classList.add('open');
             menu.classList.add('open');
             position();
-            document.addEventListener('pointerdown', onDoc, true);
+            unbindOutside = PvPopover.onOutside(function (t) { return wrap.contains(t) || menu.contains(t); }, close, { type: 'pointerdown', capture: true });
             document.addEventListener('keydown', onKey, true);
-            window.addEventListener('resize', position);
-            window.addEventListener('scroll', position, true);
+            unbindViewport = PvPopover.onViewport(position);
             var cur = menu.querySelector('.pv-select-opt.selected');
             if (cur && menu.scrollHeight > menu.clientHeight) menu.scrollTop = Math.max(0, cur.offsetTop - menu.clientHeight / 2);
         }
@@ -92,10 +82,9 @@
             wrap.classList.remove('open');
             menu.classList.remove('open');
             if (menu.parentNode) menu.parentNode.removeChild(menu);
-            document.removeEventListener('pointerdown', onDoc, true);
+            if (unbindOutside) { unbindOutside(); unbindOutside = null; }
             document.removeEventListener('keydown', onKey, true);
-            window.removeEventListener('resize', position);
-            window.removeEventListener('scroll', position, true);
+            if (unbindViewport) { unbindViewport(); unbindViewport = null; }
         }
         function pick(v) {
             sel.value = v;
@@ -105,7 +94,6 @@
             close();
             btn.focus();
         }
-        function onDoc(e) { if (wrap.contains(e.target) || menu.contains(e.target)) return; close(); }
         function onKey(e) {
             if (e.key === 'Escape') { close(); return; }
             if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter' && e.key !== ' ') return;
@@ -186,16 +174,9 @@
         }
         function position() {
             if (!pop.classList.contains('open')) return;
-            var r = field.getBoundingClientRect(), gap = 6;
-            var w = pop.offsetWidth, h = pop.offsetHeight;
-            var vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
-            var left = r.left, top = r.bottom + gap;
-            if (left + w > vw - 8) left = Math.max(8, vw - 8 - w);
-            if (top + h > vh - 8) { var a = r.top - gap - h; top = a >= 8 ? a : Math.max(8, vh - 8 - h); }
-            pop.style.left = Math.round(left) + 'px';
-            pop.style.top = Math.round(top) + 'px';
+            PvPopover.positionFixed(pop, field, { mode: 'select' });
         }
-        function onDoc(e) { if (wrap.contains(e.target) || pop.contains(e.target)) return; close(); }
+        var unbindOutside = null, unbindViewport = null;
         function open() {
             if (input.disabled || pop.classList.contains('open')) return;
             sync(); render();
@@ -203,17 +184,15 @@
             wrap.classList.add('open');
             pop.classList.add('open');
             position();
-            document.addEventListener('pointerdown', onDoc, true);
-            window.addEventListener('resize', position);
-            window.addEventListener('scroll', position, true);
+            unbindOutside = PvPopover.onOutside(function (t) { return wrap.contains(t) || pop.contains(t); }, close, { type: 'pointerdown', capture: true });
+            unbindViewport = PvPopover.onViewport(position);
         }
         function close() {
             wrap.classList.remove('open');
             pop.classList.remove('open');
             if (pop.parentNode) pop.parentNode.removeChild(pop);
-            document.removeEventListener('pointerdown', onDoc, true);
-            window.removeEventListener('resize', position);
-            window.removeEventListener('scroll', position, true);
+            if (unbindOutside) { unbindOutside(); unbindOutside = null; }
+            if (unbindViewport) { unbindViewport(); unbindViewport = null; }
         }
         field.addEventListener('click', function (e) {
             e.stopPropagation();
