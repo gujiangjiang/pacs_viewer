@@ -16,6 +16,7 @@
 
     var PAGE = 30;
     var allItems = [], total = 0, hasMore = false, query = '';
+    var searchSeq = 0;   // 请求序号：快速改筛选时丢弃过期响应，防旧结果覆盖新结果
 
     // 触摸端无可靠 dblclick：用双触（pointerup）兜底；并防抖避免双击/双触重复打开
     var lastTapAt = 0, lastTapKey = '';
@@ -345,6 +346,7 @@
     /* ---------- 检索 ---------- */
     function doSearch() {
         if (!validateDates()) return;
+        var seq = ++searchSeq;
         btn.disabled = true;
         btn.classList.add('is-loading');
         box.style.display = '';
@@ -357,6 +359,7 @@
         var f = currentFilters();
         for (var k in f) if (f[k]) opts[k] = f[k];
         PvApi.search(query, opts).then(function (j) {
+            if (seq !== searchSeq) return;   // 已有更新的检索：丢弃过期响应
             btn.disabled = false; btn.classList.remove('is-loading');
             if (!j || j.code !== 200) {
                 box.innerHTML = '';
@@ -382,6 +385,7 @@
             }
             if (d.fhir_error) PvUI.toast('FHIR 补充失败：' + d.fhir_error, 'err');
         }).catch(function () {
+            if (seq !== searchSeq) return;
             btn.disabled = false; btn.classList.remove('is-loading');
             box.innerHTML = '';
             box.style.display = 'none';
@@ -459,6 +463,7 @@
             input.focus();
         },
         destroy: function () {
+            searchSeq++;   // 失效在途检索，避免销毁后回写已置空的 DOM 引用
             if (input && onDocKey) input.removeEventListener('keydown', onDocKey);
             if (loader) { loader.destroy(); loader = null; }
             allItems = []; total = 0; hasMore = false;
