@@ -77,15 +77,19 @@ abstract class PvMockAbstractGenerator implements PvMockSliceGeneratorInterface,
         $cols = (int)$this->cols;
         $bytesPer = $this->bitsAllocated > 8 ? 2 : 1;
         $buf = '';
+        $chunk = array();
         for ($y = 0; $y < $rows; $y++) {
             $ny = ($y + 0.5) / $rows;
             for ($x = 0; $x < $cols; $x++) {
                 $nx = ($x + 0.5) / $cols;
-                $stored = $this->encodePixel($this->sample($nx, $ny, $p, $x, $y, $i));
-                if ($bytesPer === 2) $buf .= pack('v', $stored & 0xFFFF);
-                else $buf .= chr($stored & 0xFF);
+                $chunk[] = $this->encodePixel($this->sample($nx, $ny, $p, $x, $y, $i));
+                if (count($chunk) >= 4096) {
+                    $buf .= $bytesPer === 2 ? pack('v*', ...$chunk) : pack('C*', ...$chunk);
+                    $chunk = array();
+                }
             }
         }
+        if ($chunk) $buf .= $bytesPer === 2 ? pack('v*', ...$chunk) : pack('C*', ...$chunk);
         return $buf;
     }
 
