@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '1.4.0');
+define('PV_VERSION', '1.4.1');
 
 date_default_timezone_set('Asia/Shanghai');
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
@@ -28,6 +28,19 @@ if (is_dir($pvSessDir) && is_writable($pvSessDir)) {
     session_save_path($pvSessDir);
 }
 session_name('PACSVIEWSID');
+/* 会话 Cookie 安全属性（必须在 session_start 之前固定）：
+ * HttpOnly 防脚本窃取；SameSite=Lax 防跨站请求携带；HTTPS 环境附加 Secure。
+ * 非 HTTPS 的本地部署自动降级为 Secure=off，不改变可用性。 */
+$pvHttps = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+    || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+if (PHP_VERSION_ID >= 70300) {
+    session_set_cookie_params(array(
+        'lifetime' => 0, 'path' => '/', 'secure' => $pvHttps,
+        'httponly' => true, 'samesite' => 'Lax',
+    ));
+} else {
+    session_set_cookie_params(0, '/', '', $pvHttps, true);   // PHP < 7.3：无 samesite 参数
+}
 if (session_status() !== PHP_SESSION_ACTIVE) {
     @session_start();
 }
