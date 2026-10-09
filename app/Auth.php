@@ -63,6 +63,10 @@ class PvAuth {
     }
     public static function requireAdmin() {
         self::requireLogin();
-        if (!self::isAdmin()) pvw_json(403, '需要管理员权限');
+        if (self::isAdmin()) return;
+        if (pvw_is_ajax()) pvw_json(403, '需要管理员权限');   // AJAX / SPA 片段：JSON
+        http_response_code(403);                              // 页面直访：可读错误页
+        pvw_view('error', array('message' => '需要管理员权限'));
+        exit;
     }
 }
