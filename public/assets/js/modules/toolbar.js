@@ -25,17 +25,11 @@
                 positionMenu(wrap, btn);
             }
         }
-        // 菜单使用 fixed 定位，避免被工具栏的 overflow 裁剪
+        // 菜单使用 fixed 定位，避免被工具栏的 overflow 裁剪（定位算法见 PvPopover）
         function positionMenu(wrap, btn) {
             var panel = wrap.querySelector('.pv-menu');
             if (!panel) return;
-            var r = btn.getBoundingClientRect();
-            var pw = panel.offsetWidth, ph = panel.offsetHeight;
-            var left = Math.max(8, Math.min(r.left, window.innerWidth - pw - 8));
-            var top = r.bottom + 6;
-            if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 6);
-            panel.style.left = left + 'px';
-            panel.style.top = top + 'px';
+            PvPopover.positionFixed(panel, btn, { mode: 'menu' });
         }
         this.closeMenus = function () { closeMenus(); };
 
@@ -64,10 +58,8 @@
         // 点击工具栏之外的区域收起菜单
         this._docClick = function (ev) { if (!el.contains(ev.target)) closeMenus(); };
         document.addEventListener('click', this._docClick);
-        // 视口变化时收起，避免 fixed 菜单错位
-        this._onViewport = function () { closeMenus(); };
-        window.addEventListener('resize', this._onViewport);
-        window.addEventListener('scroll', this._onViewport, true);
+        // 视口变化时收起，避免 fixed 菜单错位（复用通用视口监听助手）
+        this._unbindViewport = PvPopover.onViewport(function () { closeMenus(); });
     }
     PvToolbar.prototype.sync = function (state) {
         if (!this.el) return;
@@ -83,10 +75,7 @@
     };
     PvToolbar.prototype.destroy = function () {
         if (this._docClick) document.removeEventListener('click', this._docClick);
-        if (this._onViewport) {
-            window.removeEventListener('resize', this._onViewport);
-            window.removeEventListener('scroll', this._onViewport, true);
-        }
+        if (this._unbindViewport) { this._unbindViewport(); this._unbindViewport = null; }
     };
     global.PvToolbar = PvToolbar;
 })(window);
