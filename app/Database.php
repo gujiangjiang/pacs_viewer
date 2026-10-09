@@ -28,6 +28,9 @@ class PvDatabase {
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             ));
+            // 并发写保护：短时锁等待 + WAL（读写并发），避免高并发写入报 database is locked
+            $pdo->exec('PRAGMA busy_timeout = 5000');
+            $pdo->exec('PRAGMA journal_mode = WAL');
         } catch (Exception $e) {
             http_response_code(500);
             header('Content-Type: text/html; charset=utf-8');
