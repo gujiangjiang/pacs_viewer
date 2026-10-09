@@ -100,6 +100,11 @@ class PvDatabase {
             PvSettings::set('site_title', 'PACS 影像浏览器');
         }
 
+        // 访客令牌独立密钥：首次运行 / 升级后播种一次（不对外展示，替代曾与 mock_api_key 同源的签名密钥）
+        if (trim((string)PvSettings::get('guest_secret', '')) === '') {
+            PvSettings::set('guest_secret', bin2hex(random_bytes(16)));
+        }
+
         // 兼容旧库：已存在账号则视为已完成安装
         $userCount = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
         if ($userCount > 0) {
