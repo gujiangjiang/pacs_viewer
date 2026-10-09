@@ -13,8 +13,8 @@ class PvAssets {
 
     /** 公共 CSS（页头固定引入） */
     private static $commonCss = array('base.css', 'ui.css');
-    /** 公共 JS（页脚固定引入；modules/popover.js 为基础弹层助手，须先于 controls.js） */
-    private static $commonJs  = array('api.js', 'ui.js', 'modules/popover.js', 'modules/controls.js', 'spa.js', 'pwa.js');
+    /** 公共 JS（页脚固定引入；popover / format 为基础助手，须先于 controls.js） */
+    private static $commonJs  = array('api.js', 'ui.js', 'modules/popover.js', 'modules/format.js', 'modules/controls.js', 'spa.js', 'pwa.js');
 
     /** 各页面额外资源（css / js 均为相对 assets 的路径，顺序敏感） */
     private static $pages = array(

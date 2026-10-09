@@ -42,18 +42,16 @@
         { key: 'status_name', label: '状态', nosort: true }
     ];
 
-    /* ---------- 日期工具 ---------- */
-    function pad(n) { return (n < 10 ? '0' : '') + n; }
-    function fmtDate(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+    /* ---------- 日期工具（格式化复用 PvFmt） ---------- */
     function today() { var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
     function addDays(d, n) { var x = new Date(d.getTime()); x.setDate(x.getDate() + n); return x; }
     function computeRange(mode) {
         if (mode === 'all') return { from: '', to: '' };
         var t = today();
-        if (mode === 'today') return { from: fmtDate(t), to: fmtDate(t) };
-        if (mode === '3d') return { from: fmtDate(addDays(t, -2)), to: fmtDate(t) };
-        if (mode === 'week') return { from: fmtDate(addDays(t, -6)), to: fmtDate(t) };
-        if (mode === 'year') return { from: fmtDate(addDays(t, -364)), to: fmtDate(t) };
+        if (mode === 'today') return { from: PvFmt.date(t), to: PvFmt.date(t) };
+        if (mode === '3d') return { from: PvFmt.date(addDays(t, -2)), to: PvFmt.date(t) };
+        if (mode === 'week') return { from: PvFmt.date(addDays(t, -6)), to: PvFmt.date(t) };
+        if (mode === 'year') return { from: PvFmt.date(addDays(t, -364)), to: PvFmt.date(t) };
         return null;
     }
 

@@ -138,7 +138,6 @@
 
         var view = new Date();
         function parse() { var v = txt(input.value); if (!v) return null; var d = new Date(v + 'T00:00:00'); return isNaN(d.getTime()) ? null : d; }
-        function fmt(d) { var m = d.getMonth() + 1, dd = d.getDate(); return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (dd < 10 ? '0' : '') + dd; }
         function sync() {
             text.textContent = txt(input.value) || '选择日期';
             text.classList.toggle('is-placeholder', !input.value);
@@ -166,7 +165,7 @@
             });
             Array.prototype.forEach.call(pop.querySelectorAll('.pv-cal-day'), function (b) {
                 b.addEventListener('click', function () {
-                    input.value = fmt(new Date(y, m, parseInt(b.getAttribute('data-d'), 10)));
+                    input.value = PvFmt.date(new Date(y, m, parseInt(b.getAttribute('data-d'), 10)));
                     fire(input, 'input'); fire(input, 'change');
                     sync(); close();
                 });
