@@ -230,10 +230,10 @@ class PvAdminController {
         $sinceId = max(0, (int)pvw_input('since_id', 0));
 
         if ($channel === 'system') {
-            $lines = PvSystemLogService::lines($limit);
+            $lines = PvSystemLogService::lines($limit, 1048576, $offset);
             $list = array();
             foreach ($lines as $i => $ln) {
-                $list[] = array('id' => $i + 1, 'created_at' => (string)$ln['time'], 'text' => (string)$ln['text']);
+                $list[] = array('id' => $offset + $i + 1, 'created_at' => (string)$ln['time'], 'text' => (string)$ln['text']);
             }
             pvw_json(200, 'success', array(
                 'channel' => $channel,

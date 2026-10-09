@@ -45,12 +45,18 @@ class PvSystemLogService {
 
     /* ---------------- 读取 ---------------- */
 
-    /** 尾部读取最多 $maxBytes 字节，返回按时间倒序的日志行 */
-    public static function lines($limit = 200, $maxBytes = 1048576) {
+    /**
+     * 尾部读取最多 $maxBytes 字节，返回按时间倒序的日志行。
+     * @param int $limit  返回条数上限
+     * @param int $maxBytes 尾部读取的最大字节窗口
+     * @param int $offset 起始偏移（最新在前，供滚动分页；避免重复加载首屏行）
+     */
+    public static function lines($limit = 200, $maxBytes = 1048576, $offset = 0) {
         $file = self::file();
         if (!is_file($file)) return array();
         $size = (int)@filesize($file);
         $limit = max(1, min(2000, (int)$limit));
+        $offset = max(0, (int)$offset);
         $fh = @fopen($file, 'rb');
         if (!$fh) return array();
         $start = ($size > $maxBytes) ? ($size - $maxBytes) : 0;
@@ -66,6 +72,7 @@ class PvSystemLogService {
         fclose($fh);
         // 最新在前
         $raw = array_reverse($raw);
+        if ($offset > 0) $raw = array_slice($raw, $offset);
         if (count($raw) > $limit) $raw = array_slice($raw, 0, $limit);
         $out = array();
         foreach ($raw as $ln) {
@@ -114,7 +121,7 @@ class PvSystemLogService {
     public static function clear() {
         $file = self::file();
         if (!is_file($file)) return true;
-        return @file_put_contents($file, '') !== false;
+        return @file_put_contents($file, '', LOCK_EX) !== false;
     }
 
     /**
@@ -140,6 +147,6 @@ class PvSystemLogService {
         if ($count > 0 && count($raw) > $count) {
             $raw = array_slice($raw, -$count);
         }
-        @file_put_contents($file, implode("\n", $raw) . (count($raw) ? "\n" : ""));
+        @file_put_contents($file, implode("\n", $raw) . (count($raw) ? "\n" : ""), LOCK_EX);
     }
 }
