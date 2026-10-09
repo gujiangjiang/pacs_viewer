@@ -152,10 +152,27 @@ class PvMockCache {
         return $dir;
     }
 
-    private static function diskFile($key) {
+    /** 缓存键 → 安全文件名片段（仅保留十六进制字符；空则取 md5，保持既有行为） */
+    private static function safeKey($key) {
         $key = preg_replace('/[^a-f0-9]/i', '', (string)$key);
-        if ($key === '') $key = md5((string)$key);
-        return self::diskDir() . '/' . $key . '.bin';
+        return $key === '' ? md5((string)$key) : $key;
+    }
+
+    private static function diskFile($key) {
+        return self::diskDir() . '/' . self::safeKey($key) . '.bin';
+    }
+
+    /** 索引跨进程互斥（flock）；返回句柄（获取失败返回 null，调用方无需区分） */
+    private static function lockIndex() {
+        $f = @fopen(self::diskDir() . '/__idx.lock', 'c');
+        if ($f) @flock($f, LOCK_EX);
+        return $f ? $f : null;
+    }
+
+    private static function unlockIndex($f) {
+        if (!$f) return;
+        @flock($f, LOCK_UN);
+        @fclose($f);
     }
 
     /** 读取磁盘索引（缺失时由现存文件重建一次） */
@@ -176,8 +193,12 @@ class PvMockCache {
         return $idx;
     }
 
+    /** 保存索引：先写临时文件再原子替换，避免并发读到半写状态的索引 */
     private static function saveDiskIdx() {
-        @file_put_contents(self::diskDir() . '/' . self::DISK_IDX, json_encode(self::$diskIdx), LOCK_EX);
+        $file = self::diskDir() . '/' . self::DISK_IDX;
+        $tmp = $file . '.' . getmypid() . '.tmp';
+        if (@file_put_contents($tmp, json_encode(self::$diskIdx), LOCK_EX) === false) { @unlink($tmp); return; }
+        if (!@rename($tmp, $file)) @unlink($tmp);
     }
 
     private static function storeDisk($key, $value) {
@@ -185,40 +206,47 @@ class PvMockCache {
         if (!is_file($file) || @filesize($file) !== strlen($value)) {
             @file_put_contents($file, $value, LOCK_EX);
         }
-        $idx = self::loadDiskIdx();
-        $now = time();
-        // 移除同键旧条目后追加到末尾（最新）
-        $out = array();
-        foreach ($idx as $e) { if ($e[0] !== $key) $out[] = $e; }
-        $out[] = array($key, strlen($value), $now);
+        /* 读-改-写整体加锁，并在锁内重新读取索引，避免并发写入互相覆盖（丢失更新） */
+        $lock = self::lockIndex();
+        try {
+            self::$diskIdx = null;
+            $idx = self::loadDiskIdx();
+            $now = time();
+            // 移除同键旧条目后追加到末尾（最新）
+            $out = array();
+            foreach ($idx as $e) { if ($e[0] !== $key) $out[] = $e; }
+            $out[] = array($key, strlen($value), $now);
 
-        // 1) TTL 淘汰（保留刚写入的；<=0 表示不限制日期）
-        $ttl = self::diskTtl();
-        if ($ttl > 0) {
-            $cut = $now - $ttl;
-            $kept = array();
-            foreach ($out as $e) {
-                if ($e[0] !== $key && $e[2] < $cut) { @unlink(self::diskFile($e[0])); continue; }
-                $kept[] = $e;
+            // 1) TTL 淘汰（保留刚写入的；<=0 表示不限制日期）
+            $ttl = self::diskTtl();
+            if ($ttl > 0) {
+                $cut = $now - $ttl;
+                $kept = array();
+                foreach ($out as $e) {
+                    if ($e[0] !== $key && $e[2] < $cut) { @unlink(self::diskFile($e[0])); continue; }
+                    $kept[] = $e;
+                }
+                $out = $kept;
             }
-            $out = $kept;
-        }
 
-        // 2) 容量淘汰（从最旧开始，保留刚写入的；<=0 表示不限制容量）
-        $max = self::diskMax();
-        if ($max > 0) {
-            $total = 0; foreach ($out as $e) $total += $e[1];
-            $i = 0;
-            while ($total > $max && $i < count($out)) {
-                if ($out[$i][0] === $key) { $i++; continue; }
-                @unlink(self::diskFile($out[$i][0]));
-                $total -= $out[$i][1];
-                array_splice($out, $i, 1);
+            // 2) 容量淘汰（从最旧开始，保留刚写入的；<=0 表示不限制容量）
+            $max = self::diskMax();
+            if ($max > 0) {
+                $total = 0; foreach ($out as $e) $total += $e[1];
+                $i = 0;
+                while ($total > $max && $i < count($out)) {
+                    if ($out[$i][0] === $key) { $i++; continue; }
+                    @unlink(self::diskFile($out[$i][0]));
+                    $total -= $out[$i][1];
+                    array_splice($out, $i, 1);
+                }
             }
-        }
 
-        self::$diskIdx = $out;
-        self::saveDiskIdx();
+            self::$diskIdx = $out;
+            self::saveDiskIdx();
+        } finally {
+            self::unlockIndex($lock);
+        }
     }
 
     /** 按当前设置立即执行清理：关闭的层清空，开启的层按容量 / 日期上限淘汰 */
@@ -258,27 +286,33 @@ class PvMockCache {
         apcu_store(self::IDX, $idx, 0);
     }
 
-    /** 按磁盘容量 / 日期上限淘汰最旧文件 */
+    /** 按磁盘容量 / 日期上限淘汰最旧文件（读-改-写整体加锁） */
     private static function trimDisk() {
-        $idx = self::loadDiskIdx();
-        if (!$idx) return;
-        $now = time();
-        $ttl = self::diskTtl();
-        $max = self::diskMax();
-        $out = array(); $total = 0;
-        // 索引按写入时间自然有序：先丢弃缺失文件与超期项，再从最旧删到容量以内
-        foreach ($idx as $e) {
-            if (!is_file(self::diskFile($e[0]))) continue;                       // 文件已不存在
-            if ($ttl > 0 && $e[2] < $now - $ttl) { @unlink(self::diskFile($e[0])); continue; }
-            $out[] = $e; $total += $e[1];
+        $lock = self::lockIndex();
+        try {
+            self::$diskIdx = null;
+            $idx = self::loadDiskIdx();
+            if (!$idx) return;
+            $now = time();
+            $ttl = self::diskTtl();
+            $max = self::diskMax();
+            $out = array(); $total = 0;
+            // 索引按写入时间自然有序：先丢弃缺失文件与超期项，再从最旧删到容量以内
+            foreach ($idx as $e) {
+                if (!is_file(self::diskFile($e[0]))) continue;                       // 文件已不存在
+                if ($ttl > 0 && $e[2] < $now - $ttl) { @unlink(self::diskFile($e[0])); continue; }
+                $out[] = $e; $total += $e[1];
+            }
+            while ($max > 0 && $total > $max && $out) {
+                $e = array_shift($out);
+                @unlink(self::diskFile($e[0]));
+                $total -= $e[1];
+            }
+            self::$diskIdx = array_values($out);
+            self::saveDiskIdx();
+        } finally {
+            self::unlockIndex($lock);
         }
-        while ($max > 0 && $total > $max && $out) {
-            $e = array_shift($out);
-            @unlink(self::diskFile($e[0]));
-            $total -= $e[1];
-        }
-        self::$diskIdx = array_values($out);
-        self::saveDiskIdx();
     }
 
     private static function diskBytes() {
@@ -291,9 +325,14 @@ class PvMockCache {
     }
 
     private static function clearDisk() {
-        foreach ((array)@glob(self::diskDir() . '/*.bin') as $f) { @unlink($f); }
-        @unlink(self::diskDir() . '/' . self::DISK_IDX);
-        self::$diskIdx = array();
+        $lock = self::lockIndex();
+        try {
+            foreach ((array)@glob(self::diskDir() . '/*.bin') as $f) { @unlink($f); }
+            @unlink(self::diskDir() . '/' . self::DISK_IDX);
+            self::$diskIdx = array();
+        } finally {
+            self::unlockIndex($lock);
+        }
     }
 
     /* ---------------- 容量 / 日期解析（均为可选项，空即不限制） ---------------- */
