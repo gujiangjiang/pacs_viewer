@@ -405,7 +405,7 @@
             box = document.getElementById('pvResults');
             empty = document.getElementById('pvEmpty');
             meta = document.getElementById('pvResultMeta');
-            if (!input || !btn || !box) return;
+            if (!input || !btn || !box || !meta) return;   // 关键节点缺失：不初始化，避免空引用
             if (data.flash) PvUI.toast(data.flash, 'ok');
 
             clearChk = document.getElementById('pvClearOnOpen');

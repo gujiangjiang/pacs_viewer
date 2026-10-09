@@ -414,7 +414,14 @@
             if (mode === 'replace') { self.ws.studies = []; self.clearAllSeriesState(); self.panes.forEach(function (pp) { pp.st.uid = ''; pp.st.si = 0; pp.st.fi = 0; }); }
             self.ws.studies.push({ uid: uid, data: j.data, series: j.data.series || [], collapsed: false });
             // noCull：按申请单（A2）一次打开该单全部 Study 时不按上限裁剪
-            if (!noCull) { while (self.ws.studies.length > self.studyLimit) { var ev = self.ws.studies.shift(); self.clearStudySeriesState(ev.uid); } }
+            if (!noCull) {
+                while (self.ws.studies.length > self.studyLimit) {
+                    var ev = self.ws.studies.shift();
+                    self.clearStudySeriesState(ev.uid);
+                    // 窗格若引用被挤占的检查则清空引用（渲染空态，避免残留失效 uid）
+                    self.panes.forEach(function (pp) { if (pp.st.uid === ev.uid) { pp.st.uid = ''; pp.st.si = 0; pp.st.fi = 0; } });
+                }
+            }
             self.ws.studies.forEach(function (x, k) { x.collapsed = (k !== self.ws.studies.length - 1); });
             var a = self.activePane(); if (a) a.setSeries(uid, 0);
             self.panes.forEach(function (pp) { if (pp !== a) { pp.updateTitle(); pp.updateScrollbar(); pp.render(); } });
@@ -638,16 +645,25 @@
         var self = this, sp = this.splitterEl;
         if (!sp || !this.filmstripEl) return;
         var dragging = false, startX = 0, startW = 0;
+        // 拖动期间挂到 window：即使指针捕获失败 / 移出分隔条也能持续接收（不改变拖动手感）
+        function onMove(e) { if (dragging) self.applySidebarWidth(startW + (e.clientX - startX)); }
+        function stop() {
+            if (!dragging) return;
+            dragging = false; sp.classList.remove('dragging');
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', stop);
+            window.removeEventListener('pointercancel', stop);
+            try { sessionStorage.setItem('pacs_sidebar_w', String(self.sidebarWidth || 168)); } catch (e) {}
+        }
         sp.addEventListener('pointerdown', function (e) {
             dragging = true; startX = e.clientX; startW = self.filmstripEl.getBoundingClientRect().width;
             sp.classList.add('dragging');
             if (sp.setPointerCapture) { try { sp.setPointerCapture(e.pointerId); } catch (err) {} }
+            window.addEventListener('pointermove', onMove);
+            window.addEventListener('pointerup', stop);
+            window.addEventListener('pointercancel', stop);
             e.preventDefault();
         });
-        sp.addEventListener('pointermove', function (e) { if (dragging) self.applySidebarWidth(startW + (e.clientX - startX)); });
-        function stop() { if (!dragging) return; dragging = false; sp.classList.remove('dragging'); try { sessionStorage.setItem('pacs_sidebar_w', String(self.sidebarWidth || 168)); } catch (e) {} }
-        sp.addEventListener('pointerup', stop);
-        sp.addEventListener('pointercancel', stop);
         sp.addEventListener('dblclick', function () { self.applySidebarWidth(168); try { sessionStorage.setItem('pacs_sidebar_w', '168'); } catch (e) {} });
     };
     PvViewer.prototype._disableChromeContext = function () {
