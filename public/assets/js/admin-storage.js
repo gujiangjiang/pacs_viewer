@@ -23,7 +23,7 @@
             var box = document.getElementById('pvStorageBox');
             if (!box) return;
             cache = cache || {};
-            var docClick = null;
+            var unbindDd = null;
 
             function render(d) {
                 d = d || {};
@@ -76,8 +76,11 @@
                         else confirmClear('清空缓存区', '确认清空影像内存缓存？清空后再次打开影像会重新生成。', 'api/storage/clear-cache');
                     });
                 });
-                docClick = function (ev) { if (!dd.contains(ev.target)) dd.classList.remove('open'); };
-                document.addEventListener('click', docClick);
+                unbindDd = PvPopover.onOutside(
+                    function (t) { return dd.contains(t); },
+                    function () { dd.classList.remove('open'); },
+                    { type: 'click', capture: false }
+                );
             }
 
             // 缓存设置：每次打开前拉取服务端最新值回填，避免显示过期内容
@@ -145,7 +148,7 @@
             // 供页面销毁时清理定时器与文档监听
             global.__pvStorageStop = function () {
                 live.stop();
-                if (docClick) { document.removeEventListener('click', docClick); docClick = null; }
+                if (unbindDd) { unbindDd(); unbindDd = null; }
             };
         }
     };

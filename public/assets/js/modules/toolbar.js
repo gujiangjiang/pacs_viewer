@@ -55,9 +55,8 @@
             closeMenus();   // 选择任意项后收起菜单
         });
 
-        // 点击工具栏之外的区域收起菜单
-        this._docClick = function (ev) { if (!el.contains(ev.target)) closeMenus(); };
-        document.addEventListener('click', this._docClick);
+        // 点击工具栏之外的区域收起菜单（复用通用外部点击助手）
+        this._unbindDocClick = PvPopover.onOutside(function (t) { return el.contains(t); }, closeMenus, { type: 'click', capture: false });
         // 视口变化时收起，避免 fixed 菜单错位（复用通用视口监听助手）
         this._unbindViewport = PvPopover.onViewport(function () { closeMenus(); });
     }
@@ -74,7 +73,7 @@
         });
     };
     PvToolbar.prototype.destroy = function () {
-        if (this._docClick) document.removeEventListener('click', this._docClick);
+        if (this._unbindDocClick) { this._unbindDocClick(); this._unbindDocClick = null; }
         if (this._unbindViewport) { this._unbindViewport(); this._unbindViewport = null; }
     };
     global.PvToolbar = PvToolbar;
