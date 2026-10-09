@@ -21,7 +21,7 @@ class PvDicomWebController {
         if (!class_exists('PvActivityLogRepository')) return;
         $method = isset($_SERVER['REQUEST_METHOD']) ? (string)$_SERVER['REQUEST_METHOD'] : 'GET';
         $uri = isset($_SERVER['REQUEST_URI']) ? (string)$_SERVER['REQUEST_URI'] : '';
-        $uri = preg_replace('/([?&])(token|api_key|key)=[^&]*/i', '$1', $uri);   // 剔除密钥
+        $uri = PvHttp::redactQuery($uri);   // 剔除密钥
         PvActivityLogRepository::protocol(self::$protoAction, $method . ' ' . $uri, $level);
     }
 

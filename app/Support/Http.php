@@ -58,6 +58,16 @@ class PvHttp {
     }
 
     /**
+     * 查询串 / URL 密钥参数脱敏（token / api_key / key），用于日志与协议记录。
+     * 兼容「URL（以 ? 或 & 起段）」与「纯查询串（以 ^ 或 & 起段）」两种输入。
+     * @param string $str
+     * @return string
+     */
+    public static function redactQuery($str) {
+        return preg_replace('/(^|[?&])(token|api_key|key)=[^&]*/i', '$1', (string)$str);
+    }
+
+    /**
      * 统一下发二进制响应（DICOM / PNG 等），设置类型 / 长度 / 缓存，可选文件名。
      * 发送后直接结束请求（与各调用点原有 `echo …; exit;` 行为一致）。
      * @param string      $body

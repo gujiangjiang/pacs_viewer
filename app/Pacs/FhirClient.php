@@ -883,7 +883,7 @@ class PvFhirClient {
         if (!class_exists('PvActivityLogRepository')) return;
         $path = (string)parse_url((string)$url, PHP_URL_PATH);
         $query = (string)parse_url((string)$url, PHP_URL_QUERY);
-        $query = preg_replace('/(^|&)(token|api_key|key)=[^&]*/i', '$1', $query);
+        $query = PvHttp::redactQuery($query);
         $ok = $status >= 200 && $status < 300;
         $level = $ok ? 'info' : ($status === 0 ? 'error' : 'warn');
         $stTxt = $status === 0 ? '连接失败' : ('HTTP ' . $status);

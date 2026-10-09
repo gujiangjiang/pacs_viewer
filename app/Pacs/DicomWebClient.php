@@ -64,7 +64,7 @@ class PvDicomWebClient {
         $ok = $status >= 200 && $status < 300;
         $level = $ok ? 'info' : ($status === 0 ? 'error' : 'warn');
         $q = http_build_query($query);
-        $q = preg_replace('/(^|&)(token|api_key|key)=[^&]*/i', '$1', $q);
+        $q = PvHttp::redactQuery($q);
         PvActivityLogRepository::protocol($action, self::base() . $path, $level, array('status' => $status, 'query' => $q));
     }
 
