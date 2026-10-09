@@ -61,27 +61,33 @@ class PvActivityLogRepository {
 
     /* ---------------- 限额 ---------------- */
 
+    /** 设置键前缀（合法通道 → log_{channel}；非法返回空串） */
+    private static function limitPrefix($channel) {
+        $c = self::normalize($channel);
+        return $c === '' ? '' : ('log_' . $c);
+    }
+
     /** 当前通道上限：{count, days}（0 表示不限制） */
     public static function limits($channel) {
-        return array('count' => self::maxCount($channel), 'days' => self::maxDays($channel));
+        $p = self::limitPrefix($channel);
+        return $p === '' ? array('count' => 0, 'days' => 0) : PvLogLimits::read($p);
     }
 
     public static function maxCount($channel) {
-        $v = (int)PvSettings::get('log_' . self::normalize($channel) . '_max_count', '');
-        return $v > 0 ? $v : 0;
+        $l = self::limits($channel);
+        return $l['count'];
     }
 
     public static function maxDays($channel) {
-        $v = (int)PvSettings::get('log_' . self::normalize($channel) . '_max_days', '');
-        return $v > 0 ? $v : 0;
+        $l = self::limits($channel);
+        return $l['days'];
     }
 
     /** 保存通道限额设置 */
     public static function saveLimits($channel, $count, $days) {
         $c = self::normalize($channel);
         if ($c === '') return false;
-        PvSettings::set('log_' . $c . '_max_count', PvNumber::positiveInt($count));
-        PvSettings::set('log_' . $c . '_max_days', PvNumber::positiveInt($days));
+        PvLogLimits::save('log_' . $c, $count, $days);
         self::enforceLimits($c);
         return true;
     }
@@ -90,18 +96,7 @@ class PvActivityLogRepository {
     public static function enforceLimits($channel) {
         $c = self::normalize($channel);
         if ($c === '') return;
-        $max = self::maxCount($c);
-        if ($max > 0) {
-            PvDatabase::exec(
-                "DELETE FROM activity_log WHERE channel=? AND id NOT IN (SELECT id FROM activity_log WHERE channel=? ORDER BY id DESC LIMIT " . $max . ")",
-                array($c, $c)
-            );
-        }
-        $days = self::maxDays($c);
-        if ($days > 0) {
-            $cut = date('Y-m-d H:i:s', time() - $days * 86400);
-            PvDatabase::exec("DELETE FROM activity_log WHERE channel=? AND created_at < ?", array($c, $cut));
-        }
+        PvLogLimits::enforce('activity_log', 'log_' . $c, $c);
     }
 
     /* ---------------- 读取 ---------------- */

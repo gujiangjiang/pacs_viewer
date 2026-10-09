@@ -36,22 +36,19 @@ class PvQueryLogRepository {
 
     /** 日志保留上限设置：{count, days}（0 表示不限制） */
     public static function limits() {
-        return array(
-            'count' => self::maxCount(),
-            'days'  => self::maxDays(),
-        );
+        return PvLogLimits::read('log');
     }
 
     /** 条数上限（<=0 不限制） */
     public static function maxCount() {
-        $v = (int)PvSettings::get('log_max_count', '');
-        return $v > 0 ? $v : 0;
+        $l = PvLogLimits::read('log');
+        return $l['count'];
     }
 
     /** 天数上限（<=0 不限制） */
     public static function maxDays() {
-        $v = (int)PvSettings::get('log_max_days', '');
-        return $v > 0 ? $v : 0;
+        $l = PvLogLimits::read('log');
+        return $l['days'];
     }
 
     /**
@@ -59,18 +56,7 @@ class PvQueryLogRepository {
      * 两者可同时生效（谁先满足就清理谁），未设置则对应维度不限制。
      */
     public static function enforceLimits() {
-        $max = self::maxCount();
-        if ($max > 0) {
-            // 仅保留最新 max 条（id 自增即时间序），删除更早的
-            PvDatabase::exec(
-                "DELETE FROM query_log WHERE id NOT IN (SELECT id FROM query_log ORDER BY id DESC LIMIT " . $max . ")"
-            );
-        }
-        $days = self::maxDays();
-        if ($days > 0) {
-            $cut = date('Y-m-d H:i:s', time() - $days * 86400);
-            PvDatabase::exec("DELETE FROM query_log WHERE created_at < ?", array($cut));
-        }
+        PvLogLimits::enforce('query_log', 'log');
     }
     public static function recent($limit = 50) {
         $limit = max(1, min(500, (int)$limit));

@@ -21,26 +21,25 @@ class PvSystemLogService {
         return is_file(self::file());
     }
 
-    /* ---------------- 上限设置 ---------------- */
+    /* ---------------- 上限设置（键前缀 log_system） ---------------- */
 
     public static function maxCount() {
-        $v = (int)PvSettings::get('log_system_max_count', '');
-        return $v > 0 ? $v : 0;
+        $l = PvLogLimits::read('log_system');
+        return $l['count'];
     }
 
     public static function maxDays() {
-        $v = (int)PvSettings::get('log_system_max_days', '');
-        return $v > 0 ? $v : 0;
+        $l = PvLogLimits::read('log_system');
+        return $l['days'];
     }
 
     public static function limits() {
-        return array('count' => self::maxCount(), 'days' => self::maxDays());
+        return PvLogLimits::read('log_system');
     }
 
     /** 保存上限设置并立即裁剪 */
     public static function saveLimits($count, $days) {
-        PvSettings::set('log_system_max_count', PvNumber::positiveInt($count));
-        PvSettings::set('log_system_max_days', PvNumber::positiveInt($days));
+        PvLogLimits::save('log_system', $count, $days);
         self::enforceLimits();
     }
 
