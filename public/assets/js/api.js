@@ -5,18 +5,10 @@
 (function (global) {
     'use strict';
     var boot = global.PV_BOOT || {};
-    var base = boot.api || '?r=api';
 
+    /** 统一站内路由构造：api/<sub>（PvNav.route → PvUI.buildUrl 兜底） */
     function buildUrl(sub, params) {
-        var u = base.replace(/r=api(\b|$)/, 'r=api/' + sub);
-        var q = [];
-        params = params || {};
-        for (var k in params) {
-            if (params[k] === undefined || params[k] === null) continue;
-            q.push(encodeURIComponent(k) + '=' + encodeURIComponent(params[k]));
-        }
-        if (q.length) u += (u.indexOf('?') < 0 ? '?' : '&') + q.join('&');
-        return u;
+        return PvUI.route('api/' + sub, params);
     }
     function get(sub, params) {
         // 访客阅片：随请求附带签名令牌（无 Cookie / 无会话，与登录态隔离）

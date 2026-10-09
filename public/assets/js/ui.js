@@ -354,17 +354,21 @@
 
     /* ---------------- 站内路由 / 实时轮询 / 模态提交 ---------------- */
 
-    /** 站内路由 URL（优先复用 PvNav.route；不可用时按 PV_BOOT.home 兜底） */
-    function route(r, params) {
-        if (global.PvNav && global.PvNav.route) return global.PvNav.route(r, params);
-        var home = boot.home || '/';
-        var url = home + (home.indexOf('?') < 0 ? '?' : '&') + 'r=' + encodeURIComponent(r);
+    /** 站内路由 URL 生成（纯函数：base 站点根 + r 路由 + params 参数，跳过空值） */
+    function buildUrl(base, r, params) {
+        var url = base + (base.indexOf('?') < 0 ? '?' : '&') + 'r=' + encodeURIComponent(r);
         params = params || {};
         for (var k in params) {
             if (params[k] === undefined || params[k] === null || params[k] === '') continue;
             url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
         }
         return url;
+    }
+
+    /** 站内路由 URL（优先复用 PvNav.route；不可用时按 PV_BOOT.home 兜底） */
+    function route(r, params) {
+        if (global.PvNav && global.PvNav.route) return global.PvNav.route(r, params);
+        return buildUrl(boot.home || '/', r, params);
     }
 
     /**
@@ -454,7 +458,7 @@
         toast: toast, get: get, post: post, upload: upload, copy: copy,
         bindAjaxForms: bindAjaxForms, esc: esc,
         bindSplit: bindSplit, postThen: postThen, bindConnTest: bindConnTest,
-        route: route, liveToggle: liveToggle, modalSubmit: modalSubmit,
+        route: route, buildUrl: buildUrl, liveToggle: liveToggle, modalSubmit: modalSubmit,
         clearSessionState: clearSessionState
     };
 })(window);

@@ -45,14 +45,9 @@
         loadedCss[assetKey(l.getAttribute('href'))] = true;
     });
 
+    /** 站内路由 URL：复用通用构造（PvUI.buildUrl），保证编码口径一致 */
     function route(page, params) {
-        var url = home + (home.indexOf('?') < 0 ? '?' : '') + 'r=' + encodeURIComponent(page);
-        params = params || {};
-        for (var k in params) {
-            if (params[k] === undefined || params[k] === null || params[k] === '') continue;
-            url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
-        }
-        return url;
+        return PvUI.buildUrl(home, page, params);
     }
 
     function ensureCss(list) {
