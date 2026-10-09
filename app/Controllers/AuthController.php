@@ -23,6 +23,13 @@ class PvAuthController {
     }
 
     public static function logout() {
+        // 登出属状态变更操作：校验随页头退出链接下发的 CSRF 令牌（GET 场景）
+        $t = isset($_GET['_csrf']) ? (string)$_GET['_csrf'] : '';
+        if ($t === '' || empty($_SESSION['pv_csrf']) || !hash_equals($_SESSION['pv_csrf'], $t)) {
+            http_response_code(403);
+            pvw_view('error', array('message' => '安全校验失败，请刷新页面后重试'));
+            exit;
+        }
         PvAuth::logout();
         pvw_redirect(pvw_url('login'));
     }

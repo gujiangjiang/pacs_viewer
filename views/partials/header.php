@@ -78,7 +78,7 @@ catch (e) { window.PV_BOOT.data.embedded = true; }</script>
     <div class="pv-user">
         <?php if ($pvUser && !$pvGuest) { ?>
         <span class="pv-user-name"><?php echo pvw_e($pvUser['display_name'] !== '' ? $pvUser['display_name'] : $pvUser['username']); ?><?php echo $pvUser['role'] === 'admin' ? '<span class="pv-user-role"> · 管理员</span>' : ''; ?></span>
-        <a class="pv-btn pv-btn-ghost pv-btn-sm" href="<?php echo pvw_e(pvw_url('logout')); ?>" data-no-nav="1"
+        <a class="pv-btn pv-btn-ghost pv-btn-sm" href="<?php echo pvw_e(pvw_url('logout', array('_csrf' => pvw_csrf()))); ?>" data-no-nav="1"
            onclick="try{if(window.PvUI)PvUI.clearSessionState();}catch(e){}">退出</a>
         <?php } ?>
     </div>
