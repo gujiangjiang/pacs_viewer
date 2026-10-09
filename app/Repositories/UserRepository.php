@@ -13,6 +13,16 @@ class PvUserRepository {
     }
 
     /**
+     * 密码强度校验（创建 / 重置统一口径）：
+     * 至少 6 个字符（按字符数，兼容多字节），且不超过 72 字节（避免哈希静默截断）。
+     */
+    private static function assertPassword($password) {
+        $password = (string)$password;
+        if (mb_strlen($password) < 6) throw new RuntimeException('密码长度至少 6 位');
+        if (strlen($password) > 72) throw new RuntimeException('密码过长（最多 72 字节）');
+    }
+
+    /**
      * 创建账号。
      * @param bool $owner 是否为首个「安装管理员」（受保护：不可删除 / 停用）
      */
@@ -22,7 +32,7 @@ class PvUserRepository {
         if (!preg_match('/^[A-Za-z][A-Za-z0-9_]{1,31}$/', $username)) {
             throw new RuntimeException('用户名须以字母开头，仅含字母 / 数字 / 下划线（2-32 位）');
         }
-        if (mb_strlen((string)$password) < 6) throw new RuntimeException('密码长度至少 6 位');
+        self::assertPassword($password);
         if (self::findByUsername($username)) throw new RuntimeException('用户名已存在');
         $role = $role === 'admin' ? 'admin' : 'user';
         return PvDatabase::insert(
@@ -44,7 +54,7 @@ class PvUserRepository {
     }
 
     public static function setPassword($id, $password) {
-        if (strlen((string)$password) < 6) throw new RuntimeException('密码长度至少 6 位');
+        self::assertPassword($password);
         $u = self::find($id);
         if (!$u) throw new RuntimeException('账号不存在');
         return PvDatabase::exec("UPDATE users SET password_hash=? WHERE id=?", array(password_hash($password, PASSWORD_DEFAULT), (int)$id));
