@@ -584,7 +584,7 @@ class PvFhirClient {
         $name = self::patientName($patient);
         $gender = self::gender($patient);
         $birth = isset($patient['birthDate']) ? (string)$patient['birthDate'] : '';
-        $age = self::ageText($birth);
+        $age = PvDicom::ageText($birth);
         /* modality 可能是 R4 的单个 CodeableConcept，也可能是数组（部分实现用 R5 风格），兼容两者 */
         $modality = self::codeOf(isset($im['modality'][0]) ? $im['modality'][0] : (isset($im['modality']) ? $im['modality'] : array()));
         $uid = isset($im['id']) ? (string)$im['id'] : '';
@@ -637,7 +637,7 @@ class PvFhirClient {
             'patient_id'    => $pid,
             'name'          => self::patientName($patient),
             'gender'        => self::gender($patient),
-            'age'           => self::ageText($birth),
+            'age'           => PvDicom::ageText($birth),
             'birth_date'    => $birth,
             'outpatient_no' => self::visitNo($enc),
             'accession_no'  => $acc,
@@ -724,13 +724,6 @@ class PvFhirClient {
         if (isset($concept['code'])) return strtoupper((string)$concept['code']);
         return '';
     }
-    private static function ageText($birth) {
-        if ($birth === '') return '';
-        $t = strtotime($birth);
-        if ($t === false) return '';
-        $y = (int)floor((time() - $t) / (365.25 * 86400));
-        return $y > 0 && $y < 130 ? ($y . '岁') : '';
-    }
     private static function fmtDate($s) {
         if ($s === '') return '';
         $t = strtotime($s);
@@ -779,7 +772,7 @@ class PvFhirClient {
                 'patient_id'      => self::patientNo($p),
                 'name'            => self::patientName($p),
                 'gender'          => self::gender($p),
-                'age'             => self::ageText($birth),
+                'age'             => PvDicom::ageText($birth),
                 'birth_date'      => $birth,
                 'outpatient_no'   => self::visitNo($t),
                 'registered_at'   => isset($t['executionPeriod']['start']) ? self::fmtDate($t['executionPeriod']['start']) : '',

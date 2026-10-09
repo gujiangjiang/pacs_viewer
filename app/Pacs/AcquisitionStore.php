@@ -117,7 +117,7 @@ class PvAcquisitionStore {
             'patient_id'    => (string)$acq['patient_id'],
             'name'          => (string)$acq['name'],
             'gender'        => (string)$acq['gender'],
-            'age'           => self::ageText($birth),
+            'age'           => PvDicom::ageText($birth),
             'birth_date'    => $birth,
             'outpatient_no' => (string)$acq['outpatient_no'],
             'accession_no'  => (string)$acq['accession_no'],
@@ -142,14 +142,5 @@ class PvAcquisitionStore {
             if ($row) $out[] = $row;
         }
         return $out;
-    }
-
-    private static function ageText($birth) {
-        $d = preg_replace('/\D/', '', (string)$birth);
-        if (strlen($d) < 8) return '';
-        $ts = strtotime(substr($d, 0, 4) . '-' . substr($d, 4, 2) . '-' . substr($d, 6, 2));
-        if (!$ts) return '';
-        $y = (int)floor((time() - $ts) / (365.25 * 86400));
-        return ($y > 0 && $y < 130) ? ($y . '岁') : '';
     }
 }
