@@ -14,6 +14,16 @@
 
 ---
 
+## [1.7.5] - 2026-10-09
+
+### 重构
+- **FHIR 客户端拆分（二）**：配置 / HTTP 与连通性（`FhirHttpTrait`）、检索与调阅
+  （`FhirSearchTrait`）、影像报告（`FhirReportTrait`）、摄片工作列表
+  （`FhirWorklistTrait`）拆出；反射对照 49 个方法集合一致，`FhirClient.php`
+  收敛为 40 行的装配类（仅 trait 归属与静态属性），各 trait ≤ 270 行。
+
+---
+
 ## [1.7.4] - 2026-10-09
 
 ### 重构
