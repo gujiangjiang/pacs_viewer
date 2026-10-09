@@ -103,6 +103,28 @@
     global.PvRender = {
         BASE: BASE,
         resample: resample, window: window, decodeToImage: decodeToImage, clamp: clamp,
-        drawFit: drawFit, imageToRaw: imageToRaw
+        drawFit: drawFit, imageToRaw: imageToRaw,
+        rafThrottle: rafThrottle
     };
+
+    /**
+     * rAF 节流：同一动画帧内多次调用只执行一次；返回函数带 cancel()。
+     * 无 requestAnimationFrame 环境（Worker / 旧浏览器）退化为 setTimeout。
+     */
+    function rafThrottle(fn) {
+        var pending = null;
+        var raf = (typeof window !== 'undefined' && window.requestAnimationFrame) || function (f) { return setTimeout(f, 16); };
+        var cancel = (typeof window !== 'undefined' && window.cancelAnimationFrame) || clearTimeout;
+        var wrapped = function () {
+            if (pending !== null) return;
+            var ctx = this, args = arguments;
+            pending = raf(function () { pending = null; fn.apply(ctx, args); });
+        };
+        wrapped.cancel = function () {
+            if (pending === null) return;
+            try { cancel(pending); } catch (e) {}
+            pending = null;
+        };
+        return wrapped;
+    }
 })(typeof self !== 'undefined' ? self : window);

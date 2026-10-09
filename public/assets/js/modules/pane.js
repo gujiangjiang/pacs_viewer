@@ -70,7 +70,7 @@
 
     PvPane.prototype.destroy = function () {
         this._abortFetches();      // 中止后台预取，释放浏览器连接
-        if (this._raf) { try { (window.cancelAnimationFrame || clearTimeout)(this._raf); } catch (e) {} this._raf = null; }
+        if (this._renderThrottled) { this._renderThrottled.cancel(); this._renderThrottled = null; }
         try { if (this._ro) this._ro.disconnect(); } catch (e) {}
         if (this._upH) window.removeEventListener('pointerup', this._upH);
         if (this._sb && this._sb.hideTimer) clearTimeout(this._sb.hideTimer);
@@ -211,16 +211,21 @@
         return (f && f.status === 'ok') ? f : null;
     };
 
-    /** 帧缓存上限控制（优先保留正在显示的帧） */
-    PvPane.prototype._trimFrames = function () {
-        var keys = Object.keys(this._frames);
-        if (keys.length <= 240) return;
-        var removed = 0;
-        for (var i = 0; i < keys.length && removed < keys.length - 200; i++) {
-            var f = this._frames[keys[i]];
-            if (f && f.status === 'ok') { delete this._frames[keys[i]]; removed++; }
+    /**
+     * 缓存上限控制：超过 max 时按插入顺序淘汰最早的 ok 条目，至少保留 keep 条
+     *（正在显示的帧通常刚写入、位于末尾而得以保留）。帧缓存与实例缓存共用。
+     */
+    PvPane.prototype._trimCache = function (map, max, keep) {
+        var keys = Object.keys(map);
+        if (keys.length <= max) return;
+        var removed = 0, limit = keys.length - keep;
+        for (var i = 0; i < keys.length && removed < limit; i++) {
+            var v = map[keys[i]];
+            if (v && v.status === 'ok') { delete map[keys[i]]; removed++; }
         }
     };
+    /** 帧缓存上限控制（优先保留正在显示的帧） */
+    PvPane.prototype._trimFrames = function () { this._trimCache(this._frames, 240, 200); };
 
     /**
      * 仅保留当前显示的帧 / 实例，释放其余已解码大对象。
@@ -238,15 +243,7 @@
     };
 
     /** 解码实例缓存上限控制（多帧实例较大，限制保留实例数） */
-    PvPane.prototype._trimInstances = function () {
-        var keys = Object.keys(this._instances);
-        if (keys.length <= 24) return;
-        var removed = 0;
-        for (var i = 0; i < keys.length && removed < keys.length - 16; i++) {
-            var inst = this._instances[keys[i]];
-            if (inst && inst.status === 'ok') { delete this._instances[keys[i]]; removed++; }
-        }
-    };
+    PvPane.prototype._trimInstances = function () { this._trimCache(this._instances, 24, 16); };
 
     /**
      * 后台预取并解码整条序列，使滚动翻帧基本即时。
@@ -372,13 +369,10 @@
             });
         }
     };
-    /** 合并同一动画帧内的多次渲染请求（拖动 / 滚轮 / 缩放等高频场景） */
+    /** 合并同一动画帧内的多次渲染请求（拖动 / 滚轮 / 缩放等高频场景；复用通用 rAF 节流） */
     PvPane.prototype._scheduleRender = function () {
-        if (this._rafPending) return;
-        var self = this;
-        this._rafPending = true;
-        var raf = window.requestAnimationFrame || function (fn) { return setTimeout(fn, 16); };
-        this._raf = raf(function () { self._rafPending = false; self._raf = null; self.render(); });
+        if (!this._renderThrottled) this._renderThrottled = PvRender.rafThrottle(this.render);
+        this._renderThrottled();
     };
 
     PvPane.prototype.placeholder = function (t, big) {

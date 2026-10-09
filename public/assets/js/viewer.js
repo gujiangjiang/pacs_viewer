@@ -67,11 +67,13 @@
     PvViewer.prototype.indexOf = function (uid) { for (var i = 0; i < this.ws.studies.length; i++) if (this.ws.studies[i].uid === uid) return i; return -1; };
     PvViewer.prototype._bindWindowResize = function () {
         var self = this;
-        var raf = window.requestAnimationFrame || function (fn) { return setTimeout(fn, 16); };
+        // 同一动画帧内合并多次 resize（复用通用 rAF 节流）
+        this._resizeThrottled = PvRender.rafThrottle(function () {
+            self.panes.forEach(function (p) { p.resize(); p.render(); });
+        });
         this._onWinResize = function () {
             if (!self.isAttached()) return;   // 被 SPA 隐藏期间无需重排重绘
-            if (self._resizeRaf) return;
-            self._resizeRaf = raf(function () { self._resizeRaf = null; self.panes.forEach(function (p) { p.resize(); p.render(); }); });
+            self._resizeThrottled();
         };
         window.addEventListener('resize', this._onWinResize);
     };
@@ -271,7 +273,7 @@
         if (this._onWinResize) window.removeEventListener('resize', this._onWinResize);
         if (this._onUnload) window.removeEventListener('beforeunload', this._onUnload);
         if (this._onKey) document.removeEventListener('keydown', this._onKey);
-        if (this._resizeRaf) { try { (window.cancelAnimationFrame || clearTimeout)(this._resizeRaf); } catch (e) {} this._resizeRaf = null; }
+        if (this._resizeThrottled) { this._resizeThrottled.cancel(); this._resizeThrottled = null; }
         if (this._persistTimer) { clearTimeout(this._persistTimer); this._persistTimer = null; }
         if (this.toolbar && this.toolbar.destroy) this.toolbar.destroy();
         if (this._ctxUnbind) { this._ctxUnbind(); this._ctxUnbind = null; }
