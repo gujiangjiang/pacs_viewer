@@ -98,28 +98,23 @@
                     + '<div class="pv-field"><span>缓存日期上限（天，留空不限制；内存与硬盘共用）</span>'
                     + '<input id="pvCacheMaxDays" type="number" min="0" step="1" placeholder="如 3"></div>'
                     + '<p class="pv-hint">超过上限时自动删除最早生成的缓存；容量与日期谁先达到即执行谁，留空表示该维度不限制。</p>';
-                var m = PvModal.open({
+                PvUI.modalSubmit({
                     title: '缓存设置',
                     body: body,
-                    actions: [
-                        { label: '取消', cls: 'pv-btn-ghost' },
-                        {
-                            label: '保存', cls: 'pv-btn-primary', onClick: function () {
-                                var data = {
-                                    cache_apcu_enabled: document.getElementById('pvCacheApcu').checked ? '1' : '0',
-                                    cache_disk_enabled: document.getElementById('pvCacheDisk').checked ? '1' : '0',
-                                    cache_max_mb: (document.getElementById('pvCacheMaxMb').value || '').trim(),
-                                    cache_disk_max_mb: (document.getElementById('pvCacheDiskMaxMb').value || '').trim(),
-                                    cache_max_days: (document.getElementById('pvCacheMaxDays').value || '').trim()
-                                };
-                                PvUI.post(route('api/storage/settings'), data).then(function (j) {
-                                    if (j && j.code === 200) { PvUI.toast(j.msg || '已保存', 'ok'); m.close(); load(false); }
-                                    else PvUI.toast((j && j.msg) || '保存失败', 'err');
-                                }).catch(function () { PvUI.toast('网络请求失败', 'err'); });
-                                return false;   // 保持打开，由回调决定关闭
-                            }
-                        }
-                    ],
+                    okText: '保存',
+                    okMsg: '已保存',
+                    errMsg: '保存失败',
+                    route: 'api/storage/settings',
+                    getData: function () {
+                        return {
+                            cache_apcu_enabled: document.getElementById('pvCacheApcu').checked ? '1' : '0',
+                            cache_disk_enabled: document.getElementById('pvCacheDisk').checked ? '1' : '0',
+                            cache_max_mb: (document.getElementById('pvCacheMaxMb').value || '').trim(),
+                            cache_disk_max_mb: (document.getElementById('pvCacheDiskMaxMb').value || '').trim(),
+                            cache_max_days: (document.getElementById('pvCacheMaxDays').value || '').trim()
+                        };
+                    },
+                    onOk: function () { load(false); },
                     onOpen: function () {
                         var apcu = document.getElementById('pvCacheApcu');
                         var disk = document.getElementById('pvCacheDisk');
