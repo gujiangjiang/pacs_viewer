@@ -16,6 +16,7 @@
     var MOCK_PAGE = 20;
     var mockLoader = null;
     var mockLoaded = 0, mockTotal = 0, mockHasMore = false, mockQuery = '';
+    var mockSearchSeq = 0;   // 患者检索请求序号：丢弃过期响应，防旧结果覆盖新结果
 
     /** 单个患者卡片 */
     function patientCard(p) {
@@ -63,6 +64,7 @@
 
     /** 重置预览（销毁加载器 / 清空列表）；keepKeyword=false 时同时清空关键词 */
     function resetMockPatients(keepKeyword) {
+        mockSearchSeq++;   // 失效在途检索，避免清空后旧响应又写入列表
         if (mockLoader) { mockLoader.destroy(); mockLoader = null; }
         mockLoaded = 0; mockTotal = 0; mockHasMore = false;
         var grid = document.getElementById('pvMockPatients'); if (grid) grid.innerHTML = '';
@@ -101,8 +103,10 @@
         var kw = document.getElementById('pvMockKeyword');
         mockQuery = kw ? kw.value : '';
         resetMockPatients(true);
+        var seq = ++mockSearchSeq;
         if (btn) { btn.disabled = true; btn.textContent = '检索中…'; }
         requestPatients(0).then(function (j) {
+            if (seq !== mockSearchSeq) return;   // 已有更新的检索：丢弃过期响应
             if (btn) { btn.disabled = false; btn.textContent = '检索患者'; }
             if (!j || j.code !== 200) {
                 mockTotal = 0; mockHasMore = false;
@@ -120,6 +124,7 @@
             updatePatientsMeta();
             createPatientsLoader();
         }).catch(function () {
+            if (seq !== mockSearchSeq) return;
             if (btn) { btn.disabled = false; btn.textContent = '检索患者'; }
             mockTotal = 0; mockHasMore = false;
             updatePatientsMeta();
@@ -233,7 +238,7 @@
     }
 
     /* ---------- 摄片列表：按申请单聚合（待登记 / 待摄片 / 已完成，可日期筛选） ---------- */
-    var wlAll = [], wlTab = 'pending', wlDate = '';
+    var wlAll = [], wlTab = 'pending', wlDate = '', wlSeq = 0;   // wlSeq：丢弃过期的列表响应
     function wlGroups() {
         var map = {};
         (wlAll || []).forEach(function (w) {
@@ -303,19 +308,25 @@
         }).join('');
     }
     function loadWorklist(btn) {
+        var seq = ++wlSeq;
         var body = document.getElementById('pvWorklistBody');
         var hint = document.getElementById('pvWorklistHint');
         if (body) body.innerHTML = '<tr data-row="1"><td colspan="9" class="pv-dim" style="text-align:center">加载中…</td></tr>';
         if (hint) { hint.style.display = 'none'; hint.textContent = ''; }
         if (btn) btn.disabled = true;
         return getJson('api/mock/worklist').then(function (j) {
+            if (seq !== wlSeq) return;   // 已有更新的请求：丢弃过期响应
             if (btn) btn.disabled = false;
             if (!j || j.code !== 200) { PvUI.toast((j && j.msg) || '加载失败', 'err'); wlAll = []; renderWorklist(); return; }
             var d = j.data || {};
             wlAll = d.list || [];
             if (d.hint && hint) { hint.style.display = ''; hint.textContent = d.hint; }
             renderWorklist();
-        }).catch(function () { if (btn) btn.disabled = false; PvUI.toast('网络请求失败', 'err'); });
+        }).catch(function () {
+            if (seq !== wlSeq) return;
+            if (btn) btn.disabled = false;
+            PvUI.toast('网络请求失败', 'err');
+        });
     }
     function bindWorklist() {
         var body = document.getElementById('pvWorklistBody');
