@@ -149,22 +149,21 @@
                 + '<div class="pv-field"><span>上限天数（留空不限制）</span>'
                 + '<input id="pvLogMaxDays" type="number" min="0" step="1" value="' + esc(d.days || '') + '"></div>'
                 + '<p class="pv-hint">任一上限先达到即清理最早的日志；两项均留空表示不限制。</p>';
-            var m = PvModal.open({
-                title: CH_CN[channel] + '保留设置', body: body,
-                actions: [
-                    { label: '取消', cls: 'pv-btn-ghost' },
-                    {
-                        label: '保存', cls: 'pv-btn-primary', onClick: function () {
-                            var c = ((document.getElementById('pvLogMaxCount') || {}).value || '').trim();
-                            var dd = ((document.getElementById('pvLogMaxDays') || {}).value || '').trim();
-                            PvUI.post(PvNav.route('admin/log-settings'), { channel: channel, log_max_count: c, log_max_days: dd }).then(function (jj) {
-                                if (jj && jj.code === 200) { PvUI.toast(jj.msg || '已保存', 'ok'); m.close(); if (typeof reloadFn === 'function') reloadFn(true); }
-                                else PvUI.toast((jj && jj.msg) || '保存失败', 'err');
-                            });
-                            return false;
-                        }
-                    }
-                ]
+            PvUI.modalSubmit({
+                title: CH_CN[channel] + '保留设置',
+                body: body,
+                okText: '保存',
+                okMsg: '已保存',
+                errMsg: '保存失败',
+                route: 'admin/log-settings',
+                getData: function () {
+                    return {
+                        channel: channel,
+                        log_max_count: ((document.getElementById('pvLogMaxCount') || {}).value || '').trim(),
+                        log_max_days: ((document.getElementById('pvLogMaxDays') || {}).value || '').trim()
+                    };
+                },
+                onOk: function () { if (typeof reloadFn === 'function') reloadFn(true); }
             });
         });
     }
