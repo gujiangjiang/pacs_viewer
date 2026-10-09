@@ -67,10 +67,12 @@
             else if (preset) self.setPreset(preset);
             self.closeCtxMenu();
         });
-        this._ctxDoc = function (ev) { if (el.classList.contains('open') && !el.contains(ev.target)) self.closeCtxMenu(); };
-        this._ctxViewport = function () { self.closeCtxMenu(); };
-        document.addEventListener('pointerdown', this._ctxDoc, true);
-        window.addEventListener('resize', this._ctxViewport);
-        window.addEventListener('scroll', this._ctxViewport, true);
+        /* 外部按下关闭 + 视口变化关闭：复用通用弹层助手（解绑函数供 destroy 调用） */
+        this._ctxUnbind = PvPopover.onOutside(
+            function (t) { return el.contains(t); },
+            function () { self.closeCtxMenu(); },
+            { type: 'pointerdown', capture: true }
+        );
+        this._ctxUnbindViewport = PvPopover.onViewport(function () { self.closeCtxMenu(); });
     };
 })(window);

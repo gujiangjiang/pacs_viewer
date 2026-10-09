@@ -673,8 +673,8 @@
         if (this._resizeRaf) { try { (window.cancelAnimationFrame || clearTimeout)(this._resizeRaf); } catch (e) {} this._resizeRaf = null; }
         if (this._persistTimer) { clearTimeout(this._persistTimer); this._persistTimer = null; }
         if (this.toolbar && this.toolbar.destroy) this.toolbar.destroy();
-        if (this._ctxDoc) document.removeEventListener('pointerdown', this._ctxDoc, true);
-        if (this._ctxViewport) { window.removeEventListener('resize', this._ctxViewport); window.removeEventListener('scroll', this._ctxViewport, true); }
+        if (this._ctxUnbind) { this._ctxUnbind(); this._ctxUnbind = null; }
+        if (this._ctxUnbindViewport) { this._ctxUnbindViewport(); this._ctxUnbindViewport = null; }
         if (this.sidebar && this.sidebar._thumbIO) { try { this.sidebar._thumbIO.disconnect(); } catch (e) {} }
         this.panes.slice().forEach(function (p) { p.destroy(); });
         this.panes = [];
