@@ -56,10 +56,57 @@ class PvMockServer {
         return PvAuth::check() || self::checkKey($key);
     }
 
-    /** 判断给定接口地址是否指向本模拟服务器（DICOMweb /dicom-web） */
+    /**
+     * 判断给定接口地址是否指向本模拟服务器（严格比对站内 DICOMweb 路径 + 同源主机）。
+     * 仅路径包含 /dicom-web 不再视为自身，避免把远程 DICOMweb（几乎都以 /dicom-web
+     * 结尾）误判为内置模拟：影响机构名捕获、来源标记与缩略图端点选择。
+     */
     public static function isSelfEndpoint($url) {
-        $path = parse_url((string)$url, PHP_URL_PATH);
-        return is_string($path) && $path !== '' && strpos($path, '/dicom-web') !== false;
+        $cfg = self::endpointParts($url);
+        if ($cfg === null) return false;
+        $path = (PV_URL_SITE === '' ? '' : PV_URL_SITE) . '/dicom-web';
+        if ($cfg['path'] !== $path) return false;   // 路径须严格等于站内 DICOMweb 路径
+        if ($cfg['host'] === '') return true;       // 无 host 的相对路径（严格匹配时视为本站）
+        // 与「当前请求推导的自身地址」或「当前请求来源」同源（主机等价 + 端口一致）
+        return self::sameOrigin($cfg, self::endpointParts(self::dicomWebEndpoint()))
+            || self::sameOrigin($cfg, self::requestOrigin());
+    }
+
+    /** 解析 URL → {host, port, path}（port 按 scheme 归一默认值；相对路径 host 为空） */
+    private static function endpointParts($url) {
+        $p = parse_url(trim((string)$url));
+        if (!is_array($p)) return null;
+        $scheme = strtolower(isset($p['scheme']) ? (string)$p['scheme'] : '');
+        $port = isset($p['port']) ? (int)$p['port'] : ($scheme === 'https' ? 443 : ($scheme === 'http' ? 80 : 0));
+        return array(
+            'host' => isset($p['host']) ? strtolower((string)$p['host']) : '',
+            'port' => $port,
+            'path' => isset($p['path']) ? rtrim((string)$p['path'], '/') : '',
+        );
+    }
+
+    /** 当前请求来源（host + 端口；用于同源比较） */
+    private static function requestOrigin() {
+        $host = isset($_SERVER['HTTP_HOST']) ? (string)$_SERVER['HTTP_HOST'] : '';
+        if ($host === '') return null;
+        $https = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+        $p = parse_url(($https ? 'https' : 'http') . '://' . $host);
+        if (!is_array($p) || empty($p['host'])) return null;
+        return array(
+            'host' => strtolower((string)$p['host']),
+            'port' => isset($p['port']) ? (int)$p['port'] : ($https ? 443 : 80),
+            'path' => '',
+        );
+    }
+
+    /** 同源：端口一致，且主机相同或任一方为回环地址（回环必然指向本机，同端口即同一监听） */
+    private static function sameOrigin($a, $b) {
+        if ($a === null || $b === null || $a['host'] === '' || $b['host'] === '') return false;
+        if ($a['port'] !== $b['port']) return false;
+        if ($a['host'] === $b['host']) return true;
+        $loop = array('localhost', '127.0.0.1', '::1');
+        return in_array($a['host'], $loop, true) || in_array($b['host'], $loop, true);
     }
 
     /* ---------------- 数据来源 ---------------- */
