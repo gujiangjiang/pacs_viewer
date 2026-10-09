@@ -85,7 +85,7 @@ class PvAcquisitionStore {
                     (int)$existing['id'],
                 )
             );
-            return self::find($acc);
+            return self::findByTask($acc, $taskRef);   // 同检查号多 Study：精确回读本次更新行
         }
         PvDatabase::insert(
             "INSERT INTO mock_acquisitions(task_ref,accession_no,study_uid,patient_id,name,gender,birth_date,outpatient_no,modality,description,registered_at,acquired_at,operator,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
