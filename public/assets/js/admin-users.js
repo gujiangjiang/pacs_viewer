@@ -20,53 +20,43 @@
             '</select></label>' +
             (opts.owner ? '<p class="pv-hint">安装管理员必须保持管理员角色。</p>' : '');
 
-        var m = PvModal.open({
+        var m = PvUI.modalSubmit({
             title: isEdit ? ('编辑账号 · ' + PvUI.esc(opts.username)) : '新增账号',
             body: body,
-            actions: [
-                { label: '取消', cls: 'pv-btn-ghost' },
-                {
-                    label: isEdit ? '保存' : '创建', cls: 'pv-btn-primary', close: false,
-                    onClick: function (btn) {
-                        var uname = (document.getElementById('puUsername') || {}).value || '';
-                        var display = (document.getElementById('puDisplay') || {}).value || '';
-                        var role = (document.getElementById('puRole') || {}).value || 'user';
-                        var data;
-                        if (isEdit) {
-                            data = { id: opts.id, display_name: display, role: role };
-                            postThen('admin/user-update', data, btn, '账号资料已更新');
-                        } else {
-                            var pw = (document.getElementById('puPassword') || {}).value || '';
-                            if (!uname.trim()) { PvUI.toast('请输入用户名', 'err'); return false; }
-                            if (pw.length < 6) { PvUI.toast('密码至少 6 位', 'err'); return false; }
-                            data = { username: uname.trim(), display_name: display, password: pw, role: role };
-                            postThen('admin/user-create', data, btn, '账号已创建');
-                        }
-                    }
-                }
-            ]
+            okText: isEdit ? '保存' : '创建',
+            okMsg: isEdit ? '账号资料已更新' : '账号已创建',
+            route: isEdit ? 'admin/user-update' : 'admin/user-create',
+            getData: function () {
+                var uname = (document.getElementById('puUsername') || {}).value || '';
+                var display = (document.getElementById('puDisplay') || {}).value || '';
+                var role = (document.getElementById('puRole') || {}).value || 'user';
+                if (isEdit) return { id: opts.id, display_name: display, role: role };
+                var pw = (document.getElementById('puPassword') || {}).value || '';
+                if (!uname.trim()) { PvUI.toast('请输入用户名', 'err'); return false; }
+                if (pw.length < 6) { PvUI.toast('密码至少 6 位', 'err'); return false; }
+                return { username: uname.trim(), display_name: display, password: pw, role: role };
+            },
+            onOk: function () { if (goTabFn) goTabFn('users'); }
         });
         if (global.PvControls) global.PvControls.init(m.body);   // 增强角色下拉
     }
 
     function passwordModal(u) {
-        PvModal.open({
+        PvUI.modalSubmit({
             title: '重置密码 · ' + PvUI.esc(u.username),
             body: '<label class="pv-field"><span>新密码</span><input type="password" id="ppPassword" placeholder="至少 6 位"></label>' +
                   '<label class="pv-field"><span>确认新密码</span><input type="password" id="ppConfirm" placeholder="再次输入"></label>',
-            actions: [
-                { label: '取消', cls: 'pv-btn-ghost' },
-                {
-                    label: '重置', cls: 'pv-btn-primary', close: false,
-                    onClick: function (btn) {
-                        var p1 = (document.getElementById('ppPassword') || {}).value || '';
-                        var p2 = (document.getElementById('ppConfirm') || {}).value || '';
-                        if (p1.length < 6) { PvUI.toast('密码至少 6 位', 'err'); return false; }
-                        if (p1 !== p2) { PvUI.toast('两次输入的密码不一致', 'err'); return false; }
-                        postThen('admin/user-password', { id: u.id, password: p1 }, btn, '密码已重置');
-                    }
-                }
-            ]
+            okText: '重置',
+            okMsg: '密码已重置',
+            route: 'admin/user-password',
+            getData: function () {
+                var p1 = (document.getElementById('ppPassword') || {}).value || '';
+                var p2 = (document.getElementById('ppConfirm') || {}).value || '';
+                if (p1.length < 6) { PvUI.toast('密码至少 6 位', 'err'); return false; }
+                if (p1 !== p2) { PvUI.toast('两次输入的密码不一致', 'err'); return false; }
+                return { id: u.id, password: p1 };
+            },
+            onOk: function () { if (goTabFn) goTabFn('users'); }
         });
     }
 

@@ -412,10 +412,12 @@
                 { label: o.cancelText || '取消', cls: 'pv-btn-ghost' },
                 {
                     label: o.okText || '保存', cls: o.danger ? 'pv-btn-danger' : 'pv-btn-primary', close: false,
-                    onClick: function () {
+                    onClick: function (btn) {
                         var data = typeof o.getData === 'function' ? o.getData() : (o.getData || {});
                         if (data === false) return false;
+                        if (btn) btn.disabled = true;   // 提交期间禁用，失败 / 异常后恢复
                         post(route(o.route), data).then(function (j) {
+                            if (btn) btn.disabled = false;
                             if (j && j.code === 200) {
                                 toast(j.msg || o.okMsg || '操作成功', 'ok');
                                 close();
@@ -425,6 +427,7 @@
                                 if (typeof o.onError === 'function') o.onError(j);
                             }
                         }).catch(function () {
+                            if (btn) btn.disabled = false;
                             toast('网络请求失败', 'err');
                             if (typeof o.onError === 'function') o.onError(null);
                         });
