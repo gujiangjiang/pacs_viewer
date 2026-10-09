@@ -35,10 +35,10 @@ class PvLogLimits {
         $l = self::read($prefix);
         if ($l['count'] <= 0) return;
         if ($channel === null) {
-            PvDatabase::exec("DELETE FROM " . $table . " WHERE id NOT IN (SELECT id FROM " . $table . " ORDER BY id DESC LIMIT " . $l['count']);
+            PvDatabase::exec("DELETE FROM " . $table . " WHERE id NOT IN (SELECT id FROM " . $table . " ORDER BY id DESC LIMIT " . $l['count'] . ")");
         } else {
             PvDatabase::exec(
-                "DELETE FROM " . $table . " WHERE channel=? AND id NOT IN (SELECT id FROM " . $table . " WHERE channel=? ORDER BY id DESC LIMIT " . $l['count'],
+                "DELETE FROM " . $table . " WHERE channel=? AND id NOT IN (SELECT id FROM " . $table . " WHERE channel=? ORDER BY id DESC LIMIT " . $l['count'] . ")",
                 array($channel, $channel)
             );
         }
