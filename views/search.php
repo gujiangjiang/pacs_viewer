@@ -15,7 +15,7 @@ $pageData = array('mode' => $mode, 'source' => isset($source) ? $source : null, 
         <form id="pvSearchForm" onsubmit="return false;">
             <div class="pv-search-inputrow">
                 <input type="text" id="pvKeyword" class="pv-input pv-search-input"
-                       placeholder="姓名 / 患者号 / 检查号 / 门诊号 / 检查项目">
+                       placeholder="姓名 / 患者号 / 检查号 / 就诊号 / 检查项目">
                 <button type="button" id="pvSearchBtn" class="pv-btn pv-btn-primary">检索</button>
             </div>
         </form>
@@ -78,7 +78,7 @@ $pageData = array('mode' => $mode, 'source' => isset($source) ? $source : null, 
         <div id="pvEmpty" class="pv-card pv-empty" style="display:none">
             <div class="pv-empty-ico"><?php echo pvw_icon('search'); ?></div>
             <div class="pv-empty-title">输入关键词或选择条件开始检索</div>
-            <div class="pv-empty-sub">支持姓名、患者号、检查号、门诊号与检查项目模糊匹配</div>
+            <div class="pv-empty-sub">支持姓名、患者号、检查号、就诊号与检查项目模糊匹配</div>
         </div>
     </main>
 </div>

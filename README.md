@@ -1,6 +1,6 @@
 # Web PACS 影像浏览器
 
-![版本](https://img.shields.io/badge/版本-v1.9.0-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
+![版本](https://img.shields.io/badge/版本-v1.9.1-blue) ![PHP](https://img.shields.io/badge/PHP-7.x-777BB4) ![数据库](https://img.shields.io/badge/数据库-SQLite-003B57) ![依赖](https://img.shields.io/badge/依赖-无第三方-brightgreen)
 
 > 一个**完全独立**的轻量级 Web PACS 影像浏览器（PHP + SQLite），
 > 支持 DICOM / PACS 接口检索、调阅与影像展示，并内置模拟服务器用于联调。
@@ -39,7 +39,7 @@
 - **通用上传 / 鉴权下载**（基础设施）：文件存于 Web 根之外的 `data/uploads/`，
   经 `?r=file` 鉴权下发；类型白名单 + 随机令牌 + 防路径穿越，供后续功能复用。
 - **模态框交互**：创建 / 编辑用户、重置密码、删除确认、日志清空等均为模态框。
-- **研究检索**：按姓名 / 患者号 / 检查号 / 门诊号 / 检查项目检索（数据来自 PACS 接口）；
+- **研究检索**：按姓名 / 患者号 / 检查号 / 就诊号 / 检查项目检索（数据来自 PACS 接口）；
   服务端分页 + 触底续载（无限滚动），结果原生虚拟化，超大结果集也不卡顿。
 - **影像视图工作区**（独立 Tab）：可同时打开多个检查（左栏分组展示、可折叠 /
   单独关闭 / 展开多个），会话内记忆已打开的检查与序列位置；支持追加或清空打开、

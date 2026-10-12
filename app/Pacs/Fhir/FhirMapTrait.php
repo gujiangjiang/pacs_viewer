@@ -197,7 +197,7 @@ trait PvFhirMapTrait {
         return preg_replace('/^patient-/', '', $id);
     }
 
-    /** 门诊号：就诊流水号（ImagingStudy/Encounter 的 VN 标识，与患者号不同） */
+    /** 就诊号：就诊流水号（ImagingStudy/Encounter 的 VN 标识，与患者号不同） */
     private static function visitNo($res) {
         return self::identifierValue($res, array('VN'), array('identifier:visit'));
     }

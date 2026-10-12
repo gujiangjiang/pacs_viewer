@@ -29,7 +29,7 @@
             '<div class="pv-mock-patient-head"><b>' + PvUI.esc(p.name) + '</b>' +
             '<span class="pv-dim">' + PvUI.esc(p.gender) + ' / ' + PvUI.esc(p.age || '—') + '</span></div>' +
             '<div class="pv-mock-patient-meta">患者号：' + PvUI.esc(p.patient_id) +
-            '　门诊号：' + PvUI.esc(p.outpatient_no || '—') + '<br>检查数：' + (p.exams ? p.exams.length : 0) + '</div>' +
+            '　就诊号：' + PvUI.esc(p.outpatient_no || '—') + '<br>检查数：' + (p.exams ? p.exams.length : 0) + '</div>' +
             '<div class="pv-mock-exam">' + exams + '</div>';
         return el;
     }

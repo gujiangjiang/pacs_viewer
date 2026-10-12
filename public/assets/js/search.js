@@ -38,7 +38,7 @@
         { key: 'accession_no', label: '检查号' },
         { key: 'study_date', label: '检查时间' },
         { key: 'patient_id', label: '患者号' },
-        { key: 'outpatient_no', label: '门诊号' },
+        { key: 'outpatient_no', label: '就诊号' },
         { key: 'station_name', label: '设备' },
         { key: 'status_name', label: '状态', nosort: true }
     ];
@@ -89,7 +89,7 @@
             '<div class="pv-study-desc"><span>' + esc(s.description || '影像检查') + '</span>' +
             '<span class="pv-mod">' + esc(s.modality) + '</span></div>' +
             '<div class="pv-study-rows">' +
-            '<div><b>患者号：</b>' + esc(s.patient_id) + '　<b>门诊号：</b>' + esc(s.outpatient_no || '—') + '</div>' +
+            '<div><b>患者号：</b>' + esc(s.patient_id) + '　<b>就诊号：</b>' + esc(s.outpatient_no || '—') + '</div>' +
             '<div><b>检查号：</b>' + esc(s.accession_no || '—') + '</div>' +
             '<div><b>检查时间：</b>' + esc(s.study_date || '—') + '　<b>设备：</b>' + esc(s.station_name || '—') + '</div>' +
             '</div>';

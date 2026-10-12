@@ -71,7 +71,7 @@ class PvDemoPacs {
     }
 
     /**
-     * 关键词检索（姓名 / 患者号 / 检查号 / 门诊号 / 项目）。
+     * 关键词检索（姓名 / 患者号 / 检查号 / 就诊号 / 项目）。
      * @param int $limit  返回上限（0 表示不限）
      * @param int $offset 起始偏移
      */

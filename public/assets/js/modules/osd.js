@@ -21,7 +21,7 @@
         var flip = (o.flipH ? 'H' : '') + (o.flipV ? 'V' : '') || 'N';
         var TL = [(s.institution || ''), (s.modality || '') + '  ' + (s.station_name || ''), s.description || '',
                   'Ser: ' + (ser.series_id || '') + ' - ' + (ser.description || '')];
-        var TR = [p.name || '', (p.gender || '') + ' / ' + (p.age || ''), 'PID: ' + (p.patient_id || ''), 'OPD No: ' + (p.outpatient_no || '')];
+        var TR = [p.name || '', (p.gender || '') + ' / ' + (p.age || ''), 'PID: ' + (p.patient_id || ''), 'Visit No: ' + (p.outpatient_no || '')];
         var BL = ['WW: ' + Math.round(o.ww) + ' WL: ' + Math.round(o.wl), 'Im: ' + (o.fi + 1) + '/' + o.count,
                   'Thick: ' + thick.toFixed(1) + 'mm Loc: ' + loc.toFixed(1) + 'mm', 'Zoom: ' + Math.round(o.zoom * 100) + '%'];
         var BR = ['Acc: ' + (s.accession_no || ''), 'Date: ' + (s.study_date || ''),
