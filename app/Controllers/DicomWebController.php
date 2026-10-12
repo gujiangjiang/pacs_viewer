@@ -300,8 +300,10 @@ class PvDicomWebController {
             '0020000D' => array('vr' => 'UI', 'Value' => array((string)$row['study_uid'])),
             '00100010' => array('vr' => 'PN', 'Value' => array(array('Alphabetic' => (string)$row['name']))),
             '00100020' => array('vr' => 'LO', 'Value' => array((string)$row['patient_id'])),
-            // 就诊号：DICOM 无专用标签，用 OtherPatientIDs 承载（本模拟服务约定）
-            '00101000' => array('vr' => 'LO', 'Value' => array(isset($row['outpatient_no']) ? (string)$row['outpatient_no'] : '')),
+        // 就诊号：DICOM 无专用标签，用 OtherPatientIDs 承载（本模拟服务约定）
+        '00101000' => array('vr' => 'LO', 'Value' => array(isset($row['outpatient_no']) ? (string)$row['outpatient_no'] : '')),
+        // 住院号：标准 AdmissionID(0038,0010)（住院患者才有，供下游按类型显示「住院号」）
+        '00380010' => array('vr' => 'LO', 'Value' => array(isset($row['inpatient_no']) ? (string)$row['inpatient_no'] : '')),
             '00100030' => array('vr' => 'DA', 'Value' => array(PvDicom::da($row['birth_date']))),
             '00100040' => array('vr' => 'CS', 'Value' => array(PvDicom::sex($row['gender']))),
             '00080050' => array('vr' => 'SH', 'Value' => array((string)$row['accession_no'])),

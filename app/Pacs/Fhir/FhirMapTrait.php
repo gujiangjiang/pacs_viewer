@@ -120,6 +120,8 @@ trait PvFhirMapTrait {
             'age'           => $age,
             'birth_date'    => $birth,
             'outpatient_no' => self::visitNo($im),
+            'visit_type'    => self::visitType($im),
+            'inpatient_no'  => self::admissionNo($im),
             'accession_no'  => $acc,
             'modality'      => $modality !== '' ? $modality : 'OT',
             'description'   => $desc !== '' ? $desc : '影像检查',
@@ -151,6 +153,8 @@ trait PvFhirMapTrait {
             'age'           => PvDicom::ageText($birth),
             'birth_date'    => $birth,
             'outpatient_no' => self::visitNo($enc),
+            'visit_type'    => self::visitType($enc),
+            'inpatient_no'  => self::admissionNo($enc),
             'accession_no'  => $acc,
             'modality'      => 'OT',
             'description'   => $desc !== '' ? $desc : '门诊就诊 · 影像检查',
@@ -200,6 +204,21 @@ trait PvFhirMapTrait {
     /** 就诊号：就诊流水号（ImagingStudy/Encounter 的 VN 标识，与患者号不同） */
     private static function visitNo($res) {
         return self::identifierValue($res, array('VN'), array('identifier:visit'));
+    }
+
+    /** 住院号：AN（Account Number）标识 / urn:his:identifier:admission（住院患者才有） */
+    private static function admissionNo($res) {
+        return self::identifierValue($res, array('AN'), array('admission'));
+    }
+
+    /** 就诊类型：优先 Encounter.class（IMP/EMER/AMB），否则按 AN 住院号推断 */
+    private static function visitType($res) {
+        $class = '';
+        if (isset($res['class']['code'])) $class = strtoupper((string)$res['class']['code']);
+        if ($class === 'IMP') return 'inpatient';
+        if ($class === 'EMER') return 'emergency';
+        if ($class === 'AMB') return 'outpatient';
+        return self::admissionNo($res) !== '' ? 'inpatient' : '';
     }
 
     /**

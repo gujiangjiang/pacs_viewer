@@ -29,7 +29,7 @@
             '<div class="pv-mock-patient-head"><b>' + PvUI.esc(p.name) + '</b>' +
             '<span class="pv-dim">' + PvUI.esc(p.gender) + ' / ' + PvUI.esc(p.age || '—') + '</span></div>' +
             '<div class="pv-mock-patient-meta">患者号：' + PvUI.esc(p.patient_id) +
-            '　就诊号：' + PvUI.esc(p.outpatient_no || '—') + '<br>检查数：' + (p.exams ? p.exams.length : 0) + '</div>' +
+            '　' + PvVisit.label(p) + '：' + PvUI.esc(PvVisit.no(p) || '—') + '<br>检查数：' + (p.exams ? p.exams.length : 0) + '</div>' +
             '<div class="pv-mock-exam">' + exams + '</div>';
         return el;
     }
@@ -247,7 +247,7 @@
             if (!map[k]) map[k] = {
                 key: k, accession_no: w.accession_no || w.order_no || '', patient_id: w.patient_id || '',
                 name: w.name || '', gender: w.gender || '', age: w.age || '', birth_date: w.birth_date || '',
-                outpatient_no: w.outpatient_no || '', items: [], date: ''
+                outpatient_no: w.outpatient_no || '', visit_type: w.visit_type || '', inpatient_no: w.inpatient_no || '', items: [], date: ''
             };
             map[k].items.push(w);
             var d = w.registered_at || w.authored_at || '';
@@ -375,7 +375,8 @@
         btn.disabled = true;
         PvUI.post(PvNav.route('api/mock/acquire-order'), {
             order_no: g.accession_no, patient_id: g.patient_id, name: g.name, gender: g.gender,
-            birth_date: g.birth_date, outpatient_no: g.outpatient_no, items: JSON.stringify(items)
+            birth_date: g.birth_date, outpatient_no: g.outpatient_no,
+            visit_type: g.visit_type || '', inpatient_no: g.inpatient_no || '', items: JSON.stringify(items)
         }).then(function (j) {
             btn.disabled = false;
             if (j && j.code === 200) {

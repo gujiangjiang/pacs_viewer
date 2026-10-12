@@ -157,6 +157,8 @@ class PvMockController {
                 'gender'        => (string)pvw_input('gender'),
                 'birth_date'    => (string)pvw_input('birth_date'),
                 'outpatient_no' => (string)pvw_input('outpatient_no'),
+                'visit_type'    => (string)pvw_input('visit_type'),
+                'inpatient_no'  => (string)pvw_input('inpatient_no'),
                 'modality'      => (string)pvw_input('modality'),
                 'description'   => (string)pvw_input('item_name'),
                 'operator'      => $op,
@@ -199,6 +201,8 @@ class PvMockController {
         $gender = (string)pvw_input('gender');
         $birth = (string)pvw_input('birth_date');
         $outp = (string)pvw_input('outpatient_no');
+        $vtype = (string)pvw_input('visit_type');
+        $inp = (string)pvw_input('inpatient_no');
         $uids = array(); $errs = array();
         foreach ($items as $it) {
             if (!is_array($it)) continue;
@@ -210,6 +214,7 @@ class PvMockController {
                     'task_ref' => $task, 'accession_no' => $acc,
                     'patient_id' => $pid, 'name' => $name, 'gender' => $gender,
                     'birth_date' => $birth, 'outpatient_no' => $outp,
+                    'visit_type' => $vtype, 'inpatient_no' => $inp,
                     'modality' => $mod, 'description' => $itemName, 'operator' => $op,
                 ));
                 $uids[] = (string)$row['study_uid'];

@@ -74,6 +74,7 @@ class PvMockDicomTagBuilder {
         $ds .= self::el(0x0010, 0x0020, 'LO', self::_s($m, 'patient_id'));
         $ds .= self::el(0x0010, 0x0030, 'DA', self::_s($m, 'patient_birth_date'));
         $ds .= self::el(0x0010, 0x0040, 'CS', self::_s($m, 'patient_sex'));
+        if (self::_s($m, 'admission_id') !== '') $ds .= self::el(0x0038, 0x0010, 'LO', self::_s($m, 'admission_id'));
         $ds .= self::el(0x0018, 0x0050, 'DS', self::ds(self::_f($m, 'slice_thickness', 0)));
         $ds .= self::el(0x0018, 0x0088, 'DS', self::ds(self::_f($m, 'spacing_between_slices', self::_f($m, 'slice_thickness', 0))));
         if (self::_s($m, 'body_part') !== '') $ds .= self::el(0x0018, 0x0015, 'CS', self::_s($m, 'body_part'));

@@ -497,6 +497,7 @@ class PvMockServer {
         $m['patient_id'] = isset($row['patient_id']) ? $row['patient_id'] : '';
         $m['patient_birth_date'] = PvDicom::da(isset($row['birth_date']) ? $row['birth_date'] : '', true);
         $m['patient_sex'] = PvDicom::sex(isset($row['gender']) ? $row['gender'] : '');
+        $m['admission_id'] = (isset($row['inpatient_no']) && $row['inpatient_no'] !== '') ? (string)$row['inpatient_no'] : '';   // 住院号（AdmissionID 0038,0010）
         $m['study_date'] = PvDicom::da(isset($row['study_date']) ? $row['study_date'] : '', true);
         $m['study_time'] = PvDicom::tm(isset($row['study_date']) ? $row['study_date'] : '');
         $m['study_description'] = isset($row['description']) ? $row['description'] : '';

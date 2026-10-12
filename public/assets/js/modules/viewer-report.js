@@ -48,7 +48,7 @@
             return '<div class="pv-report-item"><span>' + esc(label) + '</span><b>' + esc(val) + '</b></div>';
         };
         var meta = item('患者姓名', p.name) + item('性别', p.gender) + item('年龄', p.age)
-            + item('患者号', p.patient_id) + item('就诊号', p.outpatient_no)
+            + item('患者号', p.patient_id) + item(PvVisit.label(p), PvVisit.no(p))
             + item('检查号', s.accession_no) + item('检查项目', s.description)
             + item('检查时间', s.study_date);
 

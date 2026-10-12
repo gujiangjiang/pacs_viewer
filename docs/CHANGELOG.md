@@ -14,6 +14,22 @@
 
 ---
 
+## [1.10.0] - 2026-10-12
+
+### 新增
+- **住院患者识别与动态就诊标识**：模拟摄片记录新增 `visit_type` / `inpatient_no`
+  （schema 008 增量迁移）；FHIR 映射从 `Encounter.class`（IMP/EMER/AMB）与 AN
+  住院号标识（`urn:his:identifier:admission`）识别住院患者，工作列表 / 检索 /
+  调阅患者对象透传；DICOMweb 输出标准 `AdmissionID(0038,0010)`，远端检索同样解析；
+  WADO 二进制住院时写入 AdmissionID 标签。
+
+### 变更
+- 界面按就诊类型动态显示就诊标识：住院 →「住院号」、门诊/急诊 →「门诊号」、
+  类型未知 → 中性「就诊号」；统一由新增公共模块 `modules/visit.js`（`PvVisit`，
+  已登记 Assets 公共 JS 与 Service Worker 预缓存）驱动，覆盖检索表/卡片、
+  患者查询卡片、DICOM 详情（AdmissionID/OtherPatientIDs）、报告弹窗与图像水印
+  （`Adm No` / `Visit No`）；摄片登记/整单摄片透传住院字段。
+
 ## [1.9.1] - 2026-10-12
 
 ### 变更

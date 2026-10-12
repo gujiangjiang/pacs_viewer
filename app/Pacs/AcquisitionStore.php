@@ -71,13 +71,15 @@ class PvAcquisitionStore {
         $uid = $existing ? (string)$existing['study_uid'] : self::assignStudyUid($acc, $taskRef);
         if ($existing) {
             PvDatabase::exec(
-                "UPDATE mock_acquisitions SET patient_id=?, name=?, gender=?, birth_date=?, outpatient_no=?, modality=?, description=?, acquired_at=?, operator=? WHERE id=?",
+                "UPDATE mock_acquisitions SET patient_id=?, name=?, gender=?, birth_date=?, outpatient_no=?, visit_type=?, inpatient_no=?, modality=?, description=?, acquired_at=?, operator=? WHERE id=?",
                 array(
                     (string)(isset($d['patient_id']) ? $d['patient_id'] : $existing['patient_id']),
                     (string)(isset($d['name']) ? $d['name'] : $existing['name']),
                     (string)(isset($d['gender']) ? $d['gender'] : $existing['gender']),
                     (string)(isset($d['birth_date']) ? $d['birth_date'] : $existing['birth_date']),
                     (string)(isset($d['outpatient_no']) ? $d['outpatient_no'] : $existing['outpatient_no']),
+                    (string)(isset($d['visit_type']) ? $d['visit_type'] : (isset($existing['visit_type']) ? $existing['visit_type'] : '')),
+                    (string)(isset($d['inpatient_no']) ? $d['inpatient_no'] : (isset($existing['inpatient_no']) ? $existing['inpatient_no'] : '')),
                     (string)(isset($d['modality']) ? $d['modality'] : $existing['modality']),
                     (string)(isset($d['description']) ? $d['description'] : $existing['description']),
                     $now,
@@ -88,7 +90,7 @@ class PvAcquisitionStore {
             return self::findByTask($acc, $taskRef);   // 同检查号多 Study：精确回读本次更新行
         }
         PvDatabase::insert(
-            "INSERT INTO mock_acquisitions(task_ref,accession_no,study_uid,patient_id,name,gender,birth_date,outpatient_no,modality,description,registered_at,acquired_at,operator,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO mock_acquisitions(task_ref,accession_no,study_uid,patient_id,name,gender,birth_date,outpatient_no,visit_type,inpatient_no,modality,description,registered_at,acquired_at,operator,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             array(
                 (string)(isset($d['task_ref']) ? $d['task_ref'] : ''),
                 $acc, $uid,
@@ -97,6 +99,8 @@ class PvAcquisitionStore {
                 (string)(isset($d['gender']) ? $d['gender'] : ''),
                 (string)(isset($d['birth_date']) ? $d['birth_date'] : ''),
                 (string)(isset($d['outpatient_no']) ? $d['outpatient_no'] : ''),
+                (string)(isset($d['visit_type']) ? $d['visit_type'] : ''),
+                (string)(isset($d['inpatient_no']) ? $d['inpatient_no'] : ''),
                 (string)(isset($d['modality']) ? $d['modality'] : ''),
                 (string)(isset($d['description']) ? $d['description'] : ''),
                 (string)(isset($d['registered_at']) ? $d['registered_at'] : ''),
@@ -120,6 +124,8 @@ class PvAcquisitionStore {
             'age'           => PvDicom::ageText($birth),
             'birth_date'    => $birth,
             'outpatient_no' => (string)$acq['outpatient_no'],
+            'visit_type'    => (string)(isset($acq['visit_type']) ? $acq['visit_type'] : ''),
+            'inpatient_no'  => (string)(isset($acq['inpatient_no']) ? $acq['inpatient_no'] : ''),
             'accession_no'  => (string)$acq['accession_no'],
             'modality'      => (string)$acq['modality'] !== '' ? (string)$acq['modality'] : 'OT',
             'description'   => (string)$acq['description'] !== '' ? (string)$acq['description'] : '影像检查',

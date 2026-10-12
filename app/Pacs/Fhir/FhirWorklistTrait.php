@@ -50,9 +50,11 @@ trait PvFhirWorklistTrait {
                 'name'            => self::patientName($p),
                 'gender'          => self::gender($p),
                 'age'             => PvDicom::ageText($birth),
-                'birth_date'      => $birth,
-                'outpatient_no'   => self::visitNo($t),
-                'registered_at'   => isset($t['executionPeriod']['start']) ? self::fmtDate($t['executionPeriod']['start']) : '',
+            'birth_date'      => $birth,
+            'outpatient_no'   => self::visitNo($t),
+            'visit_type'      => self::visitType($t),
+            'inpatient_no'    => self::admissionNo($t),
+            'registered_at'   => isset($t['executionPeriod']['start']) ? self::fmtDate($t['executionPeriod']['start']) : '',
                 'authored_at'     => isset($t['authoredOn']) ? self::fmtDate($t['authoredOn']) : '',
             );
         }

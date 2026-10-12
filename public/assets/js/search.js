@@ -89,7 +89,7 @@
             '<div class="pv-study-desc"><span>' + esc(s.description || '影像检查') + '</span>' +
             '<span class="pv-mod">' + esc(s.modality) + '</span></div>' +
             '<div class="pv-study-rows">' +
-            '<div><b>患者号：</b>' + esc(s.patient_id) + '　<b>就诊号：</b>' + esc(s.outpatient_no || '—') + '</div>' +
+            '<div><b>患者号：</b>' + esc(s.patient_id) + '　<b>' + PvVisit.label(s) + '：</b>' + esc(PvVisit.no(s) || '—') + '</div>' +
             '<div><b>检查号：</b>' + esc(s.accession_no || '—') + '</div>' +
             '<div><b>检查时间：</b>' + esc(s.study_date || '—') + '　<b>设备：</b>' + esc(s.station_name || '—') + '</div>' +
             '</div>';
@@ -105,6 +105,12 @@
     function attr(key) { return key.replace(/[^a-z0-9_]/gi, ''); }
     function cellHtml(s, c) {
         if (c.key === 'status_name') return '<span class="pv-study-status' + (s.has_images === false ? ' is-noimg' : '') + '">' + esc(s.status_name || '已完成') + '</span>';
+        // 就诊号：门诊/急诊=门诊号（流水号），住院=住院号（附带「住院」标识）
+        if (c.key === 'outpatient_no') {
+            var vno = PvVisit.no(s);
+            if (!vno) return '—';
+            return (PvVisit.isInpatient(s) ? '<span class="pv-src-tag" title="住院号">住院</span>' : '') + esc(vno);
+        }
         var v = s[c.key];
         if (c.key === 'summary' || v === undefined || v === null || v === '') v = '—';
         return esc(v);

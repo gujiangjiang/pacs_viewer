@@ -151,6 +151,8 @@ trait PvFhirSearchTrait {
             'age'           => $row['age'],
             'birth_date'    => $row['birth_date'],
             'outpatient_no' => $row['outpatient_no'],
+            'visit_type'    => isset($row['visit_type']) ? $row['visit_type'] : '',
+            'inpatient_no'  => isset($row['inpatient_no']) ? $row['inpatient_no'] : '',
         );
         $studyArr = array(
             'accession_no'    => $row['accession_no'],
