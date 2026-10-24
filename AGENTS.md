@@ -16,12 +16,26 @@
   `docs/CHANGELOG.md` 小节三处保持一致。
 - 版本号**独立计算**，从 `0.1.0` 起，与任何宿主系统完全隔离。
 
-## 本地运行与检查（本机 macOS arm64，无系统 php）
+## 运行模式与本地测试服务器（可选）
 
-- 运行 / 守护（Web 根指向 `public/`，端口默认 8090）：
+- 本项目以**在线服务器部署为主**，本地不强制安装 PHP / FrankenPHP；是否启用本地
+  PHP 测试服务器由「首次询问」决定，并记录在本机标记文件 `.agent-local-server.conf`
+  （项目根目录，只记本机偏好，**严禁提交**；内容示例：`enabled=true` / `enabled=false`）。
+- **首次接手（标记文件不存在）**：先探测运行环境（macOS / Linux / Windows、是否已有
+  php 或 frankenphp），然后**询问用户是否启用本地 PHP 测试服务器**；用户明确答复前
+  不启动、不检测、不安装任何运行时。
+- 用户选择启用后，按运行环境自动选择运行时（提问时一并向用户说明可选命令）：
+
+  | 环境 | 首选 | 备选 |
+  | --- | --- | --- |
+  | macOS | 现有单文件二进制 `~/.local/bin/frankenphp` | `brew install dunglas/frankenphp/frankenphp`；官方脚本 `curl https://frankenphp.dev/install.sh \| sh`；已装系统 php 用 `php -S 0.0.0.0:8090 -t public` |
+  | Linux | 系统 `php` 可用时 `php -S 0.0.0.0:8090 -t public` | 官方脚本 `curl https://frankenphp.dev/install.sh \| sh`；或 `brew install dunglas/frankenphp/frankenphp` |
+  | Windows | 系统 `php.exe` 可用时 `php -S 0.0.0.0:8090 -t public` | PowerShell `irm https://frankenphp.dev/install.ps1 \| iex`；或官方的 Windows 免安装包（GitHub Releases，内含 PHP 二进制） |
+
+- 启用后的运行 / 守护（Web 根指向 `public/`，端口默认 8090）：
 
   ```bash
-  tools/serve.sh ensure     # 挂了就自动重启（任务收尾前必跑）
+  tools/serve.sh ensure     # 健康检查：挂了就自动重启
   tools/serve.sh status     # up / down
   tools/serve.sh restart    # 强制重启
   ```
@@ -32,30 +46,16 @@
   ~/.local/bin/frankenphp php-server --root public --listen 0.0.0.0:8090
   ```
 
-- PHP 语法检查（基于 tokenizer，扫描 `app/` `public/` `views/`）：
-
-  ```bash
-  ~/.local/bin/frankenphp php-cli tools/lint.php
-  ```
-
+- **开发服务器守护说明（仅本地测试模式）**：frankenphp 开发服务器容易因会话结束 /
+  端口冲突 / 误杀而断开——本地起服务器、跑测试后若未正确脱离终端，进程会随调用
+  结束被回收，这不是代码缺陷。启动一律走 `tools/serve.sh`（内部使用
+  `nohup + 日志 data/.serve.log + pid data/.serve.pid`），**不要**手工 `--listen`
+  起临时实例，避免端口 / 实例冲突；需要临时端口验证时可
+  `PV_PORT=8099 tools/serve.sh ensure`，用完 `stop`。
+- PHP 语法检查（任何模式均可用，不依赖本地服务器；基于 tokenizer，扫描
+  `app/` `public/` `views/`）：系统 php 在位时 `php tools/lint.php`；否则
+  `~/.local/bin/frankenphp php-cli tools/lint.php`。
 - 首次访问自动建库 `data/pacs_viewer.db`（含默认账号与设置）。
-
-## 开发服务器守护（重要，AI 每次收尾前必做）
-
-- 该 frankenphp 开发服务器**非常容易因会话结束 / 端口冲突 / 误杀而断开**。
-  这不是代码缺陷：本地起服务器、跑测试后若未正确脱离终端，进程会随调用结束
-  被回收，表现为「PHP 服务器又挂了」。
-- **铁律**：每完成一个任务 / 每次 `git commit` 前，先执行
-
-  ```bash
-  tools/serve.sh ensure
-  ```
-
-  若输出 `up` 则继续；若 `down` 则脚本会自动重启并等待可用；只有确认服务器
-  可用后才算任务完成。
-- 启动一律走 `tools/serve.sh`（内部使用 `nohup + 日志 data/.serve.log + pid
-  data/.serve.pid`），**不要**再手工 `--listen` 起临时实例，避免端口 / 实例冲突。
-- 需要临时端口验证时可 `PV_PORT=8099 tools/serve.sh ensure`，用完 `stop`。
 
 ## 自测数据保护（铁律）
 
@@ -114,8 +114,9 @@
      `feat` / `fix` / `docs` / `style` / `refactor` / `perf` / `chore`；
      标题下空一行，附逐条正文：
      `git commit -m "<标题>" -m "<正文>"`。
-3. **提交前自检**：`~/.local/bin/frankenphp php-cli tools/lint.php`；
-   `tools/serve.sh ensure`（**确认开发服务器存活，挂了自动重启**）；
+3. **提交前自检**：语法检查（系统 php `php tools/lint.php`，否则 frankenphp php-cli）；
+   **仅本地测试模式（`.agent-local-server.conf` 为 `enabled=true`）**再执行
+   `tools/serve.sh ensure` 确认本地服务器存活；在线部署模式**不执行**任何服务器检测；
    `git status` 确认未把 `data/` 运行时数据纳入提交。
 
 ## 其他约定

@@ -11,9 +11,9 @@
 
 ## 常用命令（Commands）
 
-### 本地运行（开发服务器易断，统一用守护脚本）
+### 本地运行（可选，仅启用本地测试服务器时；见 AGENTS.md「运行模式与本地测试服务器」）
 ```bash
-tools/serve.sh ensure     # 启动 / 健康检查，挂了自动重启（任务收尾前必跑）
+tools/serve.sh ensure     # 健康检查 + 挂了自动重启（仅本地测试模式）
 tools/serve.sh status     # 查看 up / down
 # http://localhost:8090/   首次访问进入安装向导，创建管理员账号
 ```

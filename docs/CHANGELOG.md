@@ -30,6 +30,15 @@
   患者查询卡片、DICOM 详情（AdmissionID/OtherPatientIDs）、报告弹窗与图像水印
   （`Adm No` / `Visit No`）；摄片登记/整单摄片透传住院字段。
 
+### 文档
+- **AI 协作规范调整：本地服务器守护改为按需启用**：`AGENTS.md`「本地运行与检查」
+  「开发服务器守护（AI 每次收尾前必做）」合并改写为「运行模式与本地测试服务器
+  （可选）」——默认在线服务器部署，本地不强制安装 PHP / FrankenPHP；首次接手
+  （无 `.agent-local-server.conf` 标记）先探测运行环境并询问用户是否启用本地
+  PHP 测试，仅 `enabled=true` 时才在提交前执行 `tools/serve.sh ensure`；补充
+  macOS / Linux / Windows 运行时选择表（系统 php 或 FrankenPHP 官方安装方式）；
+  `CLAUDE.md` 同步。
+
 ## [1.9.1] - 2026-10-12
 
 ### 变更
