@@ -7,6 +7,9 @@
 /data/uploads/
 /data/mock_cache/
 
+# 开发服务器守护脚本运行产物（serve.sh 的日志与 pid，禁止提交）
+/data/.serve.*
+
 # 本机 AI 本地服务器偏好标记（按机器生成，禁止提交）
 .agent-local-server.conf
 
