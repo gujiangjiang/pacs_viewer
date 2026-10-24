@@ -205,3 +205,4 @@ POST {站点}?r=upload/delete      （需登录 + CSRF）字段：t；管理员�
 
 - [更新日志 CHANGELOG](./docs/CHANGELOG.md)
 - [使用帮助 HELP](./docs/HELP.md)
+- [部署指南 DEPLOY](./docs/DEPLOY.md)

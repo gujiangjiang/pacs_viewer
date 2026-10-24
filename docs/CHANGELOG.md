@@ -38,6 +38,10 @@
   PHP 测试，仅 `enabled=true` 时才在提交前执行 `tools/serve.sh ensure`；补充
   macOS / Linux / Windows 运行时选择表（系统 php 或 FrankenPHP 官方安装方式）；
   `CLAUDE.md` 同步。
+- **新增 `docs/DEPLOY.md` 部署指南（宝塔面板 / Nginx / Apache）**：给出 Web 根指向
+  `public/`、主路由兜底（`?r=` 路由与 `/dicom-web/*` 均由单入口处理，不可另设
+  location 绕过）、宝塔 `error_page 404` 与「防跨站攻击(open_basedir)」处理、
+  `data/` 目录权限、PWA 需 HTTPS 说明与常见问题排查；`README.md` 文档索引同步。
 
 ## [1.9.1] - 2026-10-12
 
