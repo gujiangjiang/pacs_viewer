@@ -7,6 +7,9 @@
 /data/uploads/
 /data/mock_cache/
 
+# 本机 AI 本地服务器偏好标记（按机器生成，禁止提交）
+.agent-local-server.conf
+
 # 系统 / 编辑器
 .DS_Store
 Thumbs.db
