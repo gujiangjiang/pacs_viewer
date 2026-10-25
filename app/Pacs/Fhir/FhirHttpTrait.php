@@ -132,9 +132,10 @@ trait PvFhirHttpTrait {
             throw new RuntimeException('鉴权失败：密钥无效或无访问权限（HTTP ' . $status . '）');
         }
         if ($raw === false || $raw === '') {
+            // 提示不拼接请求 URL（防泄露后端地址 / 撑破页面布局）；完整地址已写入接口日志
             throw new RuntimeException($status >= 400
                 ? 'FHIR 接口请求失败（HTTP ' . $status . '）'
-                : '无法连接门诊系统 FHIR 接口：' . $url);
+                : '无法连接门诊系统 FHIR 接口');
         }
         $j = json_decode($raw, true);
         if (!is_array($j)) {

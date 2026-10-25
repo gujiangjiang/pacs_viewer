@@ -81,6 +81,7 @@ body.pv-nav-busy #pvMain { opacity: .55; transition: opacity .12s; }
 .pv-footer-hosp { justify-self: center; color: #94a3b8; font-weight: 600; }
 .pv-footer-src { justify-self: end; color: #64748b; }
 .pv-footer-src.is-ok { color: #34d399; }
+.pv-footer-src.is-err { color: #f87171; }
 .pv-footer-src.is-off { color: #64748b; }
 
 /* ---------- 页脚响应式：逐级精简 ---------- */

@@ -9,13 +9,22 @@
  * ============================================================ */
 class PvStudyService {
 
-    /** 数据来源状态（用于页脚「服务器已连接」展示；不暴露主机 / IP） */
+    /** 数据来源状态（用于页脚「服务器已连接」展示；不暴露主机 / IP）。
+     *  已配置接口地址 ≠ 实际可达：按最近一次真实调用结果判定——
+     *  「最后一次失败晚于最后一次成功」时输出 error 态（不可达），
+     *  下一次成功调用自动清除（见 PvDicomWebClient::markConn）。 */
     public static function sourceInfo() {
         $endpoint = trim((string)PvSettings::get('pacs_endpoint', ''));
         if ($endpoint === '') {
             return array('state' => 'unset', 'label' => 'DICOMweb 服务器未连接');
         }
-        if (PvMockServer::isSelfEndpoint($endpoint)) {
+        $isMock = PvMockServer::isSelfEndpoint($endpoint);
+        $ok = (int)PvSettings::get('pacs_last_ok_at', '0');
+        $err = (int)PvSettings::get('pacs_last_error_at', '0');
+        if ($err > 0 && $err >= $ok) {
+            return array('state' => 'error', 'label' => 'DICOMweb 服务器无法连接' . ($isMock ? ' · 内置模拟' : ' · 远程'));
+        }
+        if ($isMock) {
             return array('state' => 'mock', 'label' => 'DICOMweb 服务器已连接 · 内置模拟');
         }
         return array('state' => 'remote', 'label' => 'DICOMweb 服务器已连接 · 远程');

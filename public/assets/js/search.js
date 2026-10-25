@@ -170,6 +170,15 @@
         return wrap;
     }
 
+    /** 页脚来源状态（已连接 / 无法连接 / 未配置）：成功与错误响应共用 */
+    function applyFooterSource(src) {
+        if (!src) return;
+        var el = document.getElementById('pvFooterSource');
+        if (!el) return;
+        el.textContent = src.label || '';
+        el.className = 'pv-footer-src ' + (src.state === 'error' ? 'is-err' : (src.state !== 'unset' ? 'is-ok' : 'is-off'));
+    }
+
     function setMeta() {
         if (!meta) return;
         meta.style.display = '';
@@ -375,6 +384,8 @@
                 meta.textContent = em;
                 meta.style.display = '';
                 PvUI.toast(em, 'err');
+                // 接口失败：按错误响应随附的来源状态同步页脚（红色「无法连接」）
+                if (j && j.data && j.data.source) applyFooterSource(j.data.source);
                 return;
             }
             var d = j.data || {};
@@ -384,11 +395,7 @@
             renderAll();
             resetLoader();
             saveState();
-            var srcEl = document.getElementById('pvFooterSource');
-            if (srcEl && d.source) {
-                srcEl.textContent = d.source.label || '';
-                srcEl.className = 'pv-footer-src ' + (d.source.state !== 'unset' ? 'is-ok' : 'is-off');
-            }
+            applyFooterSource(d.source);
             if (d.fhir_error) PvUI.toast('FHIR 补充失败：' + d.fhir_error, 'err');
         }).catch(function () {
             if (seq !== searchSeq) return;

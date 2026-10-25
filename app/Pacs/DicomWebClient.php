@@ -50,11 +50,37 @@ class PvDicomWebClient {
         if ($k !== '') { $headers[] = 'Authorization: Bearer ' . $k; $headers[] = 'X-API-Key: ' . $k; }
         $r = PvHttp::get($url, self::timeout(), $headers);
         self::logOutbound($path, $query, (int)$r['code']);
-        if ($r['body'] === false || $r['body'] === '') throw new RuntimeException('无法连接 DICOMweb 接口：' . $url);
+        if ($r['body'] === false || $r['body'] === '') {
+            self::markConn(false);
+            // 提示不拼接请求 URL（防泄露后端地址 / 撑破页面布局）；
+            // 完整地址已由 logOutbound 写入协议日志，排障不受影响
+            throw new RuntimeException('无法连接 DICOMweb 接口');
+        }
         $j = json_decode($r['body'], true);
         if (!is_array($j)) throw new RuntimeException('DICOMweb 返回非 JSON 数据');
         if (isset($j['resourceType'])) throw new RuntimeException('DICOMweb 返回错误：' . (isset($j['issue'][0]['diagnostics']) ? $j['issue'][0]['diagnostics'] : 'OperationOutcome'));
+        self::markConn(true);
         return $j;
+    }
+
+    /**
+     * 记录最近一次连通性结果（供页脚「服务器已连接」状态展示）：
+     * · 失败：按分钟节流写入失败时间（高频失败不反复落库）；
+     * · 成功：仅在「此前处于失败状态」时写一次成功时间，用于清除错误态；
+     * · 临时配置覆盖（pingWith「测试当前输入」）不改变已保存连接的连通状态。
+     */
+    private static function markConn($ok) {
+        if (self::$override !== null) return;
+        $now = time();
+        if ($ok) {
+            if ((int)PvSettings::get('pacs_last_ok_at', '0') < (int)PvSettings::get('pacs_last_error_at', '0')) {
+                PvSettings::set('pacs_last_ok_at', (string)$now);
+            }
+            return;
+        }
+        if ($now - (int)PvSettings::get('pacs_last_error_at', '0') >= 60) {
+            PvSettings::set('pacs_last_error_at', (string)$now);
+        }
     }
 
     /** 出向 DICOMweb 调用落账（协议日志，channel=protocol） */
@@ -70,18 +96,14 @@ class PvDicomWebClient {
 
     /** 连通性测试：拉取 studies（limit=1），并返回机构名称（InstitutionName） */
     public static function ping() {
-        try {
-            $arr = self::getJson('/studies', array('limit' => 1, 'includefield' => 'all'));
-            $first = (is_array($arr) && isset($arr[0]) && is_array($arr[0])) ? $arr[0] : array();
-            $inst = self::val('00080080', $first);
-            if ($inst === '') $inst = pvw_hospital_api();
-            return array(
-                'name' => 'DICOMweb 服务', 'endpoint' => self::base(), 'mode' => 'DICOMweb',
-                'studies' => count((array)$arr), 'institution' => $inst,
-            );
-        } catch (Exception $e) {
-            throw new RuntimeException('DICOMweb 连接失败：' . $e->getMessage());
-        }
+        $arr = self::getJson('/studies', array('limit' => 1, 'includefield' => 'all'));
+        $first = (is_array($arr) && isset($arr[0]) && is_array($arr[0])) ? $arr[0] : array();
+        $inst = self::val('00080080', $first);
+        if ($inst === '') $inst = pvw_hospital_api();
+        return array(
+            'name' => 'DICOMweb 服务', 'endpoint' => self::base(), 'mode' => 'DICOMweb',
+            'studies' => count((array)$arr), 'institution' => $inst,
+        );
     }
 
     /**

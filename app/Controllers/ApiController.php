@@ -38,7 +38,8 @@ class PvApiController {
             try {
                 $res = PvStudyService::search($kw, $limit, $offset, $filters);
             } catch (Exception $e) {
-                pvw_json(500, $e->getMessage());
+                // 错误响应随附最新来源状态：前端据此把页脚同步为错误态（无需刷新）
+                pvw_json(500, $e->getMessage(), array('source' => PvStudyService::sourceInfo()));
             }
             PvCache::set($ck, $res, 20);
         }
@@ -76,7 +77,7 @@ class PvApiController {
             try {
                 $data = PvStudyService::study($uid);
             } catch (Exception $e) {
-                pvw_json(500, $e->getMessage());
+                pvw_json(500, $e->getMessage(), array('source' => PvStudyService::sourceInfo()));
             }
             PvCache::set($ck, $data, 30);
         }
