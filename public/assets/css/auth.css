@@ -21,3 +21,17 @@
 .pv-auth-card .pv-field { margin-bottom: 16px; }
 .pv-auth-card .pv-field input { width: 100%; max-width: none; }
 .pv-auth-hint { margin-top: 18px; text-align: center; font-size: 12px; color: #64748b; line-height: 1.9; }
+
+/* ===== 多步安装向导 ===== */
+.pv-wiz-steps { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 2px 0 16px; }
+.pv-wiz-step { font-size: 12px; color: #64748b; padding: 3px 9px; border-radius: 10px; background: rgba(148,163,184,.12); }
+.pv-wiz-step.active { color: #7dd3fc; background: rgba(56,189,248,.16); font-weight: 600; }
+.pv-wiz-step.done { color: #38bdf8; }
+.pv-wiz-check { list-style: none; margin: 0 0 14px; padding: 0; font-size: 13px; color: #cbd5e1; }
+.pv-wiz-check li { display: flex; align-items: center; gap: 8px; padding: 7px 4px; border-bottom: 1px dashed rgba(148,163,184,.18); }
+.pv-wiz-check li:last-child { border-bottom: none; }
+.pv-wiz-dot { width: 8px; height: 8px; border-radius: 50%; background: #475569; flex: none; }
+.pv-wiz-dot.ok { background: #34d399; }
+.pv-wiz-dot.bad { background: #f87171; }
+.pv-wiz-select { width: 100%; }
+.pv-wiz-link { display: block; margin: 10px auto 0; background: none; border: none; color: #7dd3fc; font-size: 13px; cursor: pointer; }

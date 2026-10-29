@@ -38,6 +38,9 @@ class PvAssets {
             'css' => array('admin.css', 'mock.css'),
             'js'  => array('modules/scroll.js', 'admin-users.js', 'admin-storage.js', 'admin-logs.js', 'admin.js', 'mock.js'),
         ),
+        'install' => array(
+            'js'  => array('install.js'),
+        ),
     );
 
     /** 不随页面直出、但需离线缓存的后台 JS（如解码 Worker） */
