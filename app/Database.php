@@ -18,11 +18,17 @@ class PvDatabase {
         self::seed();
     }
 
-    /** 获取 PDO 单例 */
+    /** 获取 PDO 单例（数据文件路径由 config.db db.path 决定，缺省 data/pacs_viewer.db） */
     public static function pdo() {
         if (self::$pdo instanceof PDO) return self::$pdo;
         if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
-        $file = PV_DATA . '/pacs_viewer.db';
+        $file = PvConfigDb::dbPath();
+        if (!is_dir(dirname($file)) && !@mkdir(dirname($file), 0775, true)) {
+            http_response_code(500);
+            header('Content-Type: text/html; charset=utf-8');
+            echo '<h3>PACS 浏览器数据库目录不可创建</h3><p>' . htmlspecialchars(dirname($file)) . '</p>';
+            exit;
+        }
         try {
             $pdo = new PDO('sqlite:' . $file, null, null, array(
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,

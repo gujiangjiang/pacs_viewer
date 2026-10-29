@@ -18,9 +18,13 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '1.10.1');
+define('PV_VERSION', '1.11.0');
 
-date_default_timezone_set('Asia/Shanghai');
+/* 基础设施配置库（data/config.db）：数据库连接、全站时区等最底层配置
+ * 独立于业务库存放（参考门诊一体化系统）；未生成时全部回退默认，行为不变。 */
+require_once PV_APP . '/ConfigDb.php';
+date_default_timezone_set(PvConfigDb::timezone('Asia/Shanghai'));   // 存储恒为 UTC，时区仅显示口径
+
 if (!is_dir(PV_DATA)) @mkdir(PV_DATA, 0775, true);
 $pvSessDir = PV_DATA . '/session';
 if (!is_dir($pvSessDir)) @mkdir($pvSessDir, 0775, true);
