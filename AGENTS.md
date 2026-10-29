@@ -87,6 +87,24 @@
   **严禁硬编码任何路径前缀**；静态资源统一放 `public/assets`，由引导计算 `PV_URL_ASSET` 输出。
   即便被外部以 iframe 嵌入或反向代理到子目录，链接也能自适应。
 
+## 时间与时区铁律（三系统统一契约：PACS / HIS / 门诊一体化）
+
+- **存储一律标准 UTC**：本系统自身时间列写入唯一来源 `PvTime::now()`（模式感知；
+  `config.db` `time.storage`，local 仅存量兼容过渡）；助手全集在 `app/Support/Time.php`。
+- **显示按站点时区**：全站经 `PvTime::local()/localize()` 换算（config.db `timezone`，
+  安装向导/管理设置）。**查询日志 / 活动日志 / 用户列表 / 摄片记录** 均已接入。
+- **DICOM 检查时间铁律**：StudyDate/StudyTime 一律由摄片记录（UTC 存储）经
+  **站点时区换算后**派生（`PvAcquisitionStore` 行映射单点）——跨天/时区零漂移；
+  DICOM DA/TM 原生值（上游透传）为业务时间直通，**严禁**再做时区换算。
+- **对外接口标准 UTC**：回写门诊 FHIR Task 时间用 `gmdate('c')`（ISO 8601 +00:00）；
+  入站外部时间按 UTC 解析（`PvTime::fromUtc()`）；对外接口不受本系统时区设置影响。
+- **业务日期时间**（用户选择的本地时间）：`nowLocal()` 存取、展示原样
+  （`PvTime::$localBizKeys` 豁免机制）。
+- **日志保留裁剪**：按天删除一律 `PvTime::stampDaysAgo()`（utc/local 双模式口径正确）；
+  严禁 `date('Y-m-d H:i:s', time()-…)` 直接与存储列比较。
+- **存量库 UTC 化**：`tools/tz_migrate.php plan|convert|rollback`
+  （VACUUM INTO 整库备份 + JSON 清单 + `--db=` 副本演练；副本模式不改实际配置）。
+
 ## 接口约定
 
 - 远程 PACS 接口使用 `{action,q,uid,key}` 查询参数，返回 `{code,msg,data}`；

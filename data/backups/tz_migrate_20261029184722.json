@@ -1,0 +1,29 @@
+{
+    "db": "\/Users\/gujiangjiang\/Downloads\/OpenCode\/Hospital\/pacs-viewer\/data\/pacs_viewer.db",
+    "direction": "to_utc",
+    "tz": "Asia\/Shanghai",
+    "tz_offset": "+08:00",
+    "started_at": "2026-10-29 18:47:22",
+    "backup": "\/Users\/gujiangjiang\/Downloads\/OpenCode\/Hospital\/pacs-viewer\/data\/backups\/pacs_viewer_20261029184722.db",
+    "tables": {
+        "users": {
+            "created_at": 2
+        },
+        "query_log": {
+            "created_at": 15
+        },
+        "schema_migrations": {
+            "applied_at": 8
+        },
+        "activity_log": {
+            "created_at": 5604
+        },
+        "mock_acquisitions": {
+            "acquired_at": 3,
+            "created_at": 3
+        }
+    },
+    "skipped": 0,
+    "status": "applied",
+    "finished_at": "2026-10-29 18:47:22"
+}
