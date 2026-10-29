@@ -76,6 +76,7 @@ define('PV_ENTRY', $pvEntry);                    // 入口脚本 URL
 
 /* ---------- 载入核心类 ---------- */
 require_once PV_APP . '/Database.php';
+require_once PV_APP . '/Support/Time.php';
 require_once PV_APP . '/Support/icons.php';
 require_once PV_APP . '/Support/Cache.php';
 require_once PV_APP . '/Support/Http.php';
