@@ -23,6 +23,19 @@
   未生成 config.db 时全部回退默认（行为与旧版完全一致）；SQLite Magic Header
   严格校验，损坏文件自动备份 `.corrupt.[时间戳]` 并优雅降级；`PvDatabase`
   数据文件路径改由 config.db 决定（相对路径按 data/ 展开）
+- **时间与时区统一框架 `PvTime`（三系统统一契约）**：本系统自身时间列一律
+  **标准 UTC** 存储（`now()` 模式感知唯一写入来源）；全站显示按站点时区
+  （config.db `timezone`）经 `local()/localize()` 换算；对外接口 UTC
+  （`isoUtc()` 带 Z）；日志保留裁剪按存储口径（`stampDaysAgo()`）；
+  **DICOM 检查时间**（StudyDate/Time）由摄片记录经站点时区派生，跨天/时区
+  零漂移；查询日志/活动日志/用户列表/摄片记录全部接入
+- **多步安装向导**（环境检测 → 数据库 → 初始化 → 站点（含时区）→ 管理员 →
+  完成）：阶段断点续填（config.db `setup.stage`）、防跳步与防重放守卫、
+  完成后自动登录；替代原单步安装表单
+- **存量库 UTC 迁移工具 `tools/tz_migrate.php`**：`plan` 只读预演 /
+  `convert`（VACUUM INTO 整库备份含 WAL 状态 → 逐列转换 → JSON 清单 →
+  `time.storage=utc`）/ `rollback`（按清单精确还原 + 回切）；`--db=` 副本演练
+  模式不改动实际配置
 - 版本 1.10.1 → 1.11.0（`PV_VERSION` / README 徽章 / 本日志三处同步）
 
 ## [1.10.1] - 2026-10-25
