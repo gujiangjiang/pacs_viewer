@@ -24,8 +24,14 @@ $routes = array(
     ''                      => array('PvAuthController', null),
     'login'                 => array('PvAuthController', $isPost ? 'login' : 'showLogin'),
     'logout'                => array('PvAuthController', 'logout'),
-    'install'               => array('PvInstallController', $isPost ? 'submit' : 'show'),
+    'install'               => array('PvInstallController', 'show'),
     'install/submit'        => array('PvInstallController', 'submit'),
+    'install/status'        => array('PvInstallController', 'status'),
+    'install/database'      => array('PvInstallController', 'database'),
+    'install/migrate'       => array('PvInstallController', 'migrate'),
+    'install/site'          => array('PvInstallController', 'site'),
+    'install/admin'         => array('PvInstallController', 'admin'),
+    'install/finish'        => array('PvInstallController', 'finish'),
     'search'                => array('PvSearchController', 'index'),
     'viewer'                => array('PvViewerController', 'show'),
     'admin'                 => array('PvAdminController', 'index'),
@@ -78,7 +84,7 @@ $routes = array(
 /* 首次运行安装门禁：未完成安装时，除安装向导外一律引导至安装页；
  * 已完成安装后，安装入口不再可用。 */
 $pvInstalled = PvSettings::isInstalled();
-$isInstallRoute = ($r === 'install' || $r === 'install/submit');
+$isInstallRoute = ($r === 'install' || strpos($r, 'install/') === 0);
 $pvPublicAsset = ($r === 'mock' || $r === 'dicom' || $r === 'thumb' || $r === 'manifest' || $r === 'sw' || $r === 'icon' || strpos($r, 'dicomweb') === 0);
 if (!$pvInstalled && !$isInstallRoute && !$pvPublicAsset) {
     pvw_redirect(pvw_url('install'));
