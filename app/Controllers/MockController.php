@@ -129,7 +129,7 @@ class PvMockController {
                 'resourceType' => 'Task', 'id' => $taskId, 'status' => 'accepted',
                 'businessStatus' => array('text' => '已登记待摄片'),
                 'owner' => array('display' => 'PACS'),
-                'executionPeriod' => array('start' => date('c')),
+                'executionPeriod' => array('start' => gmdate('c')),   // 对外接口契约：标准 UTC（ISO 8601 +00:00）
             ));
             PvActivityLogRepository::mock('register', '登记工作项 ' . $taskId . '（操作员 ' . ($u ? $u['display_name'] : '') . '）');
             pvw_json(200, '已登记，等待摄片');
@@ -171,7 +171,7 @@ class PvMockController {
                         'resourceType' => 'Task', 'id' => $taskId, 'status' => 'completed',
                         'businessStatus' => array('text' => '已摄片'),
                         'owner' => array('display' => 'PACS'),
-                        'executionPeriod' => array('end' => date('c')),
+                        'executionPeriod' => array('end' => gmdate('c')),   // 对外接口契约：标准 UTC（ISO 8601 +00:00）
                     ));
                 } catch (Exception $ex) { $writeErr = $ex->getMessage(); }
             }
@@ -224,7 +224,7 @@ class PvMockController {
                             'resourceType' => 'Task', 'id' => $task, 'status' => 'completed',
                             'businessStatus' => array('text' => '已摄片'),
                             'owner' => array('display' => 'PACS'),
-                            'executionPeriod' => array('end' => date('c')),
+                            'executionPeriod' => array('end' => gmdate('c')),   // 对外接口契约：标准 UTC（ISO 8601 +00:00）
                         ));
                     } catch (Exception $ex) { $errs[] = $task . '：' . $ex->getMessage(); }
                 }

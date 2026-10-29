@@ -45,7 +45,7 @@ foreach ($all as $a) {
             'resourceType' => 'Task', 'id' => $task, 'status' => 'completed',
             'businessStatus' => array('text' => '已摄片'),
             'owner' => array('display' => 'PACS'),
-            'executionPeriod' => array('end' => date('c')),
+            'executionPeriod' => array('end' => gmdate('c')),   // 对外接口契约：标准 UTC（ISO 8601 +00:00）
         ));
         $ok++;
         PvActivityLogRepository::mock('backfill', '回填摄片：' . $acc . ' → ' . $task);
