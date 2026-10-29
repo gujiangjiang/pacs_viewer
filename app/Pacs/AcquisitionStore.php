@@ -67,7 +67,7 @@ class PvAcquisitionStore {
         $acc = trim((string)(isset($d['accession_no']) ? $d['accession_no'] : ''));
         $taskRef = trim((string)(isset($d['task_ref']) ? $d['task_ref'] : ''));
         $existing = $acc !== '' ? self::findByTask($acc, $taskRef) : null;
-        $now = date('Y-m-d H:i:s');
+        $now = PvTime::now();   // 存储 UTC（PvTime 模式感知）
         $uid = $existing ? (string)$existing['study_uid'] : self::assignStudyUid($acc, $taskRef);
         if ($existing) {
             PvDatabase::exec(
@@ -103,7 +103,8 @@ class PvAcquisitionStore {
                 (string)(isset($d['inpatient_no']) ? $d['inpatient_no'] : ''),
                 (string)(isset($d['modality']) ? $d['modality'] : ''),
                 (string)(isset($d['description']) ? $d['description'] : ''),
-                (string)(isset($d['registered_at']) ? $d['registered_at'] : ''),
+                // 登记时间：来源为工作列表本地墙钟串 → 按存储口径落库（utc 模式换算 UTC）
+                PvTime::fromLocal((string)(isset($d['registered_at']) ? $d['registered_at'] : '')),
                 $now,
                 (string)(isset($d['operator']) ? $d['operator'] : ''),
                 $now,
@@ -129,7 +130,8 @@ class PvAcquisitionStore {
             'accession_no'  => (string)$acq['accession_no'],
             'modality'      => (string)$acq['modality'] !== '' ? (string)$acq['modality'] : 'OT',
             'description'   => (string)$acq['description'] !== '' ? (string)$acq['description'] : '影像检查',
-            'study_date'    => (string)$acq['acquired_at'],
+            // DICOM 检查时间（StudyDate/Time）：存储 UTC → 站点时区业务显示串（DA/TM 由本地时间派生）
+            'study_date'    => PvTime::local((string)$acq['acquired_at']),
             'institution'   => PvMockServer::builtinInstitution(),
             'station_name'  => ((string)$acq['modality'] !== '' ? (string)$acq['modality'] : 'OT') . '-ROOM',
             'apply_dept'    => '',

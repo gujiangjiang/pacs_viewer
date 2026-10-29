@@ -48,7 +48,7 @@ class PvLogLimits {
     public static function trimByDate($table, $prefix, $channel = null) {
         $l = self::read($prefix);
         if ($l['days'] <= 0) return;
-        $cut = date('Y-m-d H:i:s', time() - $l['days'] * 86400);
+        $cut = PvTime::stampDaysAgo($l['days']);   // 存储口径的 N 天前（utc/local 均正确）
         if ($channel === null) {
             PvDatabase::exec("DELETE FROM " . $table . " WHERE created_at < ?", array($cut));
         } else {

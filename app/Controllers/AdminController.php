@@ -27,8 +27,8 @@ class PvAdminController {
             'tab'      => $tab,
             'site'     => PvSettings::get('site_title', 'PACS 影像浏览器'),
             'settings' => PvSettings::all(),
-            'users'    => PvUserRepository::all(),
-            'logs'     => PvQueryLogRepository::recent(30),
+            'users'    => self::localRows(PvUserRepository::all()),
+            'logs'     => self::localRows(PvQueryLogRepository::recent(30)),
             'logCount' => PvQueryLogRepository::count(),
             'logLimits' => array(
                 'operation' => self::logLimits('operation'),
@@ -101,7 +101,7 @@ class PvAdminController {
                 trim((string)pvw_input('display_name')),
                 (string)pvw_input('role')
             );
-            self::reply('账号已创建', true, PvUserRepository::all(), 'users');
+            self::reply('账号已创建', true, self::localRows(PvUserRepository::all()), 'users');
         } catch (Exception $e) {
             self::reply('创建失败：' . $e->getMessage(), false, null, 'users');
         }
@@ -112,7 +112,7 @@ class PvAdminController {
         pvw_csrf_check();
         try {
             PvUserRepository::updateProfile((int)pvw_input('id'), trim((string)pvw_input('display_name')), (string)pvw_input('role'));
-            self::reply('账号资料已更新', true, PvUserRepository::all(), 'users');
+            self::reply('账号资料已更新', true, self::localRows(PvUserRepository::all()), 'users');
         } catch (Exception $e) {
             self::reply('更新失败：' . $e->getMessage(), false, null, 'users');
         }
@@ -128,7 +128,7 @@ class PvAdminController {
         }
         try {
             PvUserRepository::setStatus($id, $status);
-            self::reply('账号状态已更新', true, PvUserRepository::all(), 'users');
+            self::reply('账号状态已更新', true, self::localRows(PvUserRepository::all()), 'users');
         } catch (Exception $e) {
             self::reply('操作失败：' . $e->getMessage(), false, null, 'users');
         }
@@ -154,7 +154,7 @@ class PvAdminController {
         }
         try {
             PvUserRepository::delete($id);
-            self::reply('账号已删除', true, PvUserRepository::all(), 'users');
+            self::reply('账号已删除', true, self::localRows(PvUserRepository::all()), 'users');
         } catch (Exception $e) {
             self::reply('删除失败：' . $e->getMessage(), false, null, 'users');
         }
@@ -250,7 +250,7 @@ class PvAdminController {
                 $act = isset($l['action']) ? (string)$l['action'] : 'search';
                 $list[] = array(
                     'id' => (int)$l['id'],
-                    'created_at' => (string)$l['created_at'],
+                    'created_at' => PvTime::local((string)$l['created_at']),
                     'username' => (string)$l['username'],
                     'action' => $act,
                     'action_name' => PvQueryLogRepository::actionName($act),
@@ -267,7 +267,7 @@ class PvAdminController {
             foreach ($rows as $l) {
                 $list[] = array(
                     'id' => (int)$l['id'],
-                    'created_at' => (string)$l['created_at'],
+                    'created_at' => PvTime::local((string)$l['created_at']),
                     'level' => (string)$l['level'],
                     'action' => (string)$l['action'],
                     'detail' => (string)$l['detail'],
@@ -388,5 +388,18 @@ class PvAdminController {
         pvw_csrf_check();
         PvIconRenderer::clearCustom();
         self::reply('已恢复默认图标', true, array('version' => PvIconRenderer::version()), 'basic');
+    }
+
+    /**
+     * 展示口径转换：列表行 *_at / *_time 键 → 站点时区显示串
+     * （PvTime::localize 递归；local 模式恒等。仅适用于本系统存储时间列，
+     *  DICOM 业务日期与透传数据不得经此处理）。
+     */
+    private static function localRows($rows) {
+        $out = array();
+        foreach ((array)$rows as $i => $row) {
+            $out[$i] = is_array($row) ? PvTime::localize($row) : $row;
+        }
+        return $out;
     }
 }

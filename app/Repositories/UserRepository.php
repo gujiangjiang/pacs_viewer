@@ -37,7 +37,7 @@ class PvUserRepository {
         $role = $role === 'admin' ? 'admin' : 'user';
         return PvDatabase::insert(
             "INSERT INTO users(username,password_hash,display_name,role,status,is_owner,created_at) VALUES(?,?,?,?,1,?,?)",
-            array($username, password_hash($password, PASSWORD_DEFAULT), (string)$displayName, $role, $owner ? 1 : 0, date('Y-m-d H:i:s'))
+            array($username, password_hash($password, PASSWORD_DEFAULT), (string)$displayName, $role, $owner ? 1 : 0, PvTime::now())
         );
     }
 

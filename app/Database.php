@@ -65,7 +65,7 @@ class PvDatabase {
             if ((int)$st->fetchColumn() > 0) continue;
             include $file;   // 迁移文件使用作用域内的 $pdo
             $pdo->prepare("INSERT INTO schema_migrations(name,applied_at) VALUES(?,?)")
-                ->execute(array($name, date('Y-m-d H:i:s')));
+                ->execute(array($name, PvTime::now()));
         }
     }
 

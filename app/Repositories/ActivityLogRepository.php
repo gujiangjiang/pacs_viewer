@@ -43,7 +43,7 @@ class PvActivityLogRepository {
         }
         $id = PvDatabase::insert(
             "INSERT INTO activity_log(channel,level,action,detail,meta,ip,created_at) VALUES(?,?,?,?,?,?,?)",
-            array($channel, (string)$level, (string)$action, (string)$detail, (string)$metaStr, $ip, date('Y-m-d H:i:s'))
+            array($channel, (string)$level, (string)$action, (string)$detail, (string)$metaStr, $ip, PvTime::now())
         );
         self::enforceLimits($channel);
         return $id;

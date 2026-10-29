@@ -76,7 +76,7 @@ class PvUploadStore {
         $orig = isset($file['name']) ? self::safeName((string)$file['name']) : '';
         PvDatabase::insert(
             "INSERT INTO uploads(token,category,orig_name,stored_name,mime,size,uploader,created_at) VALUES(?,?,?,?,?,?,?,?)",
-            array($token, $category, $orig, $stored, $mime, $size, (string)$uploader, date('Y-m-d H:i:s'))
+            array($token, $category, $orig, $stored, $mime, $size, (string)$uploader, PvTime::now())
         );
         return array(
             'token'         => $token,

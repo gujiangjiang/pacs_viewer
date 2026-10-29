@@ -28,7 +28,7 @@ class PvQueryLogRepository {
         $ip = isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : '';
         $id = PvDatabase::insert(
             "INSERT INTO query_log(username,keyword,result_count,ip,action,detail,created_at) VALUES(?,?,?,?,?,?,?)",
-            array((string)$username, (string)$keyword, (int)$resultCount, $ip, (string)$action, (string)$detail, date('Y-m-d H:i:s'))
+            array((string)$username, (string)$keyword, (int)$resultCount, $ip, (string)$action, (string)$detail, PvTime::now())
         );
         self::enforceLimits();   // 写入后按「条数 / 天数」上限清理最早记录（哪个先到执行哪个）
         return $id;
