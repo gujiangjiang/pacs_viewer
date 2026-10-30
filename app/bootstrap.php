@@ -18,7 +18,7 @@ define('PV_APP', PV_ROOT . '/app');
 define('PV_VIEWS', PV_ROOT . '/views');
 define('PV_DATA', PV_ROOT . '/data');
 define('PV_PUBLIC', PV_ROOT . '/public');
-define('PV_VERSION', '1.11.0');
+define('PV_VERSION', '1.12.0');
 
 /* 基础设施配置库（data/config.db）：数据库连接、全站时区等最底层配置
  * 独立于业务库存放（参考门诊一体化系统）；未生成时全部回退默认，行为不变。 */

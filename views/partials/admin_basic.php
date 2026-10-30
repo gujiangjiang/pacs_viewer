@@ -23,6 +23,27 @@
                 <?php } ?>
             </select>
             <em class="pv-hint">影像视图最多同时打开的患者检查数，超出后自动移除最早打开的检查（3-10）</em></label>
+        <?php
+        // 全站时区（config.db）：常用置顶 + 全量列表（存储与对外接口恒为标准 UTC）
+        $__tzCommon = array('Asia/Shanghai', 'Asia/Urumqi', 'Asia/Hong_Kong', 'Asia/Taipei',
+            'Asia/Tokyo', 'Asia/Singapore', 'America/New_York', 'Europe/London', 'UTC');
+        $__tzCur = isset($timezone) ? (string)$timezone : 'Asia/Shanghai';
+        $__tzRest = array_values(array_diff((array)(isset($timezones) ? $timezones : array()), $__tzCommon));
+        ?>
+        <label class="pv-field"><span>全站时区</span>
+            <select name="timezone">
+                <optgroup label="常用">
+                    <?php foreach ($__tzCommon as $__tz) { ?>
+                    <option value="<?php echo pvw_e($__tz); ?>" <?php echo $__tz === $__tzCur ? 'selected' : ''; ?>><?php echo pvw_e($__tz); ?></option>
+                    <?php } ?>
+                </optgroup>
+                <optgroup label="全部时区">
+                    <?php foreach ($__tzRest as $__tz) { ?>
+                    <option value="<?php echo pvw_e($__tz); ?>" <?php echo $__tz === $__tzCur ? 'selected' : ''; ?>><?php echo pvw_e($__tz); ?></option>
+                    <?php } ?>
+                </optgroup>
+            </select>
+            <em class="pv-hint">存储与对外接口均为标准 UTC；此处仅决定全站显示时区（日志 / 时间戳 / 管理列表）</em></label>
         <button type="submit" class="pv-btn pv-btn-primary">保存基础设置</button>
     </form>
 

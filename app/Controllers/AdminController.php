@@ -41,6 +41,8 @@ class PvAdminController {
             'mockViewerUrl' => PvMockServer::viewerUrlTemplate(),
             'mockAeTitle' => PvSettings::get('mock_ae_title', 'PACSVIEWMOCK'),
             'pacsEndpoint' => PvSettings::get('pacs_endpoint', ''),
+            'timezone'  => PvConfigDb::timezone('Asia/Shanghai'),      // 全站时区（config.db）
+            'timezones' => DateTimeZone::listIdentifiers(),
         ));
     }
 
@@ -69,11 +71,26 @@ class PvAdminController {
             }
         }
 
+        // 全站时区（config.db；存储与对外接口恒为标准 UTC，此处仅显示口径）
+        if ($tab === 'basic' && isset($_POST['timezone'])) {
+            $tz = trim((string)$_POST['timezone']);
+            try {
+                new DateTimeZone($tz);
+            } catch (Exception $e) {
+                self::reply('无效的时区：' . $tz, false, null, 'basic');
+            }
+            if (!PvConfigDb::set('timezone', $tz)) {
+                self::reply('时区写入失败，请检查 data/ 目录权限', false, null, 'basic');
+            }
+            date_default_timezone_set($tz);   // 当前请求即时生效
+        }
+
         PvSettings::saveMany($pairs);
         self::reply('设置已保存', true, array(
             'site_title'    => PvSettings::get('site_title', ''),
             'hospital_name' => pvw_hospital(),   // 生效后的医院名（覆盖 > 接口 > 项目名 > 默认医院）
             'icon_version'  => PvIconRenderer::version(),
+            'timezone'      => PvConfigDb::timezone('Asia/Shanghai'),
         ), $tab === 'pacs' ? 'pacs' : 'basic');
     }
 
