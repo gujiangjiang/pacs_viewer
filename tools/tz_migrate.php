@@ -29,7 +29,7 @@ foreach ($argv as $a) {
     if (strpos($a, '--db=') === 0) $dbArg = substr($a, strpos($a, '=') + 1);
 }
 if (!in_array($cmd, array('plan', 'convert', 'rollback'), true)) {
-    exit("用法: tz_migrate.php plan|convert|rollback [--db=路径] [--yes]\n");
+    exit("用法: tz_migrate.php plan|convert|rollback [--db=路径] [--yes] [--force]\n");
 }
 
 $tz = PvConfigDb::timezone('Asia/Shanghai');
@@ -151,6 +151,23 @@ if ($cmd === 'rollback') {
 /* ---------------- convert：执行 墙钟 → UTC ---------------- */
 if ($cmd === 'convert') {
     if (!$yes) exit("convert 将改写全库时间数据并切换存储模式，确认请加 --yes\n");
+    // 防重复转换守卫（重复转换 = 已 UTC 数据再减时区偏移 → 8 小时数据损坏）：
+    //   ① 主库（未指定 --db）且 time.storage 已是 utc；或
+    //   ② 该库路径已有 status=applied 的 to_utc 迁移清单 → 拒绝（--force 显式覆盖）
+    if (!in_array('--force', $argv, true)) {
+        if ($dbArg === '' && (string)PvConfigDb::get('time.storage', 'local') === 'utc') {
+            fwrite(STDERR, "拒绝执行：该库已完成 UTC 转换（time.storage=utc）。\n重复 convert 会造成时区偏移损坏；如需重跑请先 rollback 还原，或显式加 --force\n");
+            exit(2);
+        }
+        foreach (glob($backupDir . '/tz_migrate_*.json') ?: array() as $f) {
+            $j = json_decode((string)@file_get_contents($f), true);
+            if (is_array($j) && isset($j['direction']) && isset($j['db']) && isset($j['status'])
+                && $j['direction'] === 'to_utc' && $j['db'] === $dbPath && $j['status'] === 'applied') {
+                fwrite(STDERR, "拒绝执行：该库已存在已应用的 to_utc 迁移清单（" . basename($f) . "）。\n重复 convert 会造成时区偏移损坏；如需重跑请先 rollback 还原，或显式加 --force\n");
+                exit(2);
+            }
+        }
+    }
     // 1) 整库备份（VACUUM INTO 捕获 WAL 状态；失败回退文件拷贝）
     $backup = $backupDir . '/pacs_viewer_' . gmdate('YmdHis') . '.db';
     $okBackup = false;
